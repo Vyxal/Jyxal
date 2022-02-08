@@ -27,4 +27,14 @@ public enum Element implements Opcodes {
     public void compile(ClassWriter cw, MethodVisitor mv) {
         consumer.accept(cw, mv);
     }
+
+    public static Element getByText(String text) {
+        for (Element e : values()) {
+            if (e.text.equals(text)) {
+                return e;
+            }
+        }
+
+        throw new JyxalCompileException("Unknown element: " + text);
+    }
 }

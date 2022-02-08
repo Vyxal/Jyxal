@@ -657,8 +657,7 @@ public class BigRational extends Number implements Comparable<BigRational>, Seri
 		return digitCount;
 	}
 
-	// TODO what is precision of a rational?
-	private int precision() {
+		private int precision() {
 		return countDigits(numerator.toBigInteger()) + countDigits(denominator.toBigInteger());
 	}
 

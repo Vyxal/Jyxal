@@ -260,8 +260,7 @@ public class BigDecimalMath {
 	 * @return <code>true</code> if the value can be represented as <code>int</code> value
 	 */
 	public static boolean isIntValue(BigDecimal value) {
-		// TODO impl isIntValue() without exceptions
-		try {
+				try {
 			value.intValueExact();
 			return true;
 		} catch (ArithmeticException ex) {
@@ -279,8 +278,7 @@ public class BigDecimalMath {
 	 * @return <code>true</code> if the value can be represented as <code>long</code> value
 	 */
 	public static boolean isLongValue(BigDecimal value) {
-		// TODO impl isLongValue() without exceptions
-		try {
+				try {
 			value.longValueExact();
 			return true;
 		} catch (ArithmeticException ex) {
@@ -651,8 +649,7 @@ System.out.println(BigDecimalMath.roundWithTrailingZeroes(new BigDecimal("0.0000
 			}
 		}
 
-		// TODO optimize y=0, y=1, y=10^k, y=-1, y=-10^k
-
+		
 		try {
 			long longValue = y.longValueExact();
 			return pow(x, longValue, mathContext);
@@ -693,8 +690,7 @@ System.out.println(BigDecimalMath.roundWithTrailingZeroes(new BigDecimal("0.0000
 	public static BigDecimal pow(BigDecimal x, long y, MathContext mathContext) {
 		MathContext mc = mathContext.getPrecision() == 0 ? mathContext : new MathContext(mathContext.getPrecision() + 10, mathContext.getRoundingMode());
 
-		// TODO optimize y=0, y=1, y=10^k, y=-1, y=-10^k
-
+		
 		if (y < 0) {
 			BigDecimal value = reciprocal(pow(x, -y, mc), mc);
 			return round(value, mathContext);

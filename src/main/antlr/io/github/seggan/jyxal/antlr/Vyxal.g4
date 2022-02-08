@@ -9,7 +9,7 @@ file
     ;
 
 program
-    : (element | literal | structure)+
+    : (literal | structure | element)+
     ;
 
 element
@@ -19,14 +19,14 @@ element
 element_type
     : ALPHA | '<' | ':' | '×' | 'Ṁ' | 'ṫ' | '₇' | '¾' | '₄' | '↵' | '¹' | 'Π' | 'æ' | 'ṡ' | '∑' | 'Ẏ'
     | '√' | 'ḋ' | '§' | '²' | '…' | 'ṅ' | 'Ż' | 'Ǎ' | '-' | '∵' | '↔' | '≠' | 'ɾ' | '¤' | '₴' | 'Ǐ'
-    | '⇧' | '\\' | 'ġ' | 'ẏ' | '⁼' | '⁋' | '∩' | '≈' | '∷' | '₈' | '÷' | 'ȧ' | 'ʀ' | '₀' | 'Ḃ' | '⊍'
+    | '⇧' | 'ġ' | 'ẏ' | '⁼' | '⁋' | '∩' | '≈' | '∷' | '₈' | '÷' | 'ȧ' | 'ʀ' | '₀' | 'Ḃ' | '⊍' | '∴'
     | '∨' | 'ȯ' | '⁰' | 'Ẋ' | '⇩' | 'ẇ' | '‹' | 'ḭ' | '†' | '‟' | '⌈' | '₁' | '!' | '€' | 'ƈ' | 'ǒ'
     | 'ɽ' | 'ʁ' | ',' | 'Ȯ' | '⋎' | 'τ' | 'ǎ' | 'ṙ' | '%' | 'Ẇ' | '∧' | '↲' | 'ǐ' | '¢' | '„' | 'Ė'
     | '₂' | 'Ḟ' | '꘍' | '}' | '*' | 'ẋ' | '?' | '₅' | 'ŀ' | 'ß' | '⟇' | '℅' | '¥'| '₆' | 'Ġ' | 'ṗ'
     | '∞' | 'Ṗ' | 'ꜝ' | 'Ǔ' | '›' | 'ε' | '□' | 'Ṫ' | '¦' | 'ė' | '$' | 'Ṙ' | 'İ' | '=' | '↓' | 'ċ'
     | '₃' | 'Ḣ' | '_' | '⟑' | 'Ċ' | 'Ŀ' | '¬' | '¶' | 'ð' | 'ḟ' | '¡' | '¯' | '≥' | 'ǔ' | 'ż' | '↑'
     | 'Ḋ' | '¼' | '⋏' | 'Ǒ' | '>' | 'ṁ' | '£' | '⅛' | 'ḣ' | '+' | '±' | '/' | '↳' | '∪' | '∇' | '≤'
-    | 'ḃ' | '⌐' | '^' | 'Ṡ' | 'Ȧ' | 'β' | '•' | '½' | 'Ṅ' | '∴'
+    | 'ḃ' | '⌐' | '^' | 'Ṡ' | 'Ȧ' | 'β' | '•' | '½' | 'Ṅ'
     ;
 
 // structures
@@ -56,7 +56,7 @@ lambda
     ;
 
 function
-    : '@' variable (':' (parameter (':' parameter)* '|')? program)? ';'?
+    : '@' variable ((':' parameter (':' parameter)*)? '|' program)? ';'?
     ;
 
 variable_assn
@@ -80,17 +80,17 @@ literal
     ;
 
 string
-    : STRING
-    | COMPRESSED_STRING
-    | SINGLE_CHAR_STRING
-    | DOUBLE_CHAR_STRING
+    : normal_string
+    | compressed_string
+    | single_char_string
+    | double_char_string
     ;
 
 number
     : integer
     | decimal
     | complex
-    | COMPRESSED_NUMBER
+    | compressed_number
     ;
 
 integer
@@ -109,29 +109,32 @@ list
     : '⟨' program ('|' program)* '⟩'?
     ;
 
-// literals
-COMPRESSED_STRING
-    : '«' .+? '«'?
+any_text
+    : .+?
     ;
 
-STRING
-    : '`' .+? '`'?
+compressed_string
+    : '«' any_text '«'?
     ;
 
-SINGLE_CHAR_STRING
-    : '\\'.
+normal_string
+    : '`' any_text '`'?
     ;
 
-DOUBLE_CHAR_STRING
-    : '‛'. .
+single_char_string
+    : '\\' .
+    ;
+
+double_char_string
+    : '‛' . .
+    ;
+
+compressed_number
+    : '»' any_text '»'?
     ;
 
 DIGIT
     : [0-9]
-    ;
-
-COMPRESSED_NUMBER
-    : '»' .+? '»'?
     ;
 
 
