@@ -1,0 +1,126 @@
+import org.objectweb.asm.ClassReader
+import org.objectweb.asm.ClassVisitor
+import org.objectweb.asm.ClassWriter
+import org.objectweb.asm.MethodVisitor
+import org.objectweb.asm.Opcodes
+
+import java.nio.file.Files
+import java.nio.file.Path as JPath
+import java.util.regex.Pattern
+
+plugins {
+    id 'java'
+    id 'application'
+    id 'com.github.johnrengelman.shadow' version '7.1.2'
+    id 'antlr'
+}
+
+group 'io.github.seggan.jyxal'
+version '1.0-SNAPSHOT'
+
+mainClassName = 'io.github.seggan.jyxal.Main'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'org.ow2.asm:asm:9.2'
+    antlr 'org.antlr:antlr4:4.9.3'
+
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.2'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.2'
+}
+
+test {
+    useJUnitPlatform()
+}
+
+generateGrammarSource {
+    maxHeapSize = "128m"
+    arguments += ['-visitor', '-no-listener']
+}
+
+compileJava.dependsOn generateGrammarSource
+
+sourceSets {
+    main {
+        java {
+            srcDir 'src/main/antlr'
+        }
+    }
+    generated {
+        java {
+            srcDir "build/generated-src/antlr/main/"
+        }
+    }
+}
+
+clean {
+    delete "generated-src"
+}
+
+// copy and relocate the runtime into the resources
+shadowJar {
+    List<String> names = new ArrayList<>()
+    String dir = "$buildDir/classes/java/main/io/github/seggan/jyxal/runtime"
+    Pattern oldPackage = Pattern.compile("io/github/seggan/jyxal/runtime/")
+    Pattern backslash = Pattern.compile("\\\\")
+    Pattern dirPattern = Pattern.compile("^.*classes[/\\\\]java[/\\\\]main[/\\\\]io[/\\\\]github[/\\\\]seggan[/\\\\]jyxal[/\\\\]runtime[/\\\\]")
+    JPath dest = JPath.of("$buildDir/runtime-classes/")
+    if (!Files.exists(dest)) {
+        Files.createDirectories(dest)
+    }
+    JPath origin = JPath.of(dir)
+    if (!Files.exists(origin)) {
+        Files.createDirectories(origin)
+    }
+    Files.walk(origin).forEach({
+        if (Files.isRegularFile(it)) {
+            String fname = dirPattern.matcher(it.toString()).replaceFirst("")
+            names.add(backslash.matcher(fname).replaceAll("/"))
+            
+            ClassReader cr = new ClassReader(Files.readAllBytes(it))
+            ClassWriter cw = new ClassWriter(cr, 0)
+            String newClassName = oldPackage.matcher(cr.getClassName()).replaceFirst("runtime/")
+            cr.accept(new ClassVisitor(Opcodes.ASM7) {
+                @Override
+                void visit(int version, int access, String name, String signature, String superName, String[] interfaces) {
+                    cw.visit(version, access, newClassName, signature, superName, interfaces)
+                }
+
+                @Override
+                MethodVisitor visitMethod(int access, String name, String descriptor, String signature, String[] exceptions) {
+                    return new MethodVisitor(Opcodes.ASM7, cw.visitMethod(access, name, descriptor, signature, exceptions)) {
+                        @Override
+                        void visitMethodInsn(int opcode, String owner, String mname, String mdesc, boolean isInterface) {
+                            owner = oldPackage.matcher(owner).replaceFirst("runtime/")
+                            mdesc = oldPackage.matcher(mdesc).replaceAll("runtime/")
+                            super.visitMethodInsn(opcode, owner, mname, mdesc, isInterface)
+                        }
+
+                        @Override
+                        void visitTypeInsn(int opcode, String type) {
+                            type = oldPackage.matcher(type).replaceFirst("runtime/")
+                            super.visitTypeInsn(opcode, type)
+                        }
+                    }
+                }
+            }, ClassReader.EXPAND_FRAMES)
+            cw.visitEnd()
+            
+            JPath out = dest.resolve(fname)
+            JPath parent = out.getParent()
+            if (!Files.exists(parent)) {
+                Files.createDirectories(parent)
+            }
+            Files.write(out, cw.toByteArray())
+        }
+    })
+
+    Files.write(dest.resolve("runtime.list"), names)
+
+    from(dest.toFile().path) {
+        include "**/*.*"
+    }
+}
