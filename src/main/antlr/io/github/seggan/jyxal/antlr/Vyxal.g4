@@ -88,21 +88,16 @@ string
 
 number
     : integer
-    | decimal
     | complex
     | compressed_number
     ;
 
 integer
-    : DIGIT+
-    ;
-
-decimal
-    : integer '.' integer
+    : DIGIT+ ('.' DIGIT+)?
     ;
 
 complex
-    : (integer | decimal) '°' (integer | decimal)
+    : integer '°' integer
     ;
 
 list
@@ -114,7 +109,7 @@ any_text
     ;
 
 compressed_string
-    : '«' any_text '«'?
+    : '\u00ab' any_text '\u00ab'?
     ;
 
 normal_string
@@ -130,7 +125,7 @@ double_char_string
     ;
 
 compressed_number
-    : '»' any_text '»'?
+    : '\u00bb' any_text '\u00bb'?
     ;
 
 DIGIT

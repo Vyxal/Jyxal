@@ -5,24 +5,16 @@ import io.github.seggan.jyxal.antlr.VyxalParser;
 import io.github.seggan.jyxal.compiler.Compiler;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
-import org.objectweb.asm.ClassReader;
-import org.objectweb.asm.ClassVisitor;
-import org.objectweb.asm.ClassWriter;
-import org.objectweb.asm.MethodVisitor;
-import org.objectweb.asm.Opcodes;
+import org.antlr.v4.runtime.Token;
 
-import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Scanner;
 import java.util.Set;
@@ -30,8 +22,6 @@ import java.util.jar.Attributes;
 import java.util.jar.JarEntry;
 import java.util.jar.JarOutputStream;
 import java.util.jar.Manifest;
-import java.util.regex.Pattern;
-import java.util.zip.ZipEntry;
 
 public class Main {
 
@@ -41,14 +31,13 @@ public class Main {
         }
 
         System.out.println("Parsing program...");
-        // The input stream is automatically closed
-        VyxalLexer lexer = new VyxalLexer(CharStreams.fromStream(new FileInputStream(args[0]), StandardCharsets.UTF_8));
 
+        VyxalLexer lexer = new VyxalLexer(CharStreams.fromPath(Path.of(args[0]), StandardCharsets.UTF_8));
         VyxalParser parser = new VyxalParser(new CommonTokenStream(lexer));
-        parser.setBuildParseTree(true);
+        //System.out.println(parser.file().toStringTree(parser));
 
         System.out.println("Compiling program...");
-        byte[] main = new Compiler(parser, args[0]).compile();
+        byte[] main = Compiler.compile(parser, args[0]);
 
         System.out.println("Extracting runtime classes...");
         Set<String> resourceList = new HashSet<>();

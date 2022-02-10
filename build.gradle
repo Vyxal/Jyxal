@@ -1,8 +1,7 @@
 import org.objectweb.asm.ClassReader
-import org.objectweb.asm.ClassVisitor
 import org.objectweb.asm.ClassWriter
-import org.objectweb.asm.MethodVisitor
-import org.objectweb.asm.Opcodes
+import org.objectweb.asm.commons.ClassRemapper
+import org.objectweb.asm.commons.Remapper
 
 import java.nio.file.Files
 import java.nio.file.Path as JPath
@@ -26,6 +25,7 @@ repositories {
 
 dependencies {
     implementation 'org.ow2.asm:asm:9.2'
+    implementation 'org.ow2.asm:asm-commons:9.2'
     antlr 'org.antlr:antlr4:4.9.3'
 
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.2'
@@ -38,7 +38,7 @@ test {
 
 generateGrammarSource {
     maxHeapSize = "128m"
-    arguments += ['-visitor', '-no-listener']
+    arguments += ['-visitor', '-no-listener', "-encoding", "UTF-8"]
 }
 
 compileJava.dependsOn generateGrammarSource
@@ -82,32 +82,13 @@ shadowJar {
             
             ClassReader cr = new ClassReader(Files.readAllBytes(it))
             ClassWriter cw = new ClassWriter(cr, 0)
-            String newClassName = oldPackage.matcher(cr.getClassName()).replaceFirst("runtime/")
-            cr.accept(new ClassVisitor(Opcodes.ASM7) {
+            ClassRemapper remapper = new ClassRemapper(cw, new Remapper() {
                 @Override
-                void visit(int version, int access, String name, String signature, String superName, String[] interfaces) {
-                    cw.visit(version, access, newClassName, signature, superName, interfaces)
+                String map(String internalName) {
+                    return oldPackage.matcher(internalName).replaceFirst("runtime/")
                 }
-
-                @Override
-                MethodVisitor visitMethod(int access, String name, String descriptor, String signature, String[] exceptions) {
-                    return new MethodVisitor(Opcodes.ASM7, cw.visitMethod(access, name, descriptor, signature, exceptions)) {
-                        @Override
-                        void visitMethodInsn(int opcode, String owner, String mname, String mdesc, boolean isInterface) {
-                            owner = oldPackage.matcher(owner).replaceFirst("runtime/")
-                            mdesc = oldPackage.matcher(mdesc).replaceAll("runtime/")
-                            super.visitMethodInsn(opcode, owner, mname, mdesc, isInterface)
-                        }
-
-                        @Override
-                        void visitTypeInsn(int opcode, String type) {
-                            type = oldPackage.matcher(type).replaceFirst("runtime/")
-                            super.visitTypeInsn(opcode, type)
-                        }
-                    }
-                }
-            }, ClassReader.EXPAND_FRAMES)
-            cw.visitEnd()
+            })
+            cr.accept(remapper, ClassReader.EXPAND_FRAMES)
             
             JPath out = dest.resolve(fname)
             JPath parent = out.getParent()
