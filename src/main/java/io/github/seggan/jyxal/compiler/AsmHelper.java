@@ -1,5 +1,6 @@
 package io.github.seggan.jyxal.compiler;
 
+import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 
 public final class AsmHelper implements Opcodes {
@@ -7,7 +8,7 @@ public final class AsmHelper implements Opcodes {
     private AsmHelper() {
     }
 
-    public static void addBigDecimal(String number, MethodVisitorWrapper mv) {
+    public static void addBigDecimal(String number, MethodVisitor mv) {
         mv.visitTypeInsn(NEW, "java/math/BigDecimal");
         mv.visitInsn(DUP);
         mv.visitLdcInsn(number);
@@ -18,7 +19,6 @@ public final class AsmHelper implements Opcodes {
             "(Ljava/lang/String;)V",
             false
         );
-        mv.visitIincInsn(mv.getStackVar(), 1);
     }
 
     public static void addBigComplex(String number, MethodVisitorWrapper mv) {
@@ -31,6 +31,14 @@ public final class AsmHelper implements Opcodes {
             false
         );
         mv.visitIincInsn(mv.getStackVar(), 1);
+    }
+
+    public static void pushOne(MethodVisitorWrapper mv) {
+        mv.visitIincInsn(mv.getStackVar(), 1);
+    }
+
+    public static void popOne(MethodVisitorWrapper mv) {
+        mv.visitIincInsn(mv.getStackVar(), -1);
     }
 
     public static void selectNumberInsn(MethodVisitorWrapper mv, int number) {

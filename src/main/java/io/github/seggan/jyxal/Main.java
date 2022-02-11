@@ -34,7 +34,9 @@ public class Main {
 
         VyxalLexer lexer = new VyxalLexer(CharStreams.fromPath(Path.of(args[0]), StandardCharsets.UTF_8));
         VyxalParser parser = new VyxalParser(new CommonTokenStream(lexer));
-        //System.out.println(parser.file().toStringTree(parser));
+
+        // uncomment to print out the tree
+        //System.out.println(parser.file().toStringTree(parser));parser.reset();
 
         System.out.println("Compiling program...");
         byte[] main = Compiler.compile(parser, args[0]);

@@ -8,10 +8,10 @@ public class MethodVisitorWrapper extends MethodVisitor implements Opcodes {
     private final int stackVar;
     private final int ctxVar;
 
-    public MethodVisitorWrapper(MethodVisitor methodVisitor, int stackVar, int ctxVar) {
+    public MethodVisitorWrapper(MethodVisitor methodVisitor, int stackVar) {
         super(Opcodes.ASM7, methodVisitor);
         this.stackVar = stackVar;
-        this.ctxVar = ctxVar;
+        this.ctxVar = stackVar + 1;
 
         visitInsn(ICONST_0);
         visitVarInsn(ISTORE, stackVar);

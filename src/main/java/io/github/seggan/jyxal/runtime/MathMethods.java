@@ -15,8 +15,4 @@ public final class MathMethods {
             return a.toString() + b.toString();
         }
     }
-
-    public static void doSomethignElse() {
-        OtherMethods.doSomething();
-    }
 }

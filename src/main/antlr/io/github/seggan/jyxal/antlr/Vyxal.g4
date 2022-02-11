@@ -9,11 +9,11 @@ file
     ;
 
 program
-    : (literal | structure | element)+
+    : (literal | structure | element)+?
     ;
 
 element
-    : PREFIX? element_type
+    : MODIFIER? PREFIX? element_type
     ;
 
 element_type
@@ -22,7 +22,7 @@ element_type
     | '⇧' | 'ġ' | 'ẏ' | '⁼' | '⁋' | '∩' | '≈' | '∷' | '₈' | '÷' | 'ȧ' | 'ʀ' | '₀' | 'Ḃ' | '⊍' | '∴'
     | '∨' | 'ȯ' | '⁰' | 'Ẋ' | '⇩' | 'ẇ' | '‹' | 'ḭ' | '†' | '‟' | '⌈' | '₁' | '!' | '€' | 'ƈ' | 'ǒ'
     | 'ɽ' | 'ʁ' | ',' | 'Ȯ' | '⋎' | 'τ' | 'ǎ' | 'ṙ' | '%' | 'Ẇ' | '∧' | '↲' | 'ǐ' | '¢' | '„' | 'Ė'
-    | '₂' | 'Ḟ' | '꘍' | '}' | '*' | 'ẋ' | '?' | '₅' | 'ŀ' | 'ß' | '⟇' | '℅' | '¥'| '₆' | 'Ġ' | 'ṗ'
+    | '₂' | 'Ḟ' | '꘍' | '*' | 'ẋ' | '?' | '₅' | 'ŀ' | '⟇' | '℅' | '¥'| '₆' | 'Ġ' | 'ṗ'
     | '∞' | 'Ṗ' | 'ꜝ' | 'Ǔ' | '›' | 'ε' | '□' | 'Ṫ' | '¦' | 'ė' | '$' | 'Ṙ' | 'İ' | '=' | '↓' | 'ċ'
     | '₃' | 'Ḣ' | '_' | '⟑' | 'Ċ' | 'Ŀ' | '¬' | '¶' | 'ð' | 'ḟ' | '¡' | '¯' | '≥' | 'ǔ' | 'ż' | '↑'
     | 'Ḋ' | '¼' | '⋏' | 'Ǒ' | '>' | 'ṁ' | '£' | '⅛' | 'ḣ' | '+' | '±' | '/' | '↳' | '∪' | '∇' | '≤'
@@ -52,7 +52,7 @@ while_loop
     ;
 
 lambda
-    : LAMBDA_TYPE (integer '|')? program ';'?
+    : LAMBDA_TYPE (INTEGER '|')? program ';'?
     ;
 
 function
@@ -64,11 +64,11 @@ variable_assn
     ;
 
 variable
-    : (ALPHA | DIGIT)+
+    : (ALPHA)+
     ;
 
 parameter
-    : '*' | variable | integer
+    : '*' | variable | INTEGER
     ;
 
 
@@ -93,11 +93,11 @@ number
     ;
 
 integer
-    : DIGIT+ ('.' DIGIT+)?
+    : ('+' | '-')? INTEGER ('.' INTEGER)?
     ;
 
 complex
-    : integer '°' integer
+    : INTEGER '°' INTEGER
     ;
 
 list
@@ -128,14 +128,22 @@ compressed_number
     : '\u00bb' any_text '\u00bb'?
     ;
 
-DIGIT
+fragment DIGIT
     : [0-9]
+    ;
+
+INTEGER
+    : DIGIT+
     ;
 
 
 // code
 PREFIX
     : [¨Þkø∆]
+    ;
+
+MODIFIER
+    : [ßvƒɖ⁽‡≬⁺₌₍~]
     ;
 
 ALPHA

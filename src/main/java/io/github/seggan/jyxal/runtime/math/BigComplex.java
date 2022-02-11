@@ -497,10 +497,16 @@ public final class BigComplex {
 
 	@Override
 	public String toString() {
-		if (im.signum() >= 0) {
-			return "(" + re + " + " + im + " i)";
+		if (im.signum() == 0) {
+			return re.toPlainString();
+		} else if (re.signum() == 0) {
+			return im.toPlainString() + "i";
 		} else {
-			return "(" + re + " - " + im.negate() + " i)";
+			if (im.signum() == -1) {
+				return re.toPlainString() + " - " + im.abs().toPlainString() + "i";
+			} else {
+				return re.toPlainString() + " + " + im.toPlainString() + "i";
+			}
 		}
 	}
 
