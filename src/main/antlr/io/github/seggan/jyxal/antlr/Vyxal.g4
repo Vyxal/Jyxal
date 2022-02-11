@@ -93,7 +93,7 @@ number
     ;
 
 integer
-    : ('+' | '-')? INTEGER ('.' INTEGER)?
+    : '-'? INTEGER ('.' INTEGER)?
     ;
 
 complex

@@ -8,11 +8,13 @@ public final class MathMethods {
     private MathMethods() {
     }
 
-    public static Object add(Object a, Object b) {
+    public static void add(ProgramStack stack) {
+        Object b = stack.pop();
+        Object a = stack.pop();
         if (a instanceof BigComplex ca && b instanceof BigComplex cb) {
-            return ca.add(cb);
+            stack.push(ca.add(cb));
         } else {
-            return a.toString() + b.toString();
+            stack.push(a + b.toString());
         }
     }
 }

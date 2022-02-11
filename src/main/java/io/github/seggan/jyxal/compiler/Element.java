@@ -1,57 +1,59 @@
 package io.github.seggan.jyxal.compiler;
 
 import io.github.seggan.jyxal.runtime.MathMethods;
+import io.github.seggan.jyxal.runtime.ProgramStack;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 
-import java.lang.invoke.MethodHandles;
-import java.lang.invoke.MethodType;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import java.util.regex.Pattern;
 
 public enum Element {
 
-    ADD("+", -1, MathMethods.class, "add", Object.class, Object.class, Object.class),
-    CONTEXT_VAR("n", 1, (cv, mv) -> mv.visitVarInsn(Opcodes.ALOAD, mv.getCtxVar())),
-    POP("_", -1, (cw, mv) -> {
+    ADD("+", MathMethods.class, "add"),
+    CONTEXT_VAR("n", mv -> {
+        mv.visitVarInsn(Opcodes.ALOAD, mv.getStackVar());
+        mv.visitVarInsn(Opcodes.ALOAD, mv.getCtxVar());
+        AsmHelper.push(mv);
+    }),
+    POP("_", mv -> {
+        AsmHelper.pop(mv);
         mv.visitInsn(Opcodes.POP);
     });
 
     private final String text;
-    private final int stackDelta;
-    private final BiConsumer<ClassWriter, MethodVisitorWrapper> consumer;
+    private final BiConsumer<ClassWriter, MethodVisitorWrapper> compileMethod;
 
-    Element(String text, int stackDelta, BiConsumer<ClassWriter, MethodVisitorWrapper> consumer) {
-        BiConsumer<ClassWriter, MethodVisitorWrapper> consumer1;
-        this.text = text;
-        this.stackDelta = stackDelta;
-        if (stackDelta != 0) {
-            consumer = consumer.andThen((cw, mv) -> mv.visitIincInsn(mv.getStackVar(), stackDelta));
-        }
-        this.consumer = consumer;
+    Element(String text, Consumer<MethodVisitorWrapper> compileMethod) {
+        this(text, (cw, mv) -> compileMethod.accept(mv));
     }
 
-    Element(String text, int stackDelta, Class<?> owner, String method, Class<?> returnType, Class<?>... parameterTypes) {
+    Element(String text, BiConsumer<ClassWriter, MethodVisitorWrapper> compileMethod) {
         this.text = text;
-        this.stackDelta = stackDelta;
+        this.compileMethod = compileMethod;
+    }
 
-        MethodType methodType = MethodType.methodType(returnType, parameterTypes);
+    Element(String text, Class<?> owner, String method) {
+        this.text = text;
+
         try {
-            MethodHandles.lookup().findStatic(owner, method, methodType);
-        } catch (NoSuchMethodException | IllegalAccessException e) {
+            owner.getDeclaredMethod(method, ProgramStack.class);
+        } catch (NoSuchMethodException e) {
             throw new IllegalArgumentException("No such method: " + owner.getName() + "#" + method, e);
         }
 
         Pattern oldPackage = Pattern.compile("io/github/seggan/jyxal/runtime/");
-        this.consumer = (cw, mv) -> {
-            mv.visitMethodInsn(Opcodes.INVOKESTATIC,
+        this.compileMethod = (cw, mv) -> {
+            mv.visitVarInsn(Opcodes.ALOAD, mv.getStackVar());
+            mv.visitMethodInsn(
+                Opcodes.INVOKESTATIC,
                 oldPackage.matcher(Type.getType(owner).getInternalName()).replaceAll("runtime/"),
                 method,
-                oldPackage.matcher(methodType.toMethodDescriptorString()).replaceAll("runtime/"),
+                "(Lruntime/ProgramStack;)V",
                 false
             );
-            mv.visitIincInsn(mv.getStackVar(), stackDelta);
         };
     }
 
@@ -66,6 +68,6 @@ public enum Element {
     }
 
     public void compile(ClassWriter cw, MethodVisitorWrapper mv) {
-        consumer.accept(cw, mv);
+        compileMethod.accept(cw, mv);
     }
 }

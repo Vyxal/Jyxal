@@ -21,7 +21,7 @@ public final class AsmHelper implements Opcodes {
         );
     }
 
-    public static void addBigComplex(String number, MethodVisitorWrapper mv) {
+    public static void addBigComplex(String number, MethodVisitor mv) {
         AsmHelper.addBigDecimal(number, mv);
         mv.visitMethodInsn(
             INVOKESTATIC,
@@ -30,15 +30,27 @@ public final class AsmHelper implements Opcodes {
             "(Ljava/math/BigDecimal;)Lruntime/math/BigComplex;",
             false
         );
-        mv.visitIincInsn(mv.getStackVar(), 1);
     }
 
-    public static void pushOne(MethodVisitorWrapper mv) {
-        mv.visitIincInsn(mv.getStackVar(), 1);
+    public static void push(MethodVisitorWrapper mv) {
+        mv.visitMethodInsn(
+            INVOKEVIRTUAL,
+            "runtime/ProgramStack",
+            "push",
+            "(Ljava/lang/Object;)V",
+            false
+        );
     }
 
-    public static void popOne(MethodVisitorWrapper mv) {
-        mv.visitIincInsn(mv.getStackVar(), -1);
+    public static void pop(MethodVisitorWrapper mv) {
+        mv.visitVarInsn(ALOAD, mv.getStackVar());
+        mv.visitMethodInsn(
+            INVOKEVIRTUAL,
+            "runtime/ProgramStack",
+            "pop",
+            "()Ljava/lang/Object;",
+            false
+        );
     }
 
     public static void selectNumberInsn(MethodVisitorWrapper mv, int number) {

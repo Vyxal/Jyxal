@@ -2,11 +2,15 @@ package io.github.seggan.jyxal.compiler;
 
 import io.github.seggan.jyxal.antlr.VyxalBaseVisitor;
 import io.github.seggan.jyxal.antlr.VyxalParser;
+import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.util.CheckClassAdapter;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.HashSet;
@@ -67,23 +71,20 @@ public final class Compiler extends VyxalBaseVisitor<Void> implements Opcodes {
         );
         mv.visitCode();
 
-        mv.visitInsn(ACONST_NULL);
+        AsmHelper.addBigComplex("0", mv);
         mv.visitFieldInsn(PUTSTATIC, "jyxal/Main", "register", "Ljava/lang/Object;");
         mv.visitInsn(RETURN);
 
         Compiler compiler = new Compiler(parser, cw, mv);
 
-        MethodVisitorWrapper main = new MethodVisitorWrapper(cw.visitMethod(
+        MethodVisitorWrapper main = new MethodVisitorWrapper(
+            cw,
             ACC_PUBLIC | ACC_STATIC,
             "main",
-            "([Ljava/lang/String;)V",
-            null,
-            null
-        ), 1);
+            "([Ljava/lang/String;)V"
+        );
         compiler.callStack.push(main);
         main.visitCode();
-
-        main.visitInsn(ACONST_NULL); // and this one is to keep asm from complaining cc: that dup insn
 
         compiler.visit(parser.file());
 
@@ -94,10 +95,25 @@ public final class Compiler extends VyxalBaseVisitor<Void> implements Opcodes {
 
         // finish up main
         Label end = new Label();
-        main.visitVarInsn(ILOAD, main.getStackVar());
+        main.visitVarInsn(ALOAD, main.getStackVar());
+        main.visitInsn(DUP);
+        main.visitMethodInsn(
+            INVOKEVIRTUAL,
+            "runtime/ProgramStack",
+            "size",
+            "()I",
+            false
+        );
         main.visitJumpInsn(IFEQ, end);
 
-        main.visitInsn(DUP); // keep the verifier from complaining
+        main.visitInsn(DUP);
+        main.visitMethodInsn(
+            INVOKEVIRTUAL,
+            "runtime/ProgramStack",
+            "pop",
+            "()Ljava/lang/Object;",
+            false
+        );
 
         main.visitFieldInsn(GETSTATIC, "java/lang/System", "out", "Ljava/io/PrintStream;");
         main.visitInsn(SWAP);
@@ -106,8 +122,16 @@ public final class Compiler extends VyxalBaseVisitor<Void> implements Opcodes {
         main.visitLabel(end);
         main.visitInsn(RETURN);
 
-        main.visitMaxs(-1, -1); // auto-calculate stack size and number of locals
-        main.visitEnd();
+        try {
+            main.visitMaxs(-1, -1); // auto-calculate stack size and number of locals
+        } catch (Exception e) {
+            StringWriter sw = new StringWriter();
+            CheckClassAdapter.verify(new ClassReader(cw.toByteArray()), true, new PrintWriter(sw));
+            if (sw.toString().length() > 0) {
+                System.err.println(sw);
+            }
+            throw new RuntimeException(e);
+        }
 
         return cw.toByteArray();
     }
@@ -115,7 +139,9 @@ public final class Compiler extends VyxalBaseVisitor<Void> implements Opcodes {
     @Override
     public Void visitInteger(VyxalParser.IntegerContext ctx) {
         MethodVisitorWrapper mv = callStack.peek();
+        mv.visitVarInsn(ALOAD, mv.getStackVar());
         AsmHelper.addBigComplex(ctx.getText(), mv);
+        AsmHelper.push(mv);
         return null;
     }
 
@@ -123,6 +149,7 @@ public final class Compiler extends VyxalBaseVisitor<Void> implements Opcodes {
     public Void visitComplex(VyxalParser.ComplexContext ctx) {
         MethodVisitorWrapper mv = callStack.peek();
         String[] parts = COMPLEX_SEPARATOR.split(ctx.getText());
+        mv.visitVarInsn(ALOAD, mv.getStackVar());
         AsmHelper.addBigDecimal(parts[0], mv);
         AsmHelper.addBigDecimal(parts[1], mv);
         mv.visitMethodInsn(
@@ -132,7 +159,7 @@ public final class Compiler extends VyxalBaseVisitor<Void> implements Opcodes {
             "(Ljava/math/BigDecimal;Ljava/math/BigDecimal;)Lruntime/math/BigComplex;",
             false
         );
-        AsmHelper.popOne(mv);
+        AsmHelper.push(mv);
 
         return null;
     }
@@ -140,31 +167,36 @@ public final class Compiler extends VyxalBaseVisitor<Void> implements Opcodes {
     @Override
     public Void visitNormal_string(VyxalParser.Normal_stringContext ctx) {
         MethodVisitorWrapper mv = callStack.peek();
+        mv.visitVarInsn(ALOAD, mv.getStackVar());
         mv.visitLdcInsn(ctx.any_text().getText());
-        AsmHelper.pushOne(mv);
+        AsmHelper.push(mv);
         return null;
     }
 
     @Override
     public Void visitSingle_char_string(VyxalParser.Single_char_stringContext ctx) {
         MethodVisitorWrapper mv = callStack.peek();
+        mv.visitVarInsn(ALOAD, mv.getStackVar());
         mv.visitLdcInsn(ctx.getText().substring(1));
-        AsmHelper.pushOne(mv);
+        AsmHelper.push(mv);
         return null;
     }
 
     @Override
     public Void visitDouble_char_string(VyxalParser.Double_char_stringContext ctx) {
         MethodVisitorWrapper mv = callStack.peek();
+        mv.visitVarInsn(ALOAD, mv.getStackVar());
         mv.visitLdcInsn(ctx.getText().substring(1));
-        AsmHelper.pushOne(mv);
+        AsmHelper.push(mv);
         return null;
     }
 
     @Override
     public Void visitList(VyxalParser.ListContext ctx) {
         MethodVisitorWrapper method = callStack.peek();
-        method.visitLdcInsn(ctx.program().size());
+        method.visitVarInsn(ALOAD, method.getStackVar());
+
+        AsmHelper.selectNumberInsn(method, ctx.program().size());
         method.visitTypeInsn(ANEWARRAY, "java/lang/Object");
 
         List<VyxalParser.ProgramContext> program = ctx.program();
@@ -174,13 +206,12 @@ public final class Compiler extends VyxalBaseVisitor<Void> implements Opcodes {
             AsmHelper.selectNumberInsn(method, i);
 
             String methodName = "listInit$" + listCounter++;
-            MethodVisitorWrapper mv = new MethodVisitorWrapper(classWriter.visitMethod(
+            MethodVisitorWrapper mv = new MethodVisitorWrapper(
+                classWriter,
                 ACC_PRIVATE | ACC_STATIC,
                 methodName,
-                "()Ljava/lang/Object;",
-                null,
-                null
-            ), 1);
+                "()Ljava/lang/Object;"
+            );
             mv.visitCode();
             callStack.push(mv);
             visit(item);
@@ -207,7 +238,7 @@ public final class Compiler extends VyxalBaseVisitor<Void> implements Opcodes {
             "([Ljava/lang/Object;)Lruntime/list/JyxalList;",
             false
         );
-        AsmHelper.pushOne(method);
+        AsmHelper.push(method);
 
         return null;
     }
@@ -238,22 +269,23 @@ public final class Compiler extends VyxalBaseVisitor<Void> implements Opcodes {
         MethodVisitorWrapper mv = callStack.peek();
         if (ctx.ASSN_SIGN().getText().equals("→")) {
             // set
+            AsmHelper.pop(mv);
             mv.visitFieldInsn(
                 PUTSTATIC,
                 "jyxal/Main",
                 name,
                 "Ljava/lang/Object;"
             );
-            AsmHelper.popOne(mv);
         } else {
             // get
+            mv.visitVarInsn(ALOAD, mv.getStackVar());
             mv.visitFieldInsn(
                 GETSTATIC,
                 "jyxal/Main",
                 name,
                 "Ljava/lang/Object;"
             );
-            AsmHelper.pushOne(mv);
+            AsmHelper.push(mv);
         }
 
         return null;
@@ -294,7 +326,6 @@ public final class Compiler extends VyxalBaseVisitor<Void> implements Opcodes {
             mv.visitJumpInsn(IFEQ, end);
         }
 
-        System.out.println(childIndex);
         visit(ctx.program(childIndex));
         mv.visitJumpInsn(GOTO, start);
         mv.visitLabel(end);
