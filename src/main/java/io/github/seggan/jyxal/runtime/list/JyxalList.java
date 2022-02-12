@@ -2,8 +2,10 @@ package io.github.seggan.jyxal.runtime.list;
 
 import io.github.seggan.jyxal.runtime.math.BigComplex;
 
+import java.math.BigDecimal;
 import java.util.AbstractList;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -25,14 +27,18 @@ public class JyxalList extends AbstractList<Object> implements List<Object> {
         return new JyxalList(new InfiniteList(generator));
     }
 
-    public static JyxalList create(Object[] array) {
+    public static JyxalList create(Object... array) {
         return new JyxalList(new FiniteList(array));
+    }
+
+    public static JyxalList create(Collection<?> collection) {
+        return new JyxalList(new FiniteList(collection));
     }
 
     public static JyxalList range(int start, int end) {
         List<Object> list = new ArrayList<>(Math.abs(end - start));
-        for (int i = start; i < end; i++) {
-            list.add(BigComplex.valueOf(i));
+        for (int i = start; i <= end; i++) {
+            list.add(BigComplex.valueOf(new BigDecimal(Integer.toString(i))));
         }
         return new JyxalList(new FiniteList(list));
     }

@@ -6,6 +6,7 @@ import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 
+import java.awt.image.DataBufferUShort;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.regex.Pattern;
@@ -21,7 +22,16 @@ public enum Element {
     POP("_", mv -> {
         AsmHelper.pop(mv);
         mv.visitInsn(Opcodes.POP);
-    });
+    }),
+    PRINTLN(",", mv -> {
+        // Unfortunately, we cannot apply the push-pop optimization here as it does not push anything
+        // to the stack. Therefore, the program stack remains on the operand stack, and we'll get an
+        // inconsistent frame error.
+        mv.visitFieldInsn(Opcodes.GETSTATIC, "java/lang/System", "out", "Ljava/io/PrintStream;");
+        AsmHelper.pop(mv);
+        mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/io/PrintStream", "println", "(Ljava/lang/Object;)V", false);
+    }),
+    ;
 
     private final String text;
     private final BiConsumer<ClassWriter, MethodVisitorWrapper> compileMethod;

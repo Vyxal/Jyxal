@@ -498,14 +498,14 @@ public final class BigComplex {
 	@Override
 	public String toString() {
 		if (im.signum() == 0) {
-			return re.toPlainString();
+			return re.stripTrailingZeros().toPlainString();
 		} else if (re.signum() == 0) {
-			return im.toPlainString() + "i";
+			return im.stripTrailingZeros().toPlainString() + "i";
 		} else {
 			if (im.signum() == -1) {
-				return re.toPlainString() + " - " + im.abs().toPlainString() + "i";
+				return re.stripTrailingZeros().toPlainString() + " - " + im.abs().stripTrailingZeros().toPlainString() + "i";
 			} else {
-				return re.toPlainString() + " + " + im.toPlainString() + "i";
+				return re.stripTrailingZeros().toPlainString() + " + " + im.stripTrailingZeros().toPlainString() + "i";
 			}
 		}
 	}

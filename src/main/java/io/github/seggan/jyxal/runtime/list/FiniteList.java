@@ -43,12 +43,16 @@ class FiniteList extends JyxalList {
 
     @Override
     public void map(Function<Object, Object> f) {
-        backing = backing.stream().map(f).collect(ArrayList::new, ArrayList::add, ArrayList::addAll);
+        List<Object> newBacking = new ArrayList<>();
+        for (Object o : backing) {
+            newBacking.add(f.apply(o));
+        }
+        backing = newBacking;
     }
 
     @Override
     public void filter(Predicate<Object> p) {
-        backing = backing.stream().filter(p).collect(ArrayList::new, ArrayList::add, ArrayList::addAll);
+        backing.removeIf(obj -> !p.test(obj));
     }
 
     @Override

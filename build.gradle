@@ -105,4 +105,8 @@ shadowJar {
     from(dest.toFile().path) {
         include "**/*.*"
     }
+
+    from(rootDir) {
+        include "LICENSE.txt"
+    }
 }
