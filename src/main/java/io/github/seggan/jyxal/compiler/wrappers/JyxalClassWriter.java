@@ -18,4 +18,8 @@ public class JyxalClassWriter extends ClassWriter {
         type2 = RUNTIME.matcher(type2).replaceAll("io/github/seggan/jyxal/runtime/");
         return super.getCommonSuperClass(type1, type2);
     }
+
+    public JyxalMethod visitMethod(int access, String name, String desc) {
+        return new JyxalMethod(this, access, name, desc);
+    }
 }

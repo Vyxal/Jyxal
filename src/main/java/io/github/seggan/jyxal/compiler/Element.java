@@ -1,21 +1,19 @@
 package io.github.seggan.jyxal.compiler;
 
+import com.google.common.base.CaseFormat;
 import io.github.seggan.jyxal.compiler.wrappers.JyxalMethod;
-import io.github.seggan.jyxal.runtime.MathMethods;
-import io.github.seggan.jyxal.runtime.OtherMethods;
+import io.github.seggan.jyxal.runtime.RuntimeMethods;
 import io.github.seggan.jyxal.runtime.ProgramStack;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Opcodes;
-import org.objectweb.asm.Type;
 
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
-import java.util.regex.Pattern;
 
 public enum Element {
 
-    ADD("+", MathMethods.class, "add"),
-    DUP(":", OtherMethods.class, "dup"),
+    ADD("+"),
+    DUP(":"),
     CONTEXT_VAR("n", mv -> {
         mv.visitVarInsn(Opcodes.ALOAD, mv.getStackVar());
         mv.visitVarInsn(Opcodes.ALOAD, mv.getCtxVar());
@@ -47,21 +45,21 @@ public enum Element {
         this.compileMethod = compileMethod;
     }
 
-    Element(String text, Class<?> owner, String method) {
+    Element(String text) {
         this.text = text;
 
+        String method = CaseFormat.UPPER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, name());
         try {
-            owner.getDeclaredMethod(method, ProgramStack.class);
+            RuntimeMethods.class.getDeclaredMethod(method, ProgramStack.class);
         } catch (NoSuchMethodException e) {
-            throw new IllegalArgumentException("No such method: " + owner.getName() + "#" + method, e);
+            throw new IllegalArgumentException("No such method: RuntimeMethods#" + method, e);
         }
 
-        Pattern oldPackage = Pattern.compile("io/github/seggan/jyxal/runtime/");
         this.compileMethod = (cw, mv) -> {
             mv.visitVarInsn(Opcodes.ALOAD, mv.getStackVar());
             mv.visitMethodInsn(
                 Opcodes.INVOKESTATIC,
-                oldPackage.matcher(Type.getType(owner).getInternalName()).replaceAll("runtime/"),
+                "runtime/RuntimeMethods",
                 method,
                 "(Lruntime/ProgramStack;)V",
                 false

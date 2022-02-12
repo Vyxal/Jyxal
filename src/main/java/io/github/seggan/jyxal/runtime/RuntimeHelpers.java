@@ -8,9 +8,9 @@ import java.util.Iterator;
 import java.util.Objects;
 import java.util.function.Consumer;
 
-public class OtherMethods {
+public class RuntimeHelpers {
 
-    private OtherMethods() {
+    private RuntimeHelpers() {
     }
 
     public static boolean truthValue(ProgramStack stack) {
@@ -60,28 +60,6 @@ public class OtherMethods {
                 }
             };
         }
-    }
-
-    public static void dup(ProgramStack stack) {
-        Object obj = Objects.requireNonNull(stack.peek());
-        if (obj instanceof JyxalList jyxalList) {
-            // deep copy
-            stack.push(deepCopy(jyxalList));
-        } else {
-            stack.push(obj);
-        }
-    }
-
-    private static JyxalList deepCopy(JyxalList list) {
-        JyxalList copy = JyxalList.create();
-        for (Object obj : list) {
-            if (obj instanceof JyxalList jyxalList) {
-                copy.add(deepCopy(jyxalList));
-            } else {
-                copy.add(obj);
-            }
-        }
-        return copy;
     }
 
     public static boolean vectorise(int arity, Consumer<ProgramStack> consumer, ProgramStack stack) {

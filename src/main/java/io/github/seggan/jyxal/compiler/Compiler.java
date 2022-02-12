@@ -36,7 +36,7 @@ public final class Compiler extends VyxalBaseVisitor<Void> implements Opcodes {
     private static final Pattern COMPLEX_SEPARATOR = Pattern.compile("°");
 
     final VyxalParser parser;
-    final ClassWriter classWriter;
+    final JyxalClassWriter classWriter;
     private final MethodVisitor clinit;
 
     private final Set<String> variables = new HashSet<>();
@@ -46,14 +46,14 @@ public final class Compiler extends VyxalBaseVisitor<Void> implements Opcodes {
 
     private int listCounter = 0;
 
-    private Compiler(VyxalParser parser, ClassWriter classWriter, MethodVisitor clinit) {
+    private Compiler(VyxalParser parser, JyxalClassWriter classWriter, MethodVisitor clinit) {
         this.parser = parser;
         this.classWriter = classWriter;
         this.clinit = clinit;
     }
 
     public static byte[] compile(VyxalParser parser, String fileName) {
-        ClassWriter cw = new JyxalClassWriter(ClassWriter.COMPUTE_FRAMES);
+        JyxalClassWriter cw = new JyxalClassWriter(ClassWriter.COMPUTE_FRAMES);
         cw.visit(V17, ACC_PUBLIC + ACC_FINAL, "jyxal/Main", null, "java/lang/Object", null);
 
         // add the register
@@ -82,8 +82,7 @@ public final class Compiler extends VyxalBaseVisitor<Void> implements Opcodes {
 
         Compiler compiler = new Compiler(parser, cw, mv);
 
-        JyxalMethod main = new JyxalMethod(
-            cw,
+        JyxalMethod main = cw.visitMethod(
             ACC_PUBLIC | ACC_STATIC,
             "main",
             "([Ljava/lang/String;)V"
@@ -126,6 +125,8 @@ public final class Compiler extends VyxalBaseVisitor<Void> implements Opcodes {
 
         main.visitLabel(end);
         main.visitInsn(RETURN);
+
+        main.visitEnd();
 
         try {
             main.visitMaxs(-1, -1); // auto-calculate stack size and number of locals
@@ -211,8 +212,7 @@ public final class Compiler extends VyxalBaseVisitor<Void> implements Opcodes {
             AsmHelper.selectNumberInsn(method, i);
 
             String methodName = "listInit$" + listCounter++;
-            JyxalMethod mv = new JyxalMethod(
-                classWriter,
+            JyxalMethod mv = classWriter.visitMethod(
                 ACC_PRIVATE | ACC_STATIC,
                 methodName,
                 "()Ljava/lang/Object;"
@@ -299,6 +299,7 @@ public final class Compiler extends VyxalBaseVisitor<Void> implements Opcodes {
             } else {
                 // get
                 mv.loadStack();
+                mv.loadStack();
                 mv.visitFieldInsn(
                     GETSTATIC,
                     "jyxal/Main",
@@ -339,7 +340,7 @@ public final class Compiler extends VyxalBaseVisitor<Void> implements Opcodes {
             childIndex = 1;
             mv.visitMethodInsn(
                 INVOKESTATIC,
-                "runtime/OtherMethods",
+                "runtime/RuntimeHelpers",
                 "truthValue",
                 "(Lruntime/ProgramStack;)Z",
                 false
@@ -367,7 +368,7 @@ public final class Compiler extends VyxalBaseVisitor<Void> implements Opcodes {
         mv.loadStack();
         mv.visitMethodInsn(
             INVOKESTATIC,
-            "runtime/OtherMethods",
+            "runtime/RuntimeHelpers",
             "forify",
             "(Lruntime/ProgramStack;)Ljava/util/Iterator;",
             false
@@ -414,7 +415,7 @@ public final class Compiler extends VyxalBaseVisitor<Void> implements Opcodes {
 
         mv.visitMethodInsn(
             INVOKESTATIC,
-            "runtime/OtherMethods",
+            "runtime/RuntimeHelpers",
             "truthValue",
             "(Lruntime/ProgramStack;)Z",
             false
