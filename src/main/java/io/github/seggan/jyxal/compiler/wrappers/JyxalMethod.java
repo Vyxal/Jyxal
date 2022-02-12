@@ -84,6 +84,12 @@ public class JyxalMethod extends MethodNode implements Opcodes {
 
     @Override
     public void visitEnd() {
+
+        // The instruction sequence for the context var
+        InsnSequence contextInit = new InsnSequence(NEW, DUP, LDC, INVOKESPECIAL, INVOKESTATIC, ASTORE);
+        List<AbstractInsnNode> contextVarInit = null;
+        boolean contextVarUsed = false;
+
         ListIterator<AbstractInsnNode> it = instructions.iterator();
         Set<AbstractInsnNode> toRemove = new HashSet<>();
         while (it.hasNext()) {
@@ -104,13 +110,37 @@ public class JyxalMethod extends MethodNode implements Opcodes {
                         toRemove.add(insn);
                         toRemove.add(next);
                         toRemove.add(next1);
+                        continue;
                     }
                 }
+            }
+
+            if (contextVarInit == null) {
+                List<AbstractInsnNode> matches = contextInit.matches(insn);
+                if (!matches.isEmpty()
+                    && matches.get(matches.size() - 1) instanceof VarInsnNode varInsnNode
+                    && varInsnNode.var == ctxVar) {
+                    contextVarInit = matches;
+                    for (AbstractInsnNode match : matches) {
+                        it.next();
+                    }
+                    continue;
+                }
+            }
+
+            if (insn instanceof VarInsnNode varInsnNode && varInsnNode.var == ctxVar) {
+                contextVarUsed = true;
             }
         }
 
         for (AbstractInsnNode insn : toRemove) {
             instructions.remove(insn);
+        }
+
+        if (contextVarInit != null && !contextVarUsed) {
+            for (AbstractInsnNode insn : contextVarInit) {
+                instructions.remove(insn);
+            }
         }
 
         accept(mv);
