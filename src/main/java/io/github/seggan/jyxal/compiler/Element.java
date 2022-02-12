@@ -1,12 +1,13 @@
 package io.github.seggan.jyxal.compiler;
 
+import io.github.seggan.jyxal.compiler.wrappers.JyxalMethod;
 import io.github.seggan.jyxal.runtime.MathMethods;
+import io.github.seggan.jyxal.runtime.OtherMethods;
 import io.github.seggan.jyxal.runtime.ProgramStack;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 
-import java.awt.image.DataBufferUShort;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.regex.Pattern;
@@ -14,6 +15,7 @@ import java.util.regex.Pattern;
 public enum Element {
 
     ADD("+", MathMethods.class, "add"),
+    DUP(":", OtherMethods.class, "dup"),
     CONTEXT_VAR("n", mv -> {
         mv.visitVarInsn(Opcodes.ALOAD, mv.getStackVar());
         mv.visitVarInsn(Opcodes.ALOAD, mv.getCtxVar());
@@ -34,13 +36,13 @@ public enum Element {
     ;
 
     private final String text;
-    private final BiConsumer<ClassWriter, MethodVisitorWrapper> compileMethod;
+    private final BiConsumer<ClassWriter, JyxalMethod> compileMethod;
 
-    Element(String text, Consumer<MethodVisitorWrapper> compileMethod) {
+    Element(String text, Consumer<JyxalMethod> compileMethod) {
         this(text, (cw, mv) -> compileMethod.accept(mv));
     }
 
-    Element(String text, BiConsumer<ClassWriter, MethodVisitorWrapper> compileMethod) {
+    Element(String text, BiConsumer<ClassWriter, JyxalMethod> compileMethod) {
         this.text = text;
         this.compileMethod = compileMethod;
     }
@@ -77,7 +79,7 @@ public enum Element {
         throw new JyxalCompileException("Unknown element: " + text);
     }
 
-    public void compile(ClassWriter cw, MethodVisitorWrapper mv) {
+    public void compile(ClassWriter cw, JyxalMethod mv) {
         compileMethod.accept(cw, mv);
     }
 }

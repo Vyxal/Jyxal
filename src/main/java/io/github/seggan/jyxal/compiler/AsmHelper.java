@@ -1,5 +1,6 @@
 package io.github.seggan.jyxal.compiler;
 
+import io.github.seggan.jyxal.compiler.wrappers.JyxalMethod;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 
@@ -32,7 +33,7 @@ public final class AsmHelper implements Opcodes {
         );
     }
 
-    public static void push(MethodVisitorWrapper mv) {
+    public static void push(JyxalMethod mv) {
         mv.visitMethodInsn(
             INVOKEVIRTUAL,
             "runtime/ProgramStack",
@@ -42,7 +43,7 @@ public final class AsmHelper implements Opcodes {
         );
     }
 
-    public static void pop(MethodVisitorWrapper mv) {
+    public static void pop(JyxalMethod mv) {
         mv.visitVarInsn(ALOAD, mv.getStackVar());
         mv.visitMethodInsn(
             INVOKEVIRTUAL,
@@ -53,7 +54,7 @@ public final class AsmHelper implements Opcodes {
         );
     }
 
-    public static void selectNumberInsn(MethodVisitorWrapper mv, int number) {
+    public static void selectNumberInsn(JyxalMethod mv, int number) {
         switch (number) {
             case -1 -> mv.visitInsn(ICONST_M1);
             case 0 -> mv.visitInsn(ICONST_0);

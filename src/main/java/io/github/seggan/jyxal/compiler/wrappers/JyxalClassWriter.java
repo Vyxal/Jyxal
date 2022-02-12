@@ -1,4 +1,4 @@
-package io.github.seggan.jyxal.compiler;
+package io.github.seggan.jyxal.compiler.wrappers;
 
 import org.objectweb.asm.ClassWriter;
 
