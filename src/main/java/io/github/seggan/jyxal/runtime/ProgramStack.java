@@ -1,5 +1,7 @@
 package io.github.seggan.jyxal.runtime;
 
+import io.github.seggan.jyxal.runtime.math.BigComplex;
+
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.List;
@@ -19,6 +21,14 @@ public class ProgramStack extends ArrayDeque<Object> implements Deque<Object> {
         Object b = this.pop();
         this.push(a);
         this.push(b);
+    }
+
+    public void push(boolean b) {
+        push(BigComplex.valueOf(b));
+    }
+
+    public void push(int i) {
+        push(BigComplex.valueOf(i));
     }
 
 }

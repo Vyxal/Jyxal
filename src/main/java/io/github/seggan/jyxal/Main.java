@@ -5,10 +5,14 @@ import io.github.seggan.jyxal.antlr.VyxalParser;
 import io.github.seggan.jyxal.compiler.Compiler;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
+import org.objectweb.asm.ClassReader;
+import org.objectweb.asm.util.TraceClassVisitor;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.HashSet;
@@ -38,17 +42,11 @@ public class Main {
         System.out.println("Compiling program...");
         byte[] main = Compiler.compile(parser, args[0]);
 
-        /*
-        // Do optimizations
         ClassReader cr = new ClassReader(main);
-        ClassWriter cw = new ClassWriter(cr, 0);
         try (OutputStream os = new FileOutputStream("debug.log")) {
-            TraceClassVisitor tcv = new TraceClassVisitor(cw, new PrintWriter(os));
-            ClassOptimizer co = new ClassOptimizer(tcv);
-            cr.accept(co, 0);
+            TraceClassVisitor tcv = new TraceClassVisitor(new PrintWriter(os));
+            cr.accept(tcv, 0);
         }
-        main = cw.toByteArray();
-        */
 
         System.out.println("Extracting runtime classes...");
         Set<String> resourceList = new HashSet<>();

@@ -63,7 +63,15 @@ public final class AsmHelper implements Opcodes {
             case 3 -> mv.visitInsn(ICONST_3);
             case 4 -> mv.visitInsn(ICONST_4);
             case 5 -> mv.visitInsn(ICONST_5);
-            default -> mv.visitLdcInsn(number);
+            default -> {
+                if (number >= Byte.MIN_VALUE && number <= Byte.MAX_VALUE) {
+                    mv.visitIntInsn(BIPUSH, number);
+                } else if (number >= Short.MIN_VALUE && number <= Short.MAX_VALUE) {
+                    mv.visitIntInsn(SIPUSH, number);
+                } else {
+                    mv.visitLdcInsn(number);
+                }
+            }
         }
     }
 }

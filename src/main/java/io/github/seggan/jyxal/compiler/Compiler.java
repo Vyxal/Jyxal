@@ -76,7 +76,12 @@ public final class Compiler extends VyxalBaseVisitor<Void> implements Opcodes {
         );
         mv.visitCode();
 
-        AsmHelper.addBigComplex("0", mv);
+        mv.visitFieldInsn(
+            GETSTATIC,
+            "runtime/math/BigComplex",
+            "ZERO",
+            "Lruntime/math/BigComplex;"
+        );
         mv.visitFieldInsn(PUTSTATIC, "jyxal/Main", "register", "Ljava/lang/Object;");
         mv.visitInsn(RETURN);
 
@@ -211,29 +216,38 @@ public final class Compiler extends VyxalBaseVisitor<Void> implements Opcodes {
             method.visitInsn(DUP);
             AsmHelper.selectNumberInsn(method, i);
 
-            String methodName = "listInit$" + listCounter++;
-            JyxalMethod mv = classWriter.visitMethod(
-                ACC_PRIVATE | ACC_STATIC,
-                methodName,
-                "()Ljava/lang/Object;"
-            );
-            mv.visitCode();
-            callStack.push(mv);
-            visit(item);
-            callStack.pop();
+            if (item.getChildCount() == 1 && item.getChild(0) instanceof VyxalParser.LiteralContext) {
+                // we can inline the literal
+                visit(item.getChild(0));
+                // we need to pop the literal value, it's going to get optimized away anyway
+                AsmHelper.pop(method);
+                method.visitInsn(SWAP);
+                method.visitInsn(POP);
+            } else {
+                String methodName = "listInit$" + listCounter++;
+                JyxalMethod mv = classWriter.visitMethod(
+                    ACC_PRIVATE | ACC_STATIC,
+                    methodName,
+                    "()Ljava/lang/Object;"
+                );
+                mv.visitCode();
+                callStack.push(mv);
+                visit(item);
+                callStack.pop();
 
-            AsmHelper.pop(mv);
-            mv.visitInsn(ARETURN);
-            mv.visitMaxs(-1, -1); // auto-calculate stack size and number of locals
-            mv.visitEnd();
+                AsmHelper.pop(mv);
+                mv.visitInsn(ARETURN);
+                mv.visitMaxs(-1, -1); // auto-calculate stack size and number of locals
+                mv.visitEnd();
 
-            method.visitMethodInsn(
-                INVOKESTATIC,
-                "jyxal/Main",
-                methodName,
-                "()Ljava/lang/Object;",
-                false
-            );
+                method.visitMethodInsn(
+                    INVOKESTATIC,
+                    "jyxal/Main",
+                    methodName,
+                    "()Ljava/lang/Object;",
+                    false
+                );
+            }
 
             method.visitInsn(AASTORE);
         }
@@ -277,7 +291,12 @@ public final class Compiler extends VyxalBaseVisitor<Void> implements Opcodes {
                     null
                 );
 
-                AsmHelper.addBigDecimal("0", clinit);
+                clinit.visitFieldInsn(
+                    GETSTATIC,
+                    "runtime/math/BigComplex",
+                    "ZERO",
+                    "Lruntime/math/BigComplex;"
+                );
                 clinit.visitFieldInsn(
                     PUTSTATIC,
                     "jyxal/Main",

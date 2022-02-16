@@ -13,7 +13,19 @@ import java.util.function.Consumer;
 public enum Element {
 
     ADD("+"),
-    DUP(":"),
+    ALL("A"),
+    CHR_ORD("C"),
+    TRIPLICATE("D"),
+    TWO_POW("E"),
+    DUPLICATE(":"),
+    EQUALS("="),
+    GREATER_THAN(">"),
+    GREATER_THAN_OR_EQUAL("≥"),
+    ITEM_SPLIT("÷"),
+    LESS_THAN("<"),
+    LESS_THAN_OR_EQUAL("≤"),
+    LOGICAL_AND("∧"),
+    LOGICAL_OR("∨"),
     CONTEXT_VAR("n", mv -> {
         mv.visitVarInsn(Opcodes.ALOAD, mv.getStackVar());
         mv.visitVarInsn(Opcodes.ALOAD, mv.getCtxVar());

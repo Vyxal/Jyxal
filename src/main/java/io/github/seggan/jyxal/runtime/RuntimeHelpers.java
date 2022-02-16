@@ -1,20 +1,21 @@
 package io.github.seggan.jyxal.runtime;
 
-import io.github.seggan.jyxal.compiler.JyxalCompileException;
 import io.github.seggan.jyxal.runtime.list.JyxalList;
 import io.github.seggan.jyxal.runtime.math.BigComplex;
 
 import java.util.Iterator;
-import java.util.Objects;
 import java.util.function.Consumer;
 
-public class RuntimeHelpers {
+public final class RuntimeHelpers {
 
     private RuntimeHelpers() {
     }
 
     public static boolean truthValue(ProgramStack stack) {
-        Object obj = stack.pop();
+        return truthValue(stack.pop());
+    }
+
+    public static boolean truthValue(Object obj) {
         if (obj instanceof JyxalList jyxalList) {
             return jyxalList.size() != 0;
         } else if (obj instanceof BigComplex bigComplex) {
@@ -63,6 +64,7 @@ public class RuntimeHelpers {
     }
 
     public static boolean vectorise(int arity, Consumer<ProgramStack> consumer, ProgramStack stack) {
+        // <editor-fold desc="vectorise" defaultstate="collapsed">
         switch (arity) {
             case 1 -> {
                 Object obj = stack.pop();
@@ -193,6 +195,7 @@ public class RuntimeHelpers {
         }
 
         return false;
+        // </editor-fold>
     }
 
     private static int slen(JyxalList first, JyxalList... rest) {

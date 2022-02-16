@@ -65,44 +65,39 @@ clean {
 
 // copy and relocate the runtime into the resources
 shadowJar {
-    List<String> names = new ArrayList<>()
-    String dir = "$buildDir/classes/java/main/io/github/seggan/jyxal/runtime"
-    Pattern oldPackage = Pattern.compile("io/github/seggan/jyxal/runtime/")
-    Pattern backslash = Pattern.compile("\\\\")
-    Pattern dirPattern = Pattern.compile("^.*classes[/\\\\]java[/\\\\]main[/\\\\]io[/\\\\]github[/\\\\]seggan[/\\\\]jyxal[/\\\\]runtime[/\\\\]")
     JPath dest = JPath.of("$buildDir/runtime-classes/")
-    if (!Files.exists(dest)) {
-        Files.createDirectories(dest)
-    }
-    JPath origin = JPath.of(dir)
-    if (!Files.exists(origin)) {
-        Files.createDirectories(origin)
-    }
-    Files.walk(origin).forEach({
-        if (Files.isRegularFile(it)) {
-            String fname = dirPattern.matcher(it.toString()).replaceFirst("")
-            names.add(backslash.matcher(fname).replaceAll("/"))
-            
-            ClassReader cr = new ClassReader(Files.readAllBytes(it))
-            ClassWriter cw = new ClassWriter(cr, 0)
-            ClassRemapper remapper = new ClassRemapper(cw, new Remapper() {
-                @Override
-                String map(String internalName) {
-                    return oldPackage.matcher(internalName).replaceFirst("runtime/")
-                }
-            })
-            cr.accept(remapper, ClassReader.EXPAND_FRAMES)
-            
-            JPath out = dest.resolve(fname)
-            JPath parent = out.getParent()
-            if (!Files.exists(parent)) {
-                Files.createDirectories(parent)
-            }
-            Files.write(out, cw.toByteArray())
-        }
-    })
+    doFirst {
+        List<String> names = new ArrayList<>()
+        String dir = "$buildDir/classes/java/main/io/github/seggan/jyxal/runtime"
+        Pattern oldPackage = Pattern.compile("io/github/seggan/jyxal/runtime/")
+        Pattern backslash = Pattern.compile("\\\\")
+        Pattern dirPattern = Pattern.compile("^.*classes[/\\\\]java[/\\\\]main[/\\\\]io[/\\\\]github[/\\\\]seggan[/\\\\]jyxal[/\\\\]runtime[/\\\\]")
+        Files.walk(JPath.of(dir)).forEach({
+            if (Files.isRegularFile(it)) {
+                String fname = dirPattern.matcher(it.toString()).replaceFirst("")
+                names.add(backslash.matcher(fname).replaceAll("/"))
 
-    Files.write(dest.resolve("runtime.list"), names)
+                ClassReader cr = new ClassReader(Files.readAllBytes(it))
+                ClassWriter cw = new ClassWriter(cr, 0)
+                ClassRemapper remapper = new ClassRemapper(cw, new Remapper() {
+                    @Override
+                    String map(String internalName) {
+                        return oldPackage.matcher(internalName).replaceFirst("runtime/")
+                    }
+                })
+                cr.accept(remapper, ClassReader.EXPAND_FRAMES)
+
+                JPath out = dest.resolve(fname)
+                JPath parent = out.getParent()
+                if (!Files.exists(parent)) {
+                    Files.createDirectories(parent)
+                }
+                Files.write(out, cw.toByteArray())
+            }
+        })
+
+        Files.write(dest.resolve("runtime.list"), names)
+    }
 
     from(dest.toFile().path) {
         include "**/*.*"

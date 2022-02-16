@@ -121,10 +121,10 @@ public class JyxalMethod extends MethodNode implements Opcodes {
                     && matches.get(matches.size() - 1) instanceof VarInsnNode varInsnNode
                     && varInsnNode.var == ctxVar) {
                     contextVarInit = matches;
-                    for (AbstractInsnNode match : matches) {
+                    int size = contextVarInit.size() - 1;
+                    for (int i = 0; i < size; i++) {
                         it.next();
                     }
-                    continue;
                 }
             }
 

@@ -44,7 +44,7 @@ import java.util.Objects;
  *
  * <p>This class is immutable and therefore inherently thread safe.</p>
  */
-public final class BigComplex {
+public final class BigComplex implements Comparable<BigComplex> {
 
 	/**
 	 * Zero represented as complex number.
@@ -531,6 +531,26 @@ public final class BigComplex {
 	}
 
 	/**
+	 * Returns a complex number with the specified real {@code long} part.
+	 *
+	 * @param real the real {@code long} part
+	 * @return the complex number
+	 */
+	public static BigComplex valueOf(long real) {
+		return valueOf(BigDecimal.valueOf(real), BigDecimal.ZERO);
+	}
+
+	/**
+	 * Returns either 0 or 1 depending on the specified {@code boolean} value.
+	 *
+	 * @param b the {@code boolean} value
+	 * @return either 0 or 1 depending on the specified {@code boolean} value
+	 */
+	public static BigComplex valueOf(boolean b) {
+		return b ? ONE : ZERO;
+	}
+
+	/**
 	 * Returns a complex number with the specified real and imaginary {@code double} parts.
 	 *
 	 * @param real the real {@code double} part
@@ -584,5 +604,19 @@ public final class BigComplex {
 
 	public static BigComplex valueOfPolar(double radius, double angle, MathContext mathContext) {
 		return valueOfPolar(BigDecimal.valueOf(radius), BigDecimal.valueOf(angle), mathContext);
+	}
+
+	/**
+	 * Compares this complex to another complex. If either number is non-real, throws an error
+	 *
+	 * @throws IllegalArgumentException if either number is non-real
+	 */
+	@Override
+	public int compareTo(BigComplex o) {
+		if (im.signum() != 0 || o.im.signum() != 0) {
+			throw new IllegalArgumentException("Cannot compare complex number " + this + " to complex number " + o);
+		}
+
+		return re.compareTo(o.re);
 	}
 }
