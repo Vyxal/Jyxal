@@ -1,9 +1,6 @@
 package io.github.seggan.jyxal.compiler;
 
-import com.google.common.base.CaseFormat;
 import io.github.seggan.jyxal.compiler.wrappers.JyxalMethod;
-import io.github.seggan.jyxal.runtime.RuntimeMethods;
-import io.github.seggan.jyxal.runtime.ProgramStack;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Opcodes;
 
@@ -27,8 +24,8 @@ public enum Element {
     LOGICAL_AND("∧"),
     LOGICAL_OR("∨"),
     CONTEXT_VAR("n", mv -> {
-        mv.visitVarInsn(Opcodes.ALOAD, mv.getStackVar());
-        mv.visitVarInsn(Opcodes.ALOAD, mv.getCtxVar());
+        mv.loadStack();
+        mv.loadContextVar();
         AsmHelper.push(mv);
     }),
     POP("_", mv -> {
@@ -45,6 +42,9 @@ public enum Element {
     }),
     ;
 
+    // used for unit testing
+    final boolean isLinkedToMethod;
+
     private final String text;
     private final BiConsumer<ClassWriter, JyxalMethod> compileMethod;
 
@@ -55,28 +55,22 @@ public enum Element {
     Element(String text, BiConsumer<ClassWriter, JyxalMethod> compileMethod) {
         this.text = text;
         this.compileMethod = compileMethod;
+        this.isLinkedToMethod = false;
     }
 
     Element(String text) {
         this.text = text;
-
-        String method = CaseFormat.UPPER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, name());
-        try {
-            RuntimeMethods.class.getDeclaredMethod(method, ProgramStack.class);
-        } catch (NoSuchMethodException e) {
-            throw new IllegalArgumentException("No such method: RuntimeMethods#" + method, e);
-        }
-
         this.compileMethod = (cw, mv) -> {
-            mv.visitVarInsn(Opcodes.ALOAD, mv.getStackVar());
+            mv.loadStack();
             mv.visitMethodInsn(
-                Opcodes.INVOKESTATIC,
-                "runtime/RuntimeMethods",
-                method,
-                "(Lruntime/ProgramStack;)V",
-                false
+                    Opcodes.INVOKESTATIC,
+                    "runtime/RuntimeMethods",
+                    screamingSnakeToCamel(name()),
+                    "(Lruntime/ProgramStack;)V",
+                    false
             );
         };
+        this.isLinkedToMethod = true;
     }
 
     public static Element getByText(String text) {
@@ -87,6 +81,25 @@ public enum Element {
         }
 
         throw new JyxalCompileException("Unknown element: " + text);
+    }
+
+    static String screamingSnakeToCamel(String s) {
+        StringBuilder sb = new StringBuilder();
+        boolean wasUnderscore = false;
+        for (char c : s.toCharArray()) {
+            if (c == '_') {
+                wasUnderscore = true;
+            } else {
+                if (wasUnderscore) {
+                    sb.append(c);
+                    wasUnderscore = false;
+                } else {
+                    sb.append(Character.toLowerCase(c));
+                }
+            }
+        }
+
+        return sb.toString();
     }
 
     public void compile(ClassWriter cw, JyxalMethod mv) {
