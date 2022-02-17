@@ -31,13 +31,17 @@ public class Main {
             System.out.println("Usage: java -jar jyxal.jar <file>");
         }
 
+        Set<CompilerOptions> options = CompilerOptions.fromString(args.length > 1 ? args[1] : "");
+
         System.out.println("Parsing program...");
 
         VyxalLexer lexer = new VyxalLexer(CharStreams.fromPath(Path.of(args[0]), StandardCharsets.UTF_8));
         VyxalParser parser = new VyxalParser(new CommonTokenStream(lexer));
 
-        // uncomment to print out the tree
-        //System.out.println(parser.file().toStringTree(parser));parser.reset();
+        if (options.contains(CompilerOptions.PRINT_DEBUG_TREE)) {
+            System.out.println(parser.file().toStringTree(parser));
+            parser.reset();
+        }
 
         System.out.println("Compiling program...");
         byte[] main = Compiler.compile(parser, args[0]);

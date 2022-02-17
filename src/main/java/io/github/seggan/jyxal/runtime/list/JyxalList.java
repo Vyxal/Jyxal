@@ -40,11 +40,11 @@ public abstract class JyxalList extends AbstractList<Object> implements List<Obj
 
     protected static String vyxalListFormat(List<Object> list) {
         StringBuilder sb = new StringBuilder();
-        sb.append('⟨');
+        sb.append("⟨");
         Iterator<Object> it = list.iterator();
         while (true) {
             if (!it.hasNext()) {
-                return sb.append('⟩').toString();
+                return sb.append("⟩").toString();
             }
             sb.append(it.next());
             sb.append(" | ");

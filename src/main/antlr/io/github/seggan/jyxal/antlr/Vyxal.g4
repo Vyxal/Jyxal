@@ -74,8 +74,8 @@ parameter
 
 // types
 literal
-    : number
-    | string
+    : string
+    | number
     | list
     ;
 
@@ -159,6 +159,10 @@ LAMBDA_TYPE
     : [λƛ'µ]
     ;
 
+SPACE
+    : ' '
+    ;
+
 WHT
-    : [ \t\n\r] -> skip
+    : [\t\n\r] -> channel(HIDDEN)
     ;

@@ -340,7 +340,7 @@ public final class Compiler extends VyxalBaseVisitor<Void> implements Opcodes {
             element = ctx.PREFIX().getText() + element;
         }
 
-        Consumer<JyxalMethod> consumer = ctx.MODIFIER() != null ? null : visitModifier(ctx.MODIFIER().getText());
+        Consumer<JyxalMethod> consumer = ctx.MODIFIER() == null ? null : visitModifier(ctx.MODIFIER().getText());
 
         JyxalMethod mv = callStack.peek();
         Element.getByText(element).compile(classWriter, mv);
