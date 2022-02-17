@@ -10,6 +10,9 @@ import java.util.function.Consumer;
 public enum Element {
 
     ADD("+"),
+    ASTERISK("×", "*"),
+    SPLIT_ON("€"),
+    MULTI_COMMAND("•"),
     ALL("A"),
     CHR_ORD("C"),
     TRIPLICATE("D"),
@@ -71,6 +74,14 @@ public enum Element {
             );
         };
         this.isLinkedToMethod = true;
+    }
+
+    Element(String text, String literal) {
+        this(text, mv -> {
+            mv.loadStack();
+            mv.visitLdcInsn(literal);
+            AsmHelper.push(mv);
+        });
     }
 
     public static Element getByText(String text) {

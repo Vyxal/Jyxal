@@ -60,7 +60,7 @@ class InfiniteList extends JyxalList {
 
     @Override
     public String toString() {
-        return "An infinite list, including " + backing;
+        return "An infinite list, including " + vyxalListFormat(backing);
     }
 
     private void fill(int index) {

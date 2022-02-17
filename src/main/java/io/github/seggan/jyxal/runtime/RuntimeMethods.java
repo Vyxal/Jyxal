@@ -190,6 +190,47 @@ public final class RuntimeMethods {
         }
     }
 
+    public static void multiCommand(ProgramStack stack) {
+        if (RuntimeHelpers.vectorise(2, RuntimeMethods::multiCommand, stack)) return;
+        Object b = stack.pop();
+        Object a = stack.pop();
+        if (a instanceof BigComplex ca) {
+            if (b instanceof BigComplex cb) {
+                // complex numbers go brr
+                // going off of that fact that ln(x)/ln(a) = loga(x)
+                // and ln(x) = ln(|x|) + i * arg(x)
+                BigComplex top = BigComplexMath.log(cb, MathContext.DECIMAL128);
+                BigComplex bottom = BigComplexMath.log(ca, MathContext.DECIMAL128);
+                stack.push(top.divide(bottom, MathContext.DECIMAL128));
+            } else {
+                stack.push(repeatCharacters(b.toString(), ca.re.intValue()));
+            }
+        } else if (b instanceof BigComplex cb) {
+            stack.push(repeatCharacters(a.toString(), cb.re.intValue()));
+        } else {
+            StringBuilder sb = new StringBuilder();
+            String aString = a.toString();
+            String bString = b.toString();
+            for (int i = 0; i < aString.length(); i++) {
+                char ch = bString.charAt(i % bString.length());
+                char aChar = aString.charAt(i);
+                if (Character.isUpperCase(ch)) {
+                    sb.append(Character.toUpperCase(aChar));
+                } else if (Character.isLowerCase(ch)) {
+                    sb.append(Character.toLowerCase(aChar));
+                } else {
+                    sb.append(aChar);
+                }
+            }
+
+            if (aString.length() > bString.length()) {
+                sb.append(aString.substring(bString.length()));
+            }
+
+            stack.push(sb.toString());
+        }
+    }
+
     private static void pushExpr(ProgramStack stack, String expr) {
         if (NUMBER_PATTERN.get().matcher(expr).matches()) {
             stack.push(BigComplex.valueOf(new BigDecimal(expr)));
@@ -206,6 +247,36 @@ public final class RuntimeMethods {
             } else {
                 stack.push(expr);
             }
+        }
+    }
+
+    private static String repeatCharacters(String str, int times) {
+        StringBuilder sb = new StringBuilder();
+        for (char c : str.toCharArray()) {
+            sb.append(String.valueOf(c).repeat(Math.max(0, times)));
+        }
+
+        return sb.toString();
+    }
+
+    public static void splitOn(ProgramStack stack) {
+        Object b = stack.pop();
+        Object a = stack.pop();
+        if (a instanceof JyxalList list) {
+            JyxalList superList = JyxalList.create();
+            JyxalList newList = JyxalList.create();
+            for (Object item : list) {
+                if (item.equals(b)) {
+                    superList.add(newList);
+                    newList = JyxalList.create();
+                } else {
+                    newList.add(item);
+                }
+            }
+            superList.add(newList);
+            stack.push(superList);
+        } else {
+            stack.push(JyxalList.create(a.toString().split(b.toString())));
         }
     }
 

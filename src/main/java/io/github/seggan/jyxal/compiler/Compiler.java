@@ -21,6 +21,7 @@ import java.util.Deque;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.regex.Pattern;
 
 /*
@@ -335,12 +336,18 @@ public final class Compiler extends VyxalBaseVisitor<Void> implements Opcodes {
     @Override
     public Void visitElement(VyxalParser.ElementContext ctx) {
         String element = ctx.getText();
-        if (ctx.MODIFIER() != null) {
-            element = ctx.MODIFIER().getText() + element;
+        if (ctx.PREFIX() != null) {
+            element = ctx.PREFIX().getText() + element;
         }
+
+        Consumer<JyxalMethod> consumer = ctx.MODIFIER() != null ? null : visitModifier(ctx.MODIFIER().getText());
 
         JyxalMethod mv = callStack.peek();
         Element.getByText(element).compile(classWriter, mv);
+
+        if (consumer != null) {
+            consumer.accept(mv);
+        }
 
         return null;
     }
@@ -431,7 +438,6 @@ public final class Compiler extends VyxalBaseVisitor<Void> implements Opcodes {
         Label end = new Label();
 
         mv.loadStack();
-
         mv.visitMethodInsn(
             INVOKESTATIC,
             "runtime/RuntimeHelpers",
@@ -454,6 +460,26 @@ public final class Compiler extends VyxalBaseVisitor<Void> implements Opcodes {
             mv.visitLabel(elseEnd);
         } else {
             mv.visitLabel(end);
+        }
+
+        return null;
+    }
+
+    public Consumer<JyxalMethod> visitModifier(String modifier) {
+        JyxalMethod mv = callStack.peek();
+        if ("ß".equals(modifier)) {
+            Label end = new Label();
+
+            mv.loadStack();
+            mv.visitMethodInsn(
+                    INVOKESTATIC,
+                    "runtime/RuntimeHelpers",
+                    "truthValue",
+                    "(Lruntime/ProgramStack;)Z",
+                    false
+            );
+            mv.visitJumpInsn(IFEQ, end);
+            return m -> m.visitLabel(end);
         }
 
         return null;

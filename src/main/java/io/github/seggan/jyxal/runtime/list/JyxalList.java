@@ -3,36 +3,27 @@ package io.github.seggan.jyxal.runtime.list;
 import io.github.seggan.jyxal.runtime.math.BigComplex;
 
 import java.math.BigDecimal;
-import java.util.AbstractList;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
+import java.util.*;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
-public class JyxalList extends AbstractList<Object> implements List<Object> {
-
-    protected JyxalList delegate;
-
-    private JyxalList(JyxalList delegate) {
-        this.delegate = delegate;
-    }
-
-    protected JyxalList() {
-        this.delegate = this;
-    }
+public abstract class JyxalList extends AbstractList<Object> implements List<Object> {
 
     public static JyxalList create(Supplier<Object> generator) {
-        return new JyxalList(new InfiniteList(generator));
+        return new InfiniteList(generator);
     }
 
-    public static JyxalList create(Object... array) {
-        return new JyxalList(new FiniteList(array));
+    public static JyxalList create(Object[] array) {
+        return new FiniteList(List.of(array));
     }
 
     public static JyxalList create(Collection<?> collection) {
-        return new JyxalList(new FiniteList(collection));
+        return new FiniteList(collection);
+    }
+
+    public static JyxalList create() {
+        return new FiniteList();
     }
 
     public static JyxalList range(int start, int end) {
@@ -40,29 +31,23 @@ public class JyxalList extends AbstractList<Object> implements List<Object> {
         for (int i = start; i <= end; i++) {
             list.add(BigComplex.valueOf(new BigDecimal(Integer.toString(i))));
         }
-        return new JyxalList(new FiniteList(list));
+        return new FiniteList(list);
     }
 
-    @Override
-    public Object get(int index) {
-        return delegate.get(index);
-    }
+    public abstract void map(Function<Object, Object> f);
 
-    @Override
-    public int size() {
-        return delegate.size();
-    }
+    public abstract void filter(Predicate<Object> p);
 
-    @Override
-    public void add(int index, Object element) {
-        delegate.add(index, element);
-    }
-
-    public void map(Function<Object, Object> f) {
-        delegate.map(f);
-    }
-
-    public void filter(Predicate<Object> p) {
-        delegate.filter(p);
+    protected static String vyxalListFormat(List<Object> list) {
+        StringBuilder sb = new StringBuilder();
+        sb.append('⟨');
+        Iterator<Object> it = list.iterator();
+        while (true) {
+            if (!it.hasNext()) {
+                return sb.append('⟩').toString();
+            }
+            sb.append(it.next());
+            sb.append(" | ");
+        }
     }
 }

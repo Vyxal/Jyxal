@@ -10,15 +10,15 @@ import java.util.function.Predicate;
 class FiniteList extends JyxalList {
     
     private List<Object> backing;
-    
-    FiniteList(Object[] elements) {
-        super();
-        backing = new ArrayList<>(List.of(elements));
-    }
 
     FiniteList(Collection<?> elements) {
         super();
         backing = new ArrayList<>(elements);
+    }
+
+    FiniteList() {
+        super();
+        backing = new ArrayList<>();
     }
 
     @Override
@@ -57,6 +57,6 @@ class FiniteList extends JyxalList {
 
     @Override
     public String toString() {
-        return backing.toString();
+        return vyxalListFormat(backing);
     }
 }
