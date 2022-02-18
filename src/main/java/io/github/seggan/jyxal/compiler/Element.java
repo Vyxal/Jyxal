@@ -10,9 +10,9 @@ import java.util.function.Consumer;
 public enum Element {
 
     ADD("+"),
-    ASTERISK("×", "*"),
-    SPLIT_ON("€"),
-    MULTI_COMMAND("•"),
+    ASTERISK("\u00D7", "*"),
+    SPLIT_ON("\u20AC"),
+    MULTI_COMMAND("\u2022"),
     ALL("A"),
     CHR_ORD("C"),
     TRIPLICATE("D"),
@@ -20,12 +20,12 @@ public enum Element {
     DUPLICATE(":"),
     EQUALS("="),
     GREATER_THAN(">"),
-    GREATER_THAN_OR_EQUAL("≥"),
-    ITEM_SPLIT("÷"),
+    GREATER_THAN_OR_EQUAL("\u2265"),
+    ITEM_SPLIT("\u00F7"),
     LESS_THAN("<"),
-    LESS_THAN_OR_EQUAL("≤"),
-    LOGICAL_AND("∧"),
-    LOGICAL_OR("∨"),
+    LESS_THAN_OR_EQUAL("\u2264"),
+    LOGICAL_AND("\u2227"),
+    LOGICAL_OR("\u2228"),
     CONTEXT_VAR("n", mv -> {
         mv.loadStack();
         mv.loadContextVar();
@@ -48,7 +48,7 @@ public enum Element {
     // used for unit testing
     final boolean isLinkedToMethod;
 
-    private final String text;
+    final String text;
     private final BiConsumer<ClassWriter, JyxalMethod> compileMethod;
 
     Element(String text, Consumer<JyxalMethod> compileMethod) {

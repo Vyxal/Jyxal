@@ -299,11 +299,11 @@ public final class RuntimeMethods {
             stack.push(BigComplexMath.pow(BigComplex.valueOf(2), complex, MathContext.DECIMAL128));
         } else {
             String str = obj.toString();
-            for (SnippetEvent e : jShell.get().eval(str)) {
+            for (SnippetEvent e : jShell.get().eval(jShell.get().sourceCodeAnalysis().analyzeCompletion(str).source())) {
                 if (e.status() == Snippet.Status.VALID) {
                     pushExpr(stack, e.value());
                 } else {
-                    throw new RuntimeException(e.exception());
+                    throw new RuntimeException(e.toString());
                 }
             }
         }

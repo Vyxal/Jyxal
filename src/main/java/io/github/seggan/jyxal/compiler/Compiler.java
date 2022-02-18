@@ -1,26 +1,18 @@
 package io.github.seggan.jyxal.compiler;
 
-import io.github.seggan.jyxal.antlr.VyxalBaseVisitor;
 import io.github.seggan.jyxal.antlr.VyxalParser;
+import io.github.seggan.jyxal.antlr.VyxalParserBaseVisitor;
 import io.github.seggan.jyxal.compiler.wrappers.ContextualVariable;
 import io.github.seggan.jyxal.compiler.wrappers.JyxalClassWriter;
 import io.github.seggan.jyxal.compiler.wrappers.JyxalMethod;
-import org.objectweb.asm.ClassReader;
-import org.objectweb.asm.ClassWriter;
-import org.objectweb.asm.Label;
-import org.objectweb.asm.MethodVisitor;
-import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.*;
 import org.objectweb.asm.util.CheckClassAdapter;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintWriter;
-import java.util.ArrayDeque;
-import java.util.Deque;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Consumer;
 import java.util.regex.Pattern;
 
@@ -32,7 +24,7 @@ Vars:
 3+: for program use
  */
 @SuppressWarnings("ConstantConditions")
-public final class Compiler extends VyxalBaseVisitor<Void> implements Opcodes {
+public final class Compiler extends VyxalParserBaseVisitor<Void> implements Opcodes {
 
     private static final Pattern COMPLEX_SEPARATOR = Pattern.compile("°");
 
@@ -158,7 +150,7 @@ public final class Compiler extends VyxalBaseVisitor<Void> implements Opcodes {
     }
 
     @Override
-    public Void visitComplex(VyxalParser.ComplexContext ctx) {
+    public Void visitComplex_number(VyxalParser.Complex_numberContext ctx) {
         JyxalMethod mv = callStack.peek();
         String[] parts = COMPLEX_SEPARATOR.split(ctx.getText());
         mv.loadStack();
@@ -180,7 +172,7 @@ public final class Compiler extends VyxalBaseVisitor<Void> implements Opcodes {
     public Void visitNormal_string(VyxalParser.Normal_stringContext ctx) {
         JyxalMethod mv = callStack.peek();
         mv.loadStack();
-        mv.visitLdcInsn(ctx.any_text().getText());
+        mv.visitLdcInsn(ctx.any().getText());
         AsmHelper.push(mv);
         return null;
     }

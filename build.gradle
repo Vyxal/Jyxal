@@ -39,7 +39,11 @@ test {
 
 generateGrammarSource {
     maxHeapSize = "128m"
-    arguments += ['-visitor', '-no-listener', "-encoding", "UTF-8"]
+    File dir = new File(buildDir, "/generated-src/antlr/main/io/github/seggan/jyxal/antlr")
+    doFirst {
+        dir.mkdirs()
+    }
+    arguments += ["-lib", dir.getAbsolutePath(), '-visitor', '-no-listener', "-encoding", "UTF-8"]
 }
 
 compileJava.dependsOn generateGrammarSource
@@ -63,6 +67,8 @@ clean {
 
 // copy and relocate the runtime into the resources
 shadowJar {
+    dependsOn test
+
     JPath dest = JPath.of("$buildDir/runtime-classes/")
     doFirst {
         List<String> names = new ArrayList<>()
