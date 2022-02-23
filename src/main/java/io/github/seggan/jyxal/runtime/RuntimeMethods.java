@@ -3,28 +3,13 @@ package io.github.seggan.jyxal.runtime;
 import io.github.seggan.jyxal.runtime.list.JyxalList;
 import io.github.seggan.jyxal.runtime.math.BigComplex;
 import io.github.seggan.jyxal.runtime.math.BigComplexMath;
-import jdk.jshell.JShell;
-import jdk.jshell.Snippet;
-import jdk.jshell.SnippetEvent;
 
-import java.math.BigDecimal;
 import java.math.MathContext;
+import java.util.HashSet;
 import java.util.Objects;
-import java.util.Set;
 import java.util.function.IntPredicate;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 public final class RuntimeMethods {
-
-    private static final Set<Character> vowels = Set.of('a', 'e', 'i', 'o', 'u', 'y');
-    private static final LazyInit<JShell> jShell = new LazyInit<>(() -> {
-        JShell shell = JShell.create();
-        Runtime.getRuntime().addShutdownHook(new Thread(shell::close));
-        return shell;
-    });
-    private static final LazyInit<Pattern> NUMBER_PATTERN = new LazyInit<>(() -> Pattern.compile("\\d+(\\.\\d+)?"));
-    private static final LazyInit<Pattern> LIST_PATTERN = new LazyInit<>(() -> Pattern.compile("\\[.+(?:,(.+))*]"));
 
     private RuntimeMethods() {
     }
@@ -40,49 +25,6 @@ public final class RuntimeMethods {
         }
     }
 
-    public static void all(ProgramStack stack) {
-        Object obj = stack.pop();
-        if (obj instanceof JyxalList list) {
-            for (Object item : list) {
-                if (!RuntimeHelpers.truthValue(item)) {
-                    stack.push(false);
-                    return;
-                }
-            }
-            stack.push(true);
-        } else if (obj instanceof String string) {
-            for (char c : string.toCharArray()) {
-                if (!vowels.contains(c)) {
-                    stack.push(false);
-                    return;
-                }
-            }
-            stack.push(true);
-        }
-
-        stack.push(true);
-    }
-
-    public static void chrOrd(ProgramStack stack) {
-        if (RuntimeHelpers.vectorise(1, RuntimeMethods::chrOrd, stack)) return;
-        Object obj = stack.pop();
-        if (obj instanceof BigComplex complex) {
-            stack.push(Character.toString(complex.re.intValue()));
-        } else {
-            String str = obj.toString();
-            if (str.length() == 1) {
-                // Due to overload resolution, it will push the int value
-                stack.push(str.charAt(0));
-            } else {
-                JyxalList list = JyxalList.create();
-                for (char c : str.toCharArray()) {
-                    list.add((int) c);
-                }
-                stack.push(list);
-            }
-        }
-    }
-
     private static void compare(ProgramStack stack, IntPredicate predicate) {
         Object b = stack.pop();
         Object a = stack.pop();
@@ -93,23 +35,11 @@ public final class RuntimeMethods {
         }
     }
 
-    private static JyxalList deepCopy(JyxalList list) {
-        JyxalList copy = JyxalList.create();
-        for (Object obj : list) {
-            if (obj instanceof JyxalList jyxalList) {
-                copy.add(deepCopy(jyxalList));
-            } else {
-                copy.add(obj);
-            }
-        }
-        return copy;
-    }
-
     public static void duplicate(ProgramStack stack) {
         Object obj = Objects.requireNonNull(stack.peek());
         if (obj instanceof JyxalList jyxalList) {
             // deep copy
-            stack.push(deepCopy(jyxalList));
+            stack.push(RuntimeHelpers.deepCopy(jyxalList));
         } else {
             stack.push(obj);
         }
@@ -126,6 +56,20 @@ public final class RuntimeMethods {
         }
     }
 
+    public static void functionCall(ProgramStack stack) {
+        Object obj = stack.pop();
+        if (obj instanceof Lambda lambda) {
+            stack.push(lambda.call(stack));
+        } else if (obj instanceof JyxalList list) {
+            list.map(o -> BigComplex.valueOf(!RuntimeHelpers.truthValue(o)));
+            stack.push(list);
+        } else if (obj instanceof BigComplex complex) {
+            stack.push(RuntimeHelpers.primeFactors(complex, HashSet::new).size());
+        } else {
+            stack.push(RuntimeHelpers.exec(obj.toString()));
+        }
+    }
+
     public static void greaterThan(ProgramStack stack) {
         if (RuntimeHelpers.vectorise(2, RuntimeMethods::greaterThan, stack)) return;
         compare(stack, i -> i > 0);
@@ -134,6 +78,19 @@ public final class RuntimeMethods {
     public static void greaterThanOrEqual(ProgramStack stack) {
         if (RuntimeHelpers.vectorise(2, RuntimeMethods::greaterThanOrEqual, stack)) return;
         compare(stack, i -> i >= 0);
+    }
+
+    public static void halve(ProgramStack stack) {
+        if (RuntimeHelpers.vectorise(1, RuntimeMethods::halve, stack)) return;
+        Object obj = stack.pop();
+        if (obj instanceof BigComplex complex) {
+            stack.push(complex.divide(BigComplex.TWO, MathContext.DECIMAL128));
+        } else {
+            String str = obj.toString();
+            int limit = str.length() / 2 + 1;
+            stack.push(str.substring(0, limit));
+            stack.push(str.substring(limit));
+        }
     }
 
     public static void itemSplit(ProgramStack stack) {
@@ -203,10 +160,10 @@ public final class RuntimeMethods {
                 BigComplex bottom = BigComplexMath.log(ca, MathContext.DECIMAL128);
                 stack.push(top.divide(bottom, MathContext.DECIMAL128));
             } else {
-                stack.push(repeatCharacters(b.toString(), ca.re.intValue()));
+                stack.push(RuntimeHelpers.repeatCharacters(b.toString(), ca.re.intValue()));
             }
         } else if (b instanceof BigComplex cb) {
-            stack.push(repeatCharacters(a.toString(), cb.re.intValue()));
+            stack.push(RuntimeHelpers.repeatCharacters(a.toString(), cb.re.intValue()));
         } else {
             StringBuilder sb = new StringBuilder();
             String aString = a.toString();
@@ -229,34 +186,6 @@ public final class RuntimeMethods {
 
             stack.push(sb.toString());
         }
-    }
-
-    private static void pushExpr(ProgramStack stack, String expr) {
-        if (NUMBER_PATTERN.get().matcher(expr).matches()) {
-            stack.push(BigComplex.valueOf(new BigDecimal(expr)));
-        } else {
-            Matcher matcher = LIST_PATTERN.get().matcher(expr);
-            if (matcher.matches()) {
-                ProgramStack newStack = new ProgramStack();
-                while (matcher.find()) {
-                    pushExpr(newStack, matcher.group());
-                }
-                stack.push(JyxalList.create(newStack));
-            } else if (expr.startsWith("\"") && expr.endsWith("\"")) {
-                stack.push(expr.substring(1, expr.length() - 1));
-            } else {
-                stack.push(expr);
-            }
-        }
-    }
-
-    private static String repeatCharacters(String str, int times) {
-        StringBuilder sb = new StringBuilder();
-        for (char c : str.toCharArray()) {
-            sb.append(String.valueOf(c).repeat(Math.max(0, times)));
-        }
-
-        return sb.toString();
     }
 
     public static void splitOn(ProgramStack stack) {
@@ -284,28 +213,12 @@ public final class RuntimeMethods {
         Object obj = Objects.requireNonNull(stack.peek());
         if (obj instanceof JyxalList jyxalList) {
             // deep copy
-            stack.push(deepCopy(jyxalList));
-            stack.push(deepCopy(jyxalList));
+            stack.push(RuntimeHelpers.deepCopy(jyxalList));
+            stack.push(RuntimeHelpers.deepCopy(jyxalList));
         } else {
             stack.push(obj);
             stack.push(obj);
         }
     }
 
-    public static void twoPow(ProgramStack stack) {
-        if (RuntimeHelpers.vectorise(1, RuntimeMethods::twoPow, stack)) return;
-        Object obj = stack.pop();
-        if (obj instanceof BigComplex complex) {
-            stack.push(BigComplexMath.pow(BigComplex.valueOf(2), complex, MathContext.DECIMAL128));
-        } else {
-            String str = obj.toString();
-            for (SnippetEvent e : jShell.get().eval(jShell.get().sourceCodeAnalysis().analyzeCompletion(str).source())) {
-                if (e.status() == Snippet.Status.VALID) {
-                    pushExpr(stack, e.value());
-                } else {
-                    throw new RuntimeException(e.toString());
-                }
-            }
-        }
-    }
 }

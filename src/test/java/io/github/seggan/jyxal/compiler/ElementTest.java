@@ -1,5 +1,6 @@
 package io.github.seggan.jyxal.compiler;
 
+import io.github.seggan.jyxal.runtime.MonadicFunctions;
 import io.github.seggan.jyxal.runtime.ProgramStack;
 import io.github.seggan.jyxal.runtime.RuntimeMethods;
 import org.junit.jupiter.api.Assertions;
@@ -20,12 +21,19 @@ public class ElementTest {
             if (element.isLinkedToMethod) {
                 String methodName = Element.screamingSnakeToCamel(element.name());
                 Assertions.assertDoesNotThrow(() -> {
-                    //noinspection ResultOfMethodCallIgnored
-                    RuntimeMethods.class.getMethod(
-                            methodName,
-                            ProgramStack.class
-                    );
-                }, "Method not found: RuntimeMethods." + methodName);
+                    try {
+                        RuntimeMethods.class.getMethod(
+                                methodName,
+                                ProgramStack.class
+                        );
+                    } catch (NoSuchMethodException e) {
+                        //noinspection ResultOfMethodCallIgnored
+                        MonadicFunctions.class.getMethod(
+                                methodName,
+                                Object.class
+                        );
+                    }
+                }, "Method not found: " + methodName);
             }
         }
     }

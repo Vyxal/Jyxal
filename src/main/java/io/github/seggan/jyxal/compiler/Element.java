@@ -2,6 +2,7 @@ package io.github.seggan.jyxal.compiler;
 
 import io.github.seggan.jyxal.compiler.wrappers.JyxalMethod;
 import org.objectweb.asm.ClassWriter;
+import org.objectweb.asm.Handle;
 import org.objectweb.asm.Opcodes;
 
 import java.util.function.BiConsumer;
@@ -13,10 +14,12 @@ public enum Element {
     ASTERISK("\u00D7", "*"),
     SPLIT_ON("\u20AC"),
     MULTI_COMMAND("\u2022"),
-    ALL("A"),
-    CHR_ORD("C"),
+    FUNCTION_CALL("\u2020"),
+    HALVE("\u00BD"),
+    ALL("A", false),
+    CHR_ORD("C", true),
     TRIPLICATE("D"),
-    TWO_POW("E"),
+    TWO_POW("E", true),
     DUPLICATE(":"),
     EQUALS("="),
     GREATER_THAN(">"),
@@ -82,6 +85,44 @@ public enum Element {
             mv.visitLdcInsn(literal);
             AsmHelper.push(mv);
         });
+    }
+
+    Element(String text, boolean vectorise) {
+        this.text = text;
+        String methodName = screamingSnakeToCamel(name());
+        this.compileMethod = (cw, mv) -> {
+            if (vectorise) {
+                mv.loadStack();
+                AsmHelper.pop(mv);
+                mv.visitLdcInsn(new Handle(
+                        Opcodes.H_INVOKESTATIC,
+                        "runtime/MonadicFunctions",
+                        methodName,
+                        "(Ljava/lang/Object;)Ljava/lang/Object;",
+                        false
+                ));
+                mv.visitMethodInsn(
+                        Opcodes.INVOKESTATIC,
+                        "runtime/MonadicFunctions",
+                        "vectorise",
+                        "(Ljava/lang/Object;Ljava/lang/invoke/MethodHandle;)Ljava/lang/Object;",
+                        false
+                );
+                AsmHelper.push(mv);
+            } else {
+                mv.loadStack();
+                AsmHelper.pop(mv);
+                mv.visitMethodInsn(
+                        Opcodes.INVOKESTATIC,
+                        "runtime/MonadicFunctions",
+                        methodName,
+                        "(Ljava/lang/Object;)Ljava/lang/Object;",
+                        false
+                );
+                AsmHelper.push(mv);
+            }
+        };
+        this.isLinkedToMethod = true;
     }
 
     public static Element getByText(String text) {

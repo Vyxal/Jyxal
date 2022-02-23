@@ -4,16 +4,9 @@ import io.github.seggan.jyxal.compiler.AsmHelper;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
-import org.objectweb.asm.tree.AbstractInsnNode;
-import org.objectweb.asm.tree.MethodInsnNode;
-import org.objectweb.asm.tree.MethodNode;
-import org.objectweb.asm.tree.VarInsnNode;
+import org.objectweb.asm.tree.*;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.ListIterator;
-import java.util.Set;
+import java.util.*;
 
 public class JyxalMethod extends MethodNode implements Opcodes {
 
@@ -25,13 +18,23 @@ public class JyxalMethod extends MethodNode implements Opcodes {
     JyxalMethod(ClassWriter cw, int access, String name, String desc) {
         super(Opcodes.ASM7, access, name, desc, null, null);
         this.mv = cw.visitMethod(access, name, desc, null, null);
-        this.stackVar = Type.getArgumentTypes(desc).length;
-        this.ctxVar = stackVar + 1;
 
-        visitTypeInsn(NEW, "runtime/ProgramStack");
-        visitInsn(DUP);
-        visitMethodInsn(INVOKESPECIAL, "runtime/ProgramStack", "<init>", "()V", false);
-        visitVarInsn(ASTORE, stackVar);
+        int stackVar1;
+
+        // lambdas have the program stack passed as the only argument
+        if (name.startsWith("lambda$")) {
+            stackVar1 = 0;
+        } else {
+            stackVar1 = Type.getArgumentTypes(desc).length;
+
+            visitTypeInsn(NEW, "runtime/ProgramStack");
+            visitInsn(DUP);
+            visitMethodInsn(INVOKESPECIAL, "runtime/ProgramStack", "<init>", "()V", false);
+            visitVarInsn(ASTORE, stackVar1);
+        }
+
+        this.stackVar = stackVar1;
+        this.ctxVar = stackVar + 1;
 
         AsmHelper.addBigComplex("0", this);
         visitVarInsn(ASTORE, ctxVar);
@@ -92,25 +95,39 @@ public class JyxalMethod extends MethodNode implements Opcodes {
 
         ListIterator<AbstractInsnNode> it = instructions.iterator();
         Set<AbstractInsnNode> toRemove = new HashSet<>();
+        Map<AbstractInsnNode, AbstractInsnNode> toInsertAfter = new HashMap<>();
         while (it.hasNext()) {
             AbstractInsnNode insn = it.next();
             if (insn.getOpcode() == INVOKEVIRTUAL
-                && insn instanceof MethodInsnNode methodInsnNode
-                && methodInsnNode.name.equals("push")
-                && methodInsnNode.desc.equals("(Ljava/lang/Object;)V")
-                && methodInsnNode.owner.equals("runtime/ProgramStack")) {
+                    && insn instanceof MethodInsnNode methodInsnNode
+                    && methodInsnNode.name.equals("push")
+                    && methodInsnNode.desc.equals("(Ljava/lang/Object;)V")
+                    && methodInsnNode.owner.equals("runtime/ProgramStack")) {
                 AbstractInsnNode next = insn.getNext();
                 if (next.getOpcode() == ALOAD) {
                     AbstractInsnNode next1 = next.getNext();
                     if (next1.getOpcode() == INVOKEVIRTUAL
-                        && next1 instanceof MethodInsnNode methodInsnNode2
-                        && methodInsnNode2.name.equals("pop")
-                        && methodInsnNode2.desc.equals("()Ljava/lang/Object;")
-                        && methodInsnNode2.owner.equals("runtime/ProgramStack")) {
+                            && next1 instanceof MethodInsnNode methodInsnNode2
+                            && methodInsnNode2.name.equals("pop")
+                            && methodInsnNode2.desc.equals("()Ljava/lang/Object;")
+                            && methodInsnNode2.owner.equals("runtime/ProgramStack")) {
                         toRemove.add(insn);
                         toRemove.add(next);
                         toRemove.add(next1);
                         continue;
+                    } else if (next1.getOpcode() == ALOAD) {
+                        AbstractInsnNode next2 = next1.getNext();
+                        if (next2.getOpcode() == INVOKEVIRTUAL
+                                && next2 instanceof MethodInsnNode methodInsnNode2
+                                && methodInsnNode2.name.equals("pop")
+                                && methodInsnNode2.desc.equals("()Ljava/lang/Object;")
+                                && methodInsnNode2.owner.equals("runtime/ProgramStack")) {
+                            toRemove.add(insn);
+                            toRemove.add(next);
+                            toRemove.add(next1);
+                            toRemove.add(next2);
+                            continue;
+                        }
                     }
                 }
             }
@@ -118,8 +135,8 @@ public class JyxalMethod extends MethodNode implements Opcodes {
             if (contextVarInit == null) {
                 List<AbstractInsnNode> matches = contextInit.matches(insn);
                 if (!matches.isEmpty()
-                    && matches.get(matches.size() - 1) instanceof VarInsnNode varInsnNode
-                    && varInsnNode.var == ctxVar) {
+                        && matches.get(matches.size() - 1) instanceof VarInsnNode varInsnNode
+                        && varInsnNode.var == ctxVar) {
                     contextVarInit = matches;
                     int size = contextVarInit.size() - 1;
                     for (int i = 0; i < size; i++) {
@@ -131,6 +148,10 @@ public class JyxalMethod extends MethodNode implements Opcodes {
             if (insn instanceof VarInsnNode varInsnNode && varInsnNode.var == ctxVar) {
                 contextVarUsed = true;
             }
+        }
+
+        for (Map.Entry<AbstractInsnNode, AbstractInsnNode> entry : toInsertAfter.entrySet()) {
+            instructions.insert(entry.getKey(), entry.getValue());
         }
 
         for (AbstractInsnNode insn : toRemove) {

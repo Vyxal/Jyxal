@@ -50,27 +50,27 @@ PIPE
     : '|'
     ;
 
-OPENING_BRACE
+WHILE_OPEN
     : '{'
     ;
 
-CLOSING_BRACE
+WHILE_CLOSE
     : '}'
     ;
 
-OPENING_BRACKET
+IF_OPEN
     : '['
     ;
 
-CLOSING_BRACKET
+IF_CLOSE
     : ']'
     ;
 
-OPENING_PARENTHESIS
+FOR_OPEN
     : '('
     ;
 
-CLOSING_PARENTHESIS
+FOR_CLOSE
     : ')'
     ;
 

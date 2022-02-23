@@ -2,13 +2,118 @@ package io.github.seggan.jyxal.runtime;
 
 import io.github.seggan.jyxal.runtime.list.JyxalList;
 import io.github.seggan.jyxal.runtime.math.BigComplex;
+import jdk.jshell.JShell;
+import jdk.jshell.Snippet;
+import jdk.jshell.SnippetEvent;
 
+import java.lang.invoke.MethodHandle;
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.util.Collection;
 import java.util.Iterator;
+import java.util.Set;
 import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.Supplier;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public final class RuntimeHelpers {
 
+    public static final Set<Character> VOWELS = Set.of('a', 'e', 'i', 'o', 'u', 'y');
+    public static final LazyInit<JShell> jShell = new LazyInit<>(() -> {
+        JShell shell = JShell.create();
+        Runtime.getRuntime().addShutdownHook(new Thread(shell::close));
+        return shell;
+    });
+    public static final LazyInit<Pattern> NUMBER_PATTERN = new LazyInit<>(() -> Pattern.compile("\\d+(\\.\\d+)?"));
+    public static final LazyInit<Pattern> LIST_PATTERN = new LazyInit<>(() -> Pattern.compile("\\[.+(?:,(.+))*]"));
+
     private RuntimeHelpers() {
+    }
+
+    public static JyxalList deepCopy(JyxalList list) {
+        JyxalList copy = JyxalList.create();
+        for (Object obj : list) {
+            if (obj instanceof JyxalList jyxalList) {
+                copy.add(deepCopy(jyxalList));
+            } else {
+                copy.add(obj);
+            }
+        }
+        return copy;
+    }
+
+    public static Object exec(String expr) {
+        ProgramStack stack = new ProgramStack();
+        for (SnippetEvent e : jShell.get().eval(jShell.get().sourceCodeAnalysis().analyzeCompletion(expr).source())) {
+            if (e.status() == Snippet.Status.VALID) {
+                pushExpr(stack, e.value());
+            } else {
+                throw new RuntimeException(e.toString());
+            }
+        }
+        return stack.pop();
+    }
+
+    public static <T extends Collection<BigComplex>> T primeFactors(BigComplex n, Supplier<T> factory) {
+        T factors = factory.get();
+        if (n.re.compareTo(BigDecimal.valueOf(Long.MAX_VALUE)) < 0
+                && n.re.compareTo(BigDecimal.valueOf(Long.MIN_VALUE)) > 0) {
+            // we can use primitives to speed this up
+            long nLong = n.re.longValue();
+            long sqrt = (long) Math.sqrt(nLong);
+            for (long i = 2; i <= sqrt; i++) {
+                if (nLong % i == 0) {
+                    factors.add(BigComplex.valueOf(i));
+                }
+            }
+            if (sqrt * sqrt == nLong) {
+                factors.add(BigComplex.valueOf(sqrt));
+            }
+        } else {
+            // we can't use primitives, so we'll have to use BigInteger
+            BigInteger nBig = n.re.toBigInteger();
+            BigInteger sqrt = nBig.sqrt();
+            for (BigInteger i = BigInteger.valueOf(2); i.compareTo(sqrt) <= 0; i = i.add(BigInteger.ONE)) {
+                if (nBig.mod(i).equals(BigInteger.ZERO)) {
+                    factors.add(BigComplex.valueOf(new BigDecimal(i)));
+                }
+            }
+            if (sqrt.multiply(sqrt).equals(nBig)) {
+                factors.add(BigComplex.valueOf(new BigDecimal(sqrt)));
+            }
+        }
+
+        return factors;
+    }
+
+    public static void pushExpr(ProgramStack stack, String expr) {
+        if (NUMBER_PATTERN.get().matcher(expr).matches()) {
+            stack.push(BigComplex.valueOf(new BigDecimal(expr)));
+        } else {
+            Matcher matcher = LIST_PATTERN.get().matcher(expr);
+            if (matcher.matches()) {
+                ProgramStack newStack = new ProgramStack();
+                while (matcher.find()) {
+                    pushExpr(newStack, matcher.group());
+                }
+                stack.push(JyxalList.create(newStack));
+            } else if (expr.startsWith("\"") && expr.endsWith("\"")) {
+                stack.push(expr.substring(1, expr.length() - 1));
+            } else {
+                stack.push(expr);
+            }
+        }
+    }
+
+    public static String repeatCharacters(String str, int times) {
+        StringBuilder sb = new StringBuilder();
+        for (char c : str.toCharArray()) {
+            sb.append(String.valueOf(c).repeat(Math.max(0, times)));
+        }
+
+        return sb.toString();
     }
 
     public static boolean truthValue(ProgramStack stack) {
@@ -63,20 +168,25 @@ public final class RuntimeHelpers {
         }
     }
 
+    public static Object vectoriseOne(Object obj, Function<Object, Object> function) {
+        if (obj instanceof JyxalList jyxalList) {
+            jyxalList.map(o -> vectoriseOne(o, function));
+            return jyxalList;
+        }
+
+        return function.apply(obj);
+    }
+
     public static boolean vectorise(int arity, Consumer<ProgramStack> consumer, ProgramStack stack) {
         // <editor-fold desc="vectorise" defaultstate="collapsed">
         switch (arity) {
             case 1 -> {
-                Object obj = stack.pop();
-                if (obj instanceof JyxalList jyxalList) {
-                    jyxalList.map(o -> {
-                        ProgramStack newStack = new ProgramStack(o);
-                        consumer.accept(newStack);
-                        return newStack.pop();
-                    });
-                    return true;
-                }
-                stack.push(obj);
+                Object obj = stack.peek();
+                return vectoriseOne(obj, o -> {
+                    ProgramStack newStack = new ProgramStack(o);
+                    consumer.accept(newStack);
+                    return newStack.pop();
+                }) instanceof JyxalList;
             }
             case 2 -> {
                 Object right = stack.pop();

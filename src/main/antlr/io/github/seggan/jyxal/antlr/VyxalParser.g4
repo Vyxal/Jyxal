@@ -77,15 +77,15 @@ statement
     ;
 
 if_statement
-    : OPENING_BRACKET program (PIPE program)? CLOSING_BRACKET?
+    : IF_OPEN program (PIPE program)? IF_CLOSE?
     ;
 
 for_loop
-    : OPENING_PARENTHESIS (variable PIPE)? program CLOSING_PARENTHESIS?
+    : FOR_OPEN (variable PIPE)? program FOR_CLOSE?
     ;
 
 while_loop
-    : OPENING_BRACE (program PIPE)? program CLOSING_BRACE?
+    : WHILE_OPEN (program PIPE)? program WHILE_CLOSE?
     ;
 
 lambda

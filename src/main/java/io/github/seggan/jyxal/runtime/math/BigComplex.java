@@ -56,6 +56,13 @@ public final class BigComplex implements Comparable<BigComplex> {
 	 */
 	public static final BigComplex ONE = new BigComplex(BigDecimal.ONE, BigDecimal.ZERO);
 
+	private static final BigDecimal DECIMAL_TWO = BigDecimal.valueOf(2);
+
+	/**
+	 * Real 2 represented as complex number.
+	 */
+	public static final BigComplex TWO = new BigComplex(DECIMAL_TWO, BigDecimal.ZERO);
+
 	/**
 	 * Imaginary 1 represented as complex number.
 	 */
@@ -577,8 +584,12 @@ public final class BigComplex implements Comparable<BigComplex> {
 				return I;
 			}
 		}
-		if (imaginary.signum() == 0 && real.compareTo(BigDecimal.ONE) == 0) {
-			return ONE;
+		if (imaginary.signum() == 0) {
+			if (real.compareTo(BigDecimal.ONE) == 0) {
+				return ONE;
+			} else if (real.compareTo(DECIMAL_TWO) == 0) {
+				return TWO;
+			}
 		}
 
 		return new BigComplex(real, imaginary);
