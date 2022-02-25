@@ -4,10 +4,12 @@ import io.github.seggan.jyxal.runtime.list.JyxalList;
 import io.github.seggan.jyxal.runtime.math.BigComplex;
 import io.github.seggan.jyxal.runtime.math.BigComplexMath;
 
+import java.math.BigInteger;
 import java.math.MathContext;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.function.IntPredicate;
+import java.util.function.Supplier;
 
 public final class RuntimeMethods {
 
@@ -68,6 +70,17 @@ public final class RuntimeMethods {
         } else {
             stack.push(RuntimeHelpers.exec(obj.toString()));
         }
+    }
+
+    public static void infinitePrimes(ProgramStack stack) {
+        stack.push(JyxalList.create(new Supplier<Object>() {
+            BigInteger next = BigInteger.ONE;
+            @Override
+            public Object get() {
+                next = next.nextProbablePrime();
+                return next;
+            }
+        }));
     }
 
     public static void greaterThan(ProgramStack stack) {

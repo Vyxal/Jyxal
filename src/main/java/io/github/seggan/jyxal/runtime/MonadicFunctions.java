@@ -5,6 +5,8 @@ import io.github.seggan.jyxal.runtime.math.BigComplex;
 import io.github.seggan.jyxal.runtime.math.BigComplexMath;
 
 import java.lang.invoke.MethodHandle;
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.math.MathContext;
 
 public final class MonadicFunctions {
@@ -54,6 +56,42 @@ public final class MonadicFunctions {
             return BigComplexMath.pow(BigComplex.TWO, complex, MathContext.DECIMAL128);
         } else {
             return RuntimeHelpers.exec(obj.toString());
+        }
+    }
+
+    public static Object isPrime(Object obj) {
+        if (obj instanceof BigComplex complex) {
+            BigInteger n = complex.re.toBigInteger();
+            BigDecimal bsqrt = complex.re.sqrt(MathContext.DECIMAL128);
+            if (n.compareTo(BigInteger.valueOf(Long.MAX_VALUE)) < 0
+                    && n.compareTo(BigInteger.valueOf(Long.MIN_VALUE)) > 0) {
+                long l = n.longValue();
+                long sqrt = bsqrt.longValue();
+                for (long i = 2; i <= sqrt; i++) {
+                    if (l % i == 0) {
+                        return BigComplex.valueOf(false);
+                    }
+                }
+            } else {
+                BigInteger sqrt = bsqrt.toBigInteger();
+                for (BigInteger i = BigInteger.valueOf(2); i.compareTo(sqrt) <= 0; i = i.add(BigInteger.ONE)) {
+                    if (n.mod(i).compareTo(BigInteger.ZERO) == 0) {
+                        return BigComplex.valueOf(false);
+                    }
+                }
+            }
+
+            return BigComplex.valueOf(true);
+        } else {
+            String str = obj.toString();
+            boolean isUppercase = Character.isUpperCase(str.charAt(0));
+            for (char c : str.toCharArray()) {
+                if (Character.isUpperCase(c) != isUppercase) {
+                    return BigComplex.valueOf(-1);
+                }
+            }
+
+            return BigComplex.valueOf(isUppercase);
         }
     }
 

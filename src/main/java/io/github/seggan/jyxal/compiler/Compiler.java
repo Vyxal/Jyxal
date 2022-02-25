@@ -1,12 +1,12 @@
 package io.github.seggan.jyxal.compiler;
 
+import io.github.seggan.jyxal.CompilerOptions;
 import io.github.seggan.jyxal.antlr.VyxalParser;
 import io.github.seggan.jyxal.antlr.VyxalParserBaseVisitor;
 import io.github.seggan.jyxal.compiler.wrappers.ContextualVariable;
 import io.github.seggan.jyxal.compiler.wrappers.JyxalClassWriter;
 import io.github.seggan.jyxal.compiler.wrappers.JyxalMethod;
 import org.objectweb.asm.*;
-import org.objectweb.asm.tree.analysis.SimpleVerifier;
 import org.objectweb.asm.util.CheckClassAdapter;
 
 import java.io.FileOutputStream;
@@ -88,8 +88,10 @@ public final class Compiler extends VyxalParserBaseVisitor<Void> implements Opco
 
         // finish up clinit
         mv.visitInsn(RETURN);
-        mv.visitMaxs(-1, -1); // auto-calculate stack size and number of locals
         mv.visitEnd();
+        mv.visitMaxs(-1, -1); // auto-calculate stack size and number of locals
+
+        // TODO: reverse the signs for the variable assns
 
         // finish up main
         Label end = new Label();
@@ -322,7 +324,7 @@ public final class Compiler extends VyxalParserBaseVisitor<Void> implements Opco
 
     @Override
     public Void visitElement(VyxalParser.ElementContext ctx) {
-        String element = ctx.getText();
+        String element = ctx.element_type().getText();
         if (ctx.PREFIX() != null) {
             element = ctx.PREFIX().getText() + element;
         }
@@ -378,14 +380,18 @@ public final class Compiler extends VyxalParserBaseVisitor<Void> implements Opco
         Label end = new Label();
         JyxalMethod mv = callStack.peek();
 
-        mv.loadStack();
+        AsmHelper.pop(mv);
         mv.visitMethodInsn(
                 INVOKESTATIC,
                 "runtime/RuntimeHelpers",
                 "forify",
-                "(Lruntime/ProgramStack;)Ljava/util/Iterator;",
+                "(Ljava/lang/Object;)Ljava/util/Iterator;",
                 false
         );
+        if (!CompilerOptions.OPTIONS.contains(CompilerOptions.DONT_OPTIMISE)) {
+            mv.visitInsn(SWAP);
+            mv.visitInsn(POP);
+        }
         try (ContextualVariable iteratorVar = mv.reserveVar()) {
             iteratorVar.store();
             mv.visitLabel(start);
@@ -424,14 +430,26 @@ public final class Compiler extends VyxalParserBaseVisitor<Void> implements Opco
         JyxalMethod mv = callStack.peek();
         Label end = new Label();
 
-        mv.loadStack();
+        AsmHelper.pop(mv);
+        mv.visitMethodInsn(
+                INVOKEVIRTUAL,
+                "runtime/ProgramStack",
+                "pop",
+                "()Ljava/lang/Object;",
+                false
+        );
         mv.visitMethodInsn(
                 INVOKESTATIC,
                 "runtime/RuntimeHelpers",
                 "truthValue",
-                "(Lruntime/ProgramStack;)Z",
+                "(Ljava/lang/Object;)Z",
                 false
         );
+
+        if (!CompilerOptions.OPTIONS.contains(CompilerOptions.DONT_OPTIMISE)) {
+            mv.visitInsn(SWAP);
+            mv.visitInsn(POP);
+        }
 
         mv.visitJumpInsn(IFEQ, end);
 

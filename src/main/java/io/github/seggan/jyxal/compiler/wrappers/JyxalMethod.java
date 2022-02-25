@@ -1,5 +1,6 @@
 package io.github.seggan.jyxal.compiler.wrappers;
 
+import io.github.seggan.jyxal.CompilerOptions;
 import io.github.seggan.jyxal.compiler.AsmHelper;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Opcodes;
@@ -87,6 +88,10 @@ public class JyxalMethod extends MethodNode implements Opcodes {
 
     @Override
     public void visitEnd() {
+        if (CompilerOptions.OPTIONS.contains(CompilerOptions.DONT_OPTIMISE)) {
+            accept(mv);
+            return;
+        }
 
         // The instruction sequence for the context var
         InsnSequence contextInit = new InsnSequence(NEW, DUP, LDC, INVOKESPECIAL, INVOKESTATIC, ASTORE);

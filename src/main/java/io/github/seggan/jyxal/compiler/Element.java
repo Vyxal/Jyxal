@@ -13,6 +13,26 @@ public enum Element {
     ADD("+"),
     ASTERISK("\u00D7", "*"),
     SPLIT_ON("\u20AC"),
+    STACK_SIZE("!", mv -> {
+        mv.loadStack();
+        mv.visitInsn(Opcodes.DUP);
+        mv.visitMethodInsn(
+                Opcodes.INVOKEVIRTUAL,
+                "runtime/ProgramStack",
+                "size",
+                "()I",
+                false
+        );
+        mv.visitInsn(Opcodes.I2L);
+        mv.visitMethodInsn(
+                Opcodes.INVOKESTATIC,
+                "runtime/math/BigComplex",
+                "valueOf",
+                "(J)Lruntime/math/BigComplex;",
+                false
+        );
+        AsmHelper.push(mv);
+    }),
     MULTI_COMMAND("\u2022"),
     FUNCTION_CALL("\u2020"),
     HALVE("\u00BD"),
@@ -34,6 +54,8 @@ public enum Element {
         mv.loadContextVar();
         AsmHelper.push(mv);
     }),
+    IS_PRIME("\u00E6", true),
+    INFINITE_PRIMES("\u00DEp"),
     POP("_", mv -> {
         AsmHelper.pop(mv);
         mv.visitInsn(Opcodes.POP);

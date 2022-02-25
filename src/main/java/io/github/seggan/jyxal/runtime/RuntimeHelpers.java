@@ -6,7 +6,6 @@ import jdk.jshell.JShell;
 import jdk.jshell.Snippet;
 import jdk.jshell.SnippetEvent;
 
-import java.lang.invoke.MethodHandle;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Collection;
@@ -54,6 +53,47 @@ public final class RuntimeHelpers {
             }
         }
         return stack.pop();
+    }
+
+    public static Iterator<Object> forify(ProgramStack stack) {
+        return forify(stack.pop());
+    }
+
+    public static Iterator<Object> forify(Object obj) {
+        if (obj instanceof JyxalList jyxalList) {
+            return jyxalList.iterator();
+        } else if (obj instanceof BigComplex bigComplex) {
+            return new Iterator<>() {
+                private BigComplex current = BigComplex.ONE;
+
+                @Override
+                public boolean hasNext() {
+                    return current.re.compareTo(bigComplex.re) <= 0;
+                }
+
+                @Override
+                public Object next() {
+                    BigComplex next = current;
+                    current = current.add(BigComplex.ONE);
+                    return next;
+                }
+            };
+        } else {
+            String s = obj.toString();
+            return new Iterator<>() {
+                private int i = 0;
+
+                @Override
+                public boolean hasNext() {
+                    return i < s.length();
+                }
+
+                @Override
+                public Object next() {
+                    return Character.toString(s.charAt(i++));
+                }
+            };
+        }
     }
 
     public static <T extends Collection<BigComplex>> T primeFactors(BigComplex n, Supplier<T> factory) {
@@ -116,6 +156,14 @@ public final class RuntimeHelpers {
         return sb.toString();
     }
 
+    private static int slen(JyxalList first, JyxalList... rest) {
+        int size = first.size();
+        for (JyxalList list : rest) {
+            size = Math.min(size, list.size());
+        }
+        return size;
+    }
+
     public static boolean truthValue(ProgramStack stack) {
         return truthValue(stack.pop());
     }
@@ -124,57 +172,10 @@ public final class RuntimeHelpers {
         if (obj instanceof JyxalList jyxalList) {
             return jyxalList.size() != 0;
         } else if (obj instanceof BigComplex bigComplex) {
-            return (bigComplex.re.scale() != 0 || bigComplex.im.scale() != 0);
+            return !bigComplex.equals(BigComplex.ZERO);
         }
 
         return true;
-    }
-
-    public static Iterator<Object> forify(ProgramStack stack) {
-        Object obj = stack.pop();
-        if (obj instanceof JyxalList jyxalList) {
-            return jyxalList.iterator();
-        } else if (obj instanceof BigComplex bigComplex) {
-            return new Iterator<>() {
-                private BigComplex current = BigComplex.ONE;
-
-                @Override
-                public boolean hasNext() {
-                    return current.re.compareTo(bigComplex.re) <= 0;
-                }
-
-                @Override
-                public Object next() {
-                    BigComplex next = current;
-                    current = current.add(BigComplex.ONE);
-                    return next;
-                }
-            };
-        } else {
-            String s = obj.toString();
-            return new Iterator<>() {
-                private int i = 0;
-
-                @Override
-                public boolean hasNext() {
-                    return i < s.length();
-                }
-
-                @Override
-                public Object next() {
-                    return Character.toString(s.charAt(i++));
-                }
-            };
-        }
-    }
-
-    public static Object vectoriseOne(Object obj, Function<Object, Object> function) {
-        if (obj instanceof JyxalList jyxalList) {
-            jyxalList.map(o -> vectoriseOne(o, function));
-            return jyxalList;
-        }
-
-        return function.apply(obj);
     }
 
     public static boolean vectorise(int arity, Consumer<ProgramStack> consumer, ProgramStack stack) {
@@ -308,11 +309,12 @@ public final class RuntimeHelpers {
         // </editor-fold>
     }
 
-    private static int slen(JyxalList first, JyxalList... rest) {
-        int size = first.size();
-        for (JyxalList list : rest) {
-            size = Math.min(size, list.size());
+    public static Object vectoriseOne(Object obj, Function<Object, Object> function) {
+        if (obj instanceof JyxalList jyxalList) {
+            jyxalList.map(o -> vectoriseOne(o, function));
+            return jyxalList;
         }
-        return size;
+
+        return function.apply(obj);
     }
 }
