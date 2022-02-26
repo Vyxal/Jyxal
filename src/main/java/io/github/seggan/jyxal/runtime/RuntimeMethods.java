@@ -73,8 +73,9 @@ public final class RuntimeMethods {
     }
 
     public static void infinitePrimes(ProgramStack stack) {
-        stack.push(JyxalList.create(new Supplier<Object>() {
+        stack.push(JyxalList.create(new Supplier<>() {
             BigInteger next = BigInteger.ONE;
+
             @Override
             public Object get() {
                 next = next.nextProbablePrime();

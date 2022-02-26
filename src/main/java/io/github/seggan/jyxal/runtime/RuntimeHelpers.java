@@ -182,12 +182,16 @@ public final class RuntimeHelpers {
         // <editor-fold desc="vectorise" defaultstate="collapsed">
         switch (arity) {
             case 1 -> {
-                Object obj = stack.peek();
-                return vectoriseOne(obj, o -> {
-                    ProgramStack newStack = new ProgramStack(o);
-                    consumer.accept(newStack);
-                    return newStack.pop();
-                }) instanceof JyxalList;
+                Object obj = stack.pop();
+                if (obj instanceof JyxalList jyxalList) {
+                    jyxalList.map(o -> {
+                        ProgramStack newStack = new ProgramStack(o);
+                        consumer.accept(newStack);
+                        return newStack.pop();
+                    });
+                    return true;
+                }
+                stack.push(obj);
             }
             case 2 -> {
                 Object right = stack.pop();
@@ -307,14 +311,5 @@ public final class RuntimeHelpers {
 
         return false;
         // </editor-fold>
-    }
-
-    public static Object vectoriseOne(Object obj, Function<Object, Object> function) {
-        if (obj instanceof JyxalList jyxalList) {
-            jyxalList.map(o -> vectoriseOne(o, function));
-            return jyxalList;
-        }
-
-        return function.apply(obj);
     }
 }

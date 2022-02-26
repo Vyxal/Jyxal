@@ -51,14 +51,6 @@ public final class MonadicFunctions {
         }
     }
 
-    public static Object twoPow(Object obj) {
-        if (obj instanceof BigComplex complex) {
-            return BigComplexMath.pow(BigComplex.TWO, complex, MathContext.DECIMAL128);
-        } else {
-            return RuntimeHelpers.exec(obj.toString());
-        }
-    }
-
     public static Object isPrime(Object obj) {
         if (obj instanceof BigComplex complex) {
             BigInteger n = complex.re.toBigInteger();
@@ -95,13 +87,23 @@ public final class MonadicFunctions {
         }
     }
 
-    public static Object vectorise(Object obj, MethodHandle handle) {
-        return RuntimeHelpers.vectoriseOne(obj, o -> {
-            try {
-                return handle.invoke(o);
-            } catch (Throwable e) {
-                throw new RuntimeException(e);
+    public static Object twoPow(Object obj) {
+        if (obj instanceof BigComplex complex) {
+            return BigComplexMath.pow(BigComplex.TWO, complex, MathContext.DECIMAL128);
+        } else {
+            return RuntimeHelpers.exec(obj.toString());
+        }
+    }
+
+    public static Object vectorise(Object obj, MethodHandle handle) throws Throwable {
+        if (obj instanceof JyxalList list) {
+            JyxalList result = JyxalList.create();
+            for (Object item : list) {
+                result.add(vectorise(item, handle));
             }
-        });
+            return result;
+        }
+
+        return handle.invoke(obj);
     }
 }
