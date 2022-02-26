@@ -6,6 +6,8 @@ import io.github.seggan.jyxal.compiler.Compiler;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.objectweb.asm.ClassReader;
+import org.objectweb.asm.tree.analysis.SimpleVerifier;
+import org.objectweb.asm.util.CheckClassAdapter;
 import org.objectweb.asm.util.TraceClassVisitor;
 
 import java.io.FileOutputStream;

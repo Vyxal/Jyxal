@@ -2,6 +2,7 @@ package io.github.seggan.jyxal.compiler.wrappers;
 
 import io.github.seggan.jyxal.CompilerOptions;
 import io.github.seggan.jyxal.compiler.AsmHelper;
+import org.antlr.v4.codegen.model.decl.CodeBlock;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
@@ -13,6 +14,8 @@ public class JyxalMethod extends MethodNode implements Opcodes {
 
     private final int stackVar;
     private final int ctxVar;
+
+    private boolean optimise = !CompilerOptions.OPTIONS.contains(CompilerOptions.DONT_OPTIMISE);
 
     private final Set<ContextualVariable> reservedVars = new HashSet<>();
 
@@ -86,105 +89,69 @@ public class JyxalMethod extends MethodNode implements Opcodes {
         reservedVars.remove(var);
     }
 
+    public void setOptimise(boolean optimise) {
+        this.optimise = optimise;
+    }
+
     @Override
     public void visitEnd() {
-        if (CompilerOptions.OPTIONS.contains(CompilerOptions.DONT_OPTIMISE)) {
-            accept(mv);
-            return;
-        }
+        if (optimise) {
+            List<InsnList> codeBlocks = new ArrayList<>();
+            InsnList code = new InsnList();
+            for (ListIterator<AbstractInsnNode> iterator = instructions.iterator(); iterator.hasNext(); ) {
+                AbstractInsnNode insn = iterator.next();
+                iterator.remove();
+                code.add(insn);
+                if (insn instanceof LabelNode || insn.getOpcode() == RETURN || insn.getOpcode() == ATHROW
+                        || insn.getOpcode() == IRETURN || insn.getOpcode() == LRETURN
+                        || insn.getOpcode() == FRETURN || insn.getOpcode() == DRETURN
+                        || insn.getOpcode() == ARETURN) {
+                    codeBlocks.add(code);
+                    code = new InsnList();
+                }
+            }
 
-        // The instruction sequence for the context var
-        InsnSequence contextInit = new InsnSequence(NEW, DUP, LDC, INVOKESPECIAL, INVOKESTATIC, ASTORE);
-        List<AbstractInsnNode> contextVarInit = null;
-        boolean contextVarUsed = false;
+            for (InsnList block : codeBlocks) {
+                Optimiser.optimise(block, this);
+            }
 
-        ListIterator<AbstractInsnNode> it = instructions.iterator();
-        Set<AbstractInsnNode> toRemove = new HashSet<>();
-        Map<AbstractInsnNode, AbstractInsnNode> toInsertAfter = new HashMap<>();
-        while (it.hasNext()) {
-            AbstractInsnNode insn = it.next();
-            if (insn.getOpcode() == INVOKEVIRTUAL
-                    && insn instanceof MethodInsnNode methodInsnNode
-                    && methodInsnNode.name.equals("push")
-                    && methodInsnNode.desc.equals("(Ljava/lang/Object;)V")
-                    && methodInsnNode.owner.equals("runtime/ProgramStack")) {
-                AbstractInsnNode next = insn.getNext();
-                if (next.getOpcode() == ALOAD) {
-                    AbstractInsnNode next1 = next.getNext();
-                    if (next1.getOpcode() == INVOKEVIRTUAL
-                            && next1 instanceof MethodInsnNode methodInsnNode2
-                            && methodInsnNode2.name.equals("pop")
-                            && methodInsnNode2.desc.equals("()Ljava/lang/Object;")
-                            && methodInsnNode2.owner.equals("runtime/ProgramStack")) {
-                        toRemove.add(insn);
-                        toRemove.add(next);
-                        toRemove.add(next1);
-                        continue;
-                    } else if (next1.getOpcode() == ALOAD) {
-                        AbstractInsnNode next2 = next1.getNext();
-                        if (next2.getOpcode() == INVOKEVIRTUAL
-                                && next2 instanceof MethodInsnNode methodInsnNode2
-                                && methodInsnNode2.name.equals("pop")
-                                && methodInsnNode2.desc.equals("()Ljava/lang/Object;")
-                                && methodInsnNode2.owner.equals("runtime/ProgramStack")) {
-                            toRemove.add(insn);
-                            toRemove.add(next);
-                            toRemove.add(next1);
-                            toRemove.add(next2);
-                            continue;
+            for (InsnList block : codeBlocks) {
+                instructions.add(block);
+            }
+
+            // The instruction sequence for the context var
+            InsnSequence contextInit = new InsnSequence(NEW, DUP, LDC, INVOKESPECIAL, INVOKESTATIC, ASTORE);
+            List<AbstractInsnNode> contextVarInit = null;
+            boolean contextVarUsed = false;
+
+            ListIterator<AbstractInsnNode> it = instructions.iterator();
+            while (it.hasNext()) {
+                AbstractInsnNode insn = it.next();
+                if (contextVarInit == null) {
+                    List<AbstractInsnNode> matches = contextInit.matches(insn);
+                    if (!matches.isEmpty()
+                            && matches.get(matches.size() - 1) instanceof VarInsnNode varInsnNode
+                            && varInsnNode.var == ctxVar) {
+                        contextVarInit = matches;
+                        int size = contextVarInit.size() - 1;
+                        for (int i = 0; i < size; i++) {
+                            it.next();
                         }
                     }
                 }
-            }
 
-            if (contextVarInit == null) {
-                List<AbstractInsnNode> matches = contextInit.matches(insn);
-                if (!matches.isEmpty()
-                        && matches.get(matches.size() - 1) instanceof VarInsnNode varInsnNode
-                        && varInsnNode.var == ctxVar) {
-                    contextVarInit = matches;
-                    int size = contextVarInit.size() - 1;
-                    for (int i = 0; i < size; i++) {
-                        it.next();
-                    }
+                if (insn instanceof VarInsnNode varInsnNode && varInsnNode.var == ctxVar) {
+                    contextVarUsed = true;
                 }
             }
 
-            if (insn instanceof VarInsnNode varInsnNode && varInsnNode.var == ctxVar) {
-                contextVarUsed = true;
-            }
-        }
-
-        for (Map.Entry<AbstractInsnNode, AbstractInsnNode> entry : toInsertAfter.entrySet()) {
-            instructions.insert(entry.getKey(), entry.getValue());
-        }
-
-        for (AbstractInsnNode insn : toRemove) {
-            instructions.remove(insn);
-        }
-
-        if (contextVarInit != null && !contextVarUsed) {
-            for (AbstractInsnNode insn : contextVarInit) {
-                instructions.remove(insn);
+            if (contextVarInit != null && !contextVarUsed) {
+                for (AbstractInsnNode insn : contextVarInit) {
+                    instructions.remove(insn);
+                }
             }
         }
 
         accept(mv);
-    }
-
-    private static record InsnSequence(int... insns) {
-
-        public List<AbstractInsnNode> matches(AbstractInsnNode insn) {
-            List<AbstractInsnNode> matches = new ArrayList<>();
-            for (int i : insns) {
-                if (insn.getOpcode() != i) {
-                    return new ArrayList<>();
-                }
-                matches.add(insn);
-                insn = insn.getNext();
-            }
-
-            return matches;
-        }
     }
 }

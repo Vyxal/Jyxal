@@ -56,25 +56,24 @@ public final class Compiler extends VyxalParserBaseVisitor<Void> implements Opco
 
         cw.visitSource(fileName, null);
 
-        MethodVisitor mv = cw.visitMethod(
+        MethodVisitor clinit = cw.visitMethod(
                 ACC_STATIC,
                 "<clinit>",
                 "()V",
                 null,
                 null
         );
-        mv.visitCode();
+        clinit.visitCode();
 
-        mv.visitFieldInsn(
+        clinit.visitFieldInsn(
                 GETSTATIC,
                 "runtime/math/BigComplex",
                 "ZERO",
                 "Lruntime/math/BigComplex;"
         );
-        mv.visitFieldInsn(PUTSTATIC, "jyxal/Main", "register", "Ljava/lang/Object;");
-        mv.visitInsn(RETURN);
+        clinit.visitFieldInsn(PUTSTATIC, "jyxal/Main", "register", "Ljava/lang/Object;");
 
-        Compiler compiler = new Compiler(parser, cw, mv);
+        Compiler compiler = new Compiler(parser, cw, clinit);
 
         JyxalMethod main = cw.visitMethod(
                 ACC_PUBLIC | ACC_STATIC,
@@ -87,16 +86,15 @@ public final class Compiler extends VyxalParserBaseVisitor<Void> implements Opco
         compiler.visit(parser.file());
 
         // finish up clinit
-        mv.visitInsn(RETURN);
-        mv.visitEnd();
-        mv.visitMaxs(-1, -1); // auto-calculate stack size and number of locals
+        clinit.visitInsn(RETURN);
+        clinit.visitEnd();
+        clinit.visitMaxs(0, 0);
 
         // TODO: reverse the signs for the variable assns
 
         // finish up main
         Label end = new Label();
-        main.visitVarInsn(ALOAD, main.getStackVar());
-        main.visitInsn(DUP);
+        main.loadStack();
         main.visitMethodInsn(
                 INVOKEVIRTUAL,
                 "runtime/ProgramStack",
@@ -106,7 +104,7 @@ public final class Compiler extends VyxalParserBaseVisitor<Void> implements Opco
         );
         main.visitJumpInsn(IFEQ, end);
 
-        main.visitInsn(DUP);
+        main.loadStack();
         main.visitMethodInsn(
                 INVOKEVIRTUAL,
                 "runtime/ProgramStack",
@@ -124,7 +122,7 @@ public final class Compiler extends VyxalParserBaseVisitor<Void> implements Opco
 
         try {
             main.visitEnd();
-            main.visitMaxs(-1, -1); // auto-calculate stack size and number of locals
+            main.visitMaxs(0, 0);
         } catch (Exception e) {
             try (OutputStream os = new FileOutputStream("debug.log")) {
                 CheckClassAdapter.verify(new ClassReader(cw.toByteArray()), true, new PrintWriter(os));
@@ -388,10 +386,6 @@ public final class Compiler extends VyxalParserBaseVisitor<Void> implements Opco
                 "(Ljava/lang/Object;)Ljava/util/Iterator;",
                 false
         );
-        if (!CompilerOptions.OPTIONS.contains(CompilerOptions.DONT_OPTIMISE)) {
-            mv.visitInsn(SWAP);
-            mv.visitInsn(POP);
-        }
         try (ContextualVariable iteratorVar = mv.reserveVar()) {
             iteratorVar.store();
             mv.visitLabel(start);
@@ -432,24 +426,12 @@ public final class Compiler extends VyxalParserBaseVisitor<Void> implements Opco
 
         AsmHelper.pop(mv);
         mv.visitMethodInsn(
-                INVOKEVIRTUAL,
-                "runtime/ProgramStack",
-                "pop",
-                "()Ljava/lang/Object;",
-                false
-        );
-        mv.visitMethodInsn(
                 INVOKESTATIC,
                 "runtime/RuntimeHelpers",
                 "truthValue",
                 "(Ljava/lang/Object;)Z",
                 false
         );
-
-        if (!CompilerOptions.OPTIONS.contains(CompilerOptions.DONT_OPTIMISE)) {
-            mv.visitInsn(SWAP);
-            mv.visitInsn(POP);
-        }
 
         mv.visitJumpInsn(IFEQ, end);
 
