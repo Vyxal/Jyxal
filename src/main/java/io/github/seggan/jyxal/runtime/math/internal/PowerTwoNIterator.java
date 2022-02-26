@@ -28,7 +28,7 @@ import java.math.BigDecimal;
 import java.math.MathContext;
 
 /**
- * {@link io.github.seggan.jyxal.runtime.math.internal.PowerIterator} to calculate x<sup>2*n</sup>.
+ * {@link PowerIterator} to calculate x<sup>2*n</sup>.
  */
 public class PowerTwoNIterator implements PowerIterator {
 
