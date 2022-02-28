@@ -2,7 +2,6 @@ package io.github.seggan.jyxal.compiler.wrappers;
 
 import io.github.seggan.jyxal.CompilerOptions;
 import io.github.seggan.jyxal.compiler.AsmHelper;
-import org.antlr.v4.codegen.model.decl.CodeBlock;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
@@ -14,10 +13,8 @@ public class JyxalMethod extends MethodNode implements Opcodes {
 
     private final int stackVar;
     private final int ctxVar;
-
-    private boolean optimise = !CompilerOptions.OPTIONS.contains(CompilerOptions.DONT_OPTIMISE);
-
     private final Set<ContextualVariable> reservedVars = new HashSet<>();
+    private boolean optimise = !CompilerOptions.OPTIONS.contains(CompilerOptions.DONT_OPTIMISE);
 
     JyxalMethod(ClassWriter cw, int access, String name, String desc) {
         super(Opcodes.ASM7, access, name, desc, null, null);

@@ -17,10 +17,6 @@ public class Optimiser implements Opcodes {
                 codeBlock.remove(insn);
             }
         }
-        if (codeBlock.getFirst().getOpcode() == ALOAD) {
-            // i need a breakpoint here
-            assert Boolean.TRUE;
-        }
         Set<AbstractInsnNode> toRemove = new HashSet<>();
         // then remove all push-pop pairs
         for (AbstractInsnNode insn : codeBlock) {

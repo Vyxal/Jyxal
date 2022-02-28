@@ -4,3 +4,4 @@ test.*
 /.gradle
 *.log
 /test
+score.sh
