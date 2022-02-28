@@ -35,6 +35,7 @@ public enum Element {
     }),
     MULTI_COMMAND("\u2022"),
     FUNCTION_CALL("\u2020"),
+    MULTIPLY("*"),
     HALVE("\u00BD"),
     ALL("A", false),
     CHR_ORD("C", true),
@@ -65,6 +66,24 @@ public enum Element {
         mv.visitFieldInsn(Opcodes.GETSTATIC, "java/lang/System", "out", "Ljava/io/PrintStream;");
         mv.visitInsn(Opcodes.SWAP);
         mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/io/PrintStream", "println", "(Ljava/lang/Object;)V", false);
+    }),
+    PRINT("\u20B4", mv -> {
+        AsmHelper.pop(mv);
+        mv.visitFieldInsn(Opcodes.GETSTATIC, "java/lang/System", "out", "Ljava/io/PrintStream;");
+        mv.visitInsn(Opcodes.SWAP);
+        mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/io/PrintStream", "print", "(Ljava/lang/Object;)V", false);
+    }),
+    PRINT_NO_POP("\u2026", mv -> {
+        mv.visitFieldInsn(Opcodes.GETSTATIC, "java/lang/System", "out", "Ljava/io/PrintStream;");
+        mv.loadStack();
+        mv.visitMethodInsn(
+                Opcodes.INVOKEVIRTUAL,
+                "runtime/ProgramStack",
+                "peek",
+                "()Ljava/lang/Object;",
+                false
+        );
+        mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/io/PrintStream", "print", "(Ljava/lang/Object;)V", false);
     }),
     ;
 
