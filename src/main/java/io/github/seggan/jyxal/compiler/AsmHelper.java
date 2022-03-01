@@ -1,6 +1,5 @@
 package io.github.seggan.jyxal.compiler;
 
-import io.github.seggan.jyxal.CompilerOptions;
 import io.github.seggan.jyxal.compiler.wrappers.JyxalMethod;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
