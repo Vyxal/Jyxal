@@ -19,6 +19,8 @@ version '1.0-SNAPSHOT'
 
 mainClassName = 'io.github.seggan.jyxal.Main'
 
+JPath dest = JPath.of("$buildDir/runtime-classes/")
+
 repositories {
     mavenCentral()
 }
@@ -48,33 +50,11 @@ generateGrammarSource {
 
 compileJava {
     dependsOn generateGrammarSource
+
     sourceCompatibility = '17'
     targetCompatibility = '17'
-}
 
-sourceSets {
-    main {
-        java {
-            srcDir 'src/main/antlr'
-        }
-    }
-    generated {
-        java {
-            srcDir "build/generated-src/antlr/main/"
-        }
-    }
-}
-
-clean {
-    delete "generated-src"
-}
-
-// copy and relocate the runtime into the resources
-shadowJar {
-    dependsOn test
-
-    JPath dest = JPath.of("$buildDir/runtime-classes/")
-    doFirst {
+    doLast {
         List<String> names = new ArrayList<>()
         String dir = "$buildDir/classes/java/main/io/github/seggan/jyxal/runtime"
         Pattern oldPackage = Pattern.compile("io/github/seggan/jyxal/runtime/")
@@ -106,6 +86,41 @@ shadowJar {
 
         Files.write(dest.resolve("runtime.list"), names)
     }
+}
+
+sourceSets {
+    main {
+        java {
+            srcDir 'src/main/antlr'
+        }
+    }
+    generated {
+        java {
+            srcDir "build/generated-src/antlr/main/"
+        }
+    }
+}
+
+sourceSets {
+    main {
+        java {
+            srcDir 'src/main/antlr'
+        }
+    }
+    generated {
+        java {
+            srcDir "build/generated-src/antlr/main/"
+        }
+    }
+}
+
+clean {
+    delete "generated-src"
+}
+
+// copy and relocate the runtime into the resources
+shadowJar {
+    dependsOn test
 
     from(dest.toFile().path) {
         include "**/*.*"
