@@ -1,9 +1,11 @@
 package io.github.seggan.jyxal.compiler;
 
 import io.github.seggan.jyxal.compiler.wrappers.JyxalMethod;
+import io.github.seggan.jyxal.runtime.ProgramStack;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Handle;
 import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.Type;
 
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -56,7 +58,17 @@ public enum Element {
         AsmHelper.push(mv);
     }),
     IS_PRIME("\u00E6", true),
-    INFINITE_PRIMES("\u00DEp"),
+    INFINITE_PRIMES("\u00DEp", mv -> {
+        mv.loadStack();
+        mv.visitMethodInsn(
+                Opcodes.INVOKESTATIC,
+                "runtime/RuntimeMethods",
+                "infinitePrimes",
+                "()Lruntime/list/JyxalList;",
+                false
+        );
+        AsmHelper.push(mv);
+    }),
     POP("_", mv -> {
         AsmHelper.pop(mv);
         mv.visitInsn(Opcodes.POP);
@@ -87,8 +99,7 @@ public enum Element {
     }),
     ;
 
-    // used for unit testing
-    final boolean isLinkedToMethod;
+    final LinkedMethodType type;
 
     final String text;
     private final BiConsumer<ClassWriter, JyxalMethod> compileMethod;
@@ -100,22 +111,35 @@ public enum Element {
     Element(String text, BiConsumer<ClassWriter, JyxalMethod> compileMethod) {
         this.text = text;
         this.compileMethod = compileMethod;
-        this.isLinkedToMethod = false;
+        this.type = null;
     }
 
-    Element(String text) {
+    Element(String text, LinkedMethodType type) {
         this.text = text;
         this.compileMethod = (cw, mv) -> {
             mv.loadStack();
+            if (type.returnType != void.class) {
+                mv.loadStack();
+            }
             mv.visitMethodInsn(
                     Opcodes.INVOKESTATIC,
                     "runtime/RuntimeMethods",
                     screamingSnakeToCamel(name()),
-                    "(Lruntime/ProgramStack;)V",
+                    Type.getMethodDescriptor(Type.getType(type.returnType), type.argType == Object.class ?
+                            Type.getType(Object.class)
+                            :
+                            Type.getType("Lruntime/ProgramStack;")),
                     false
             );
+            if (type.returnType != void.class) {
+                AsmHelper.push(mv);
+            }
         };
-        this.isLinkedToMethod = true;
+        this.type = type;
+    }
+
+    Element(String text) {
+        this(text, LinkedMethodType.STACK_OBJECT);
     }
 
     Element(String text, String literal) {
@@ -135,14 +159,14 @@ public enum Element {
                 AsmHelper.pop(mv);
                 mv.visitLdcInsn(new Handle(
                         Opcodes.H_INVOKESTATIC,
-                        "runtime/MonadicFunctions",
+                        "runtime/RuntimeMethods",
                         methodName,
                         "(Ljava/lang/Object;)Ljava/lang/Object;",
                         false
                 ));
                 mv.visitMethodInsn(
                         Opcodes.INVOKESTATIC,
-                        "runtime/MonadicFunctions",
+                        "runtime/RuntimeMethods",
                         "vectorise",
                         "(Ljava/lang/Object;Ljava/lang/invoke/MethodHandle;)Ljava/lang/Object;",
                         false
@@ -153,7 +177,7 @@ public enum Element {
                 AsmHelper.pop(mv);
                 mv.visitMethodInsn(
                         Opcodes.INVOKESTATIC,
-                        "runtime/MonadicFunctions",
+                        "runtime/RuntimeMethods",
                         methodName,
                         "(Ljava/lang/Object;)Ljava/lang/Object;",
                         false
@@ -161,7 +185,7 @@ public enum Element {
                 AsmHelper.push(mv);
             }
         };
-        this.isLinkedToMethod = true;
+        this.type = LinkedMethodType.OBJECT_OBJECT;
     }
 
     public static Element getByText(String text) {
@@ -195,5 +219,20 @@ public enum Element {
 
     public void compile(ClassWriter cw, JyxalMethod mv) {
         compileMethod.accept(cw, mv);
+    }
+
+    enum LinkedMethodType {
+        OBJECT_OBJECT(Object.class, Object.class),
+        OBJECT_VOID(Object.class, void.class),
+        STACK_VOID(ProgramStack.class, void.class),
+        STACK_OBJECT(ProgramStack.class, Object.class);
+
+        final Class<?> returnType;
+        final Class<?> argType;
+
+        LinkedMethodType(Class<?> argType, Class<?> returnType) {
+            this.returnType = returnType;
+            this.argType = argType;
+        }
     }
 }

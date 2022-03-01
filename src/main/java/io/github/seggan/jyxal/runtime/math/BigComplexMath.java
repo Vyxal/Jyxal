@@ -30,7 +30,7 @@ import java.math.BigDecimal;
 import java.math.MathContext;
 import java.util.List;
 
-import static io.github.seggan.jyxal.runtime.math.BigComplex.*;
+import static io.github.seggan.jyxal.runtime.math.BigComplex.I;
 
 /**
  * Provides advanced functions operating on {@link BigComplex}s.

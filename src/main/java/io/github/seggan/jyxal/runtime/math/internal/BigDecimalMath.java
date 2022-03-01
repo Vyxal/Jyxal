@@ -33,7 +33,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static java.math.BigDecimal.*;
+import static java.math.BigDecimal.ONE;
+import static java.math.BigDecimal.TEN;
+import static java.math.BigDecimal.ZERO;
+import static java.math.BigDecimal.valueOf;
 
 /**
  * Provides advanced functions operating on {@link BigDecimal}s.

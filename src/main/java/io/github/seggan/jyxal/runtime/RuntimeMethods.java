@@ -4,6 +4,8 @@ import io.github.seggan.jyxal.runtime.list.JyxalList;
 import io.github.seggan.jyxal.runtime.math.BigComplex;
 import io.github.seggan.jyxal.runtime.math.BigComplexMath;
 
+import java.lang.invoke.MethodHandle;
+import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.math.MathContext;
 import java.util.HashSet;
@@ -11,68 +13,134 @@ import java.util.Objects;
 import java.util.function.IntPredicate;
 import java.util.function.Supplier;
 
+@SuppressWarnings("UnusedReturnValue")
 public final class RuntimeMethods {
 
     private RuntimeMethods() {
     }
 
-    public static void add(ProgramStack stack) {
-        if (RuntimeHelpers.vectorise(2, RuntimeMethods::add, stack)) return;
+    public static Object add(ProgramStack stack) {
+        Object o = RuntimeHelpers.vectorise(2, RuntimeMethods::add, stack);
+        if (o != null) return o;
         Object b = stack.pop();
         Object a = stack.pop();
         if (a instanceof BigComplex ca && b instanceof BigComplex cb) {
-            stack.push(ca.add(cb));
+            return ca.add(cb);
         } else {
-            stack.push(a + b.toString());
+            return a + b.toString();
         }
     }
 
-    private static void compare(ProgramStack stack, IntPredicate predicate) {
+    public static Object all(Object obj) {
+        if (obj instanceof JyxalList list) {
+            for (Object item : list) {
+                if (!RuntimeHelpers.truthValue(item)) {
+                    return BigComplex.valueOf(false);
+                }
+            }
+            return true;
+        } else if (obj instanceof String string) {
+            for (char c : string.toCharArray()) {
+                if (!RuntimeHelpers.VOWELS.contains(c)) {
+                    return BigComplex.valueOf(false);
+                }
+            }
+            return BigComplex.valueOf(true);
+        }
+
+        return BigComplex.valueOf(true);
+    }
+
+    public static Object chrOrd(Object obj) {
+        if (obj instanceof BigComplex complex) {
+            return Character.toString(complex.re.intValueExact());
+        } else {
+            String str = obj.toString();
+            if (str.length() == 1) {
+                return BigComplex.valueOf(str.charAt(0));
+            } else {
+                JyxalList list = JyxalList.create();
+                for (char c : str.toCharArray()) {
+                    list.add((int) c);
+                }
+                return list;
+            }
+        }
+    }
+
+    private static Object compare(ProgramStack stack, IntPredicate predicate) {
         Object b = stack.pop();
         Object a = stack.pop();
         if (a instanceof BigComplex ca && b instanceof BigComplex cb) {
-            stack.push(predicate.test(ca.compareTo(cb)));
+            return BigComplex.valueOf(predicate.test(ca.compareTo(cb)));
         } else {
-            stack.push(predicate.test(a.toString().compareTo(b.toString())));
+            return BigComplex.valueOf(predicate.test(a.toString().compareTo(b.toString())));
         }
     }
 
-    public static void duplicate(ProgramStack stack) {
+    public static Object duplicate(ProgramStack stack) {
         Object obj = Objects.requireNonNull(stack.peek());
         if (obj instanceof JyxalList jyxalList) {
             // deep copy
-            stack.push(RuntimeHelpers.deepCopy(jyxalList));
+            return RuntimeHelpers.deepCopy(jyxalList);
         } else {
-            stack.push(obj);
+            return obj;
         }
     }
 
-    public static void equals(ProgramStack stack) {
-        if (RuntimeHelpers.vectorise(2, RuntimeMethods::equals, stack)) return;
+    public static Object equals(ProgramStack stack) {
+        Object o = RuntimeHelpers.vectorise(2, RuntimeMethods::equals, stack);
+        if (o != null) return o;
         Object b = stack.pop();
         Object a = stack.pop();
         if (a instanceof BigComplex ca && b instanceof BigComplex cb) {
-            stack.push(ca.equals(cb));
+            return BigComplex.valueOf(ca.equals(cb));
         } else {
-            stack.push(a.toString().equals(b.toString()));
+            return BigComplex.valueOf(a.toString().equals(b.toString()));
         }
     }
 
-    public static void functionCall(ProgramStack stack) {
+    public static Object functionCall(ProgramStack stack) {
         Object obj = stack.pop();
         if (obj instanceof Lambda lambda) {
-            stack.push(lambda.call(stack));
+            return lambda.call(stack);
         } else if (obj instanceof JyxalList list) {
-            stack.push(list.map(o -> BigComplex.valueOf(!RuntimeHelpers.truthValue(o))));
+            return list.map(o -> BigComplex.valueOf(!RuntimeHelpers.truthValue(o)));
         } else if (obj instanceof BigComplex complex) {
-            stack.push(RuntimeHelpers.primeFactors(complex, HashSet::new).size());
+            return RuntimeHelpers.primeFactors(complex, HashSet::new).size();
         } else {
-            stack.push(RuntimeHelpers.exec(obj.toString()));
+            return RuntimeHelpers.exec(obj.toString());
         }
     }
 
-    public static void infinitePrimes(ProgramStack stack) {
-        stack.push(JyxalList.createInf(new Supplier<>() {
+    public static Object greaterThan(ProgramStack stack) {
+        Object o = RuntimeHelpers.vectorise(2, RuntimeMethods::greaterThan, stack);
+        if (o != null) return o;
+        return compare(stack, i -> i > 0);
+    }
+
+    public static Object greaterThanOrEqual(ProgramStack stack) {
+        Object o = RuntimeHelpers.vectorise(2, RuntimeMethods::greaterThanOrEqual, stack);
+        if (o != null) return o;
+        return compare(stack, i -> i >= 0);
+    }
+
+    public static Object halve(ProgramStack stack) {
+        Object o = RuntimeHelpers.vectorise(1, RuntimeMethods::halve, stack);
+        if (o != null) return o;
+        Object obj = stack.pop();
+        if (obj instanceof BigComplex complex) {
+            return complex.divide(BigComplex.TWO, MathContext.DECIMAL128);
+        } else {
+            String str = obj.toString();
+            int limit = str.length() / 2 + 1;
+            stack.push(str.substring(0, limit));
+            return str.substring(limit);
+        }
+    }
+
+    public static Object infinitePrimes() {
+        return JyxalList.createInf(new Supplier<>() {
             BigInteger next = BigInteger.ONE;
 
             @Override
@@ -80,88 +148,110 @@ public final class RuntimeMethods {
                 next = next.nextProbablePrime();
                 return next;
             }
-        }));
+        });
     }
 
-    public static void greaterThan(ProgramStack stack) {
-        if (RuntimeHelpers.vectorise(2, RuntimeMethods::greaterThan, stack)) return;
-        compare(stack, i -> i > 0);
-    }
-
-    public static void greaterThanOrEqual(ProgramStack stack) {
-        if (RuntimeHelpers.vectorise(2, RuntimeMethods::greaterThanOrEqual, stack)) return;
-        compare(stack, i -> i >= 0);
-    }
-
-    public static void halve(ProgramStack stack) {
-        if (RuntimeHelpers.vectorise(1, RuntimeMethods::halve, stack)) return;
-        Object obj = stack.pop();
+    public static Object isPrime(Object obj) {
         if (obj instanceof BigComplex complex) {
-            stack.push(complex.divide(BigComplex.TWO, MathContext.DECIMAL128));
+            BigInteger n = complex.re.toBigInteger();
+            BigDecimal bsqrt = complex.re.sqrt(MathContext.DECIMAL128);
+            if (n.compareTo(BigInteger.valueOf(Long.MAX_VALUE)) < 0
+                    && n.compareTo(BigInteger.valueOf(Long.MIN_VALUE)) > 0) {
+                long l = n.longValue();
+                long sqrt = bsqrt.longValue();
+                for (long i = 2; i <= sqrt; i++) {
+                    if (l % i == 0) {
+                        return BigComplex.valueOf(false);
+                    }
+                }
+            } else {
+                BigInteger sqrt = bsqrt.toBigInteger();
+                for (BigInteger i = BigInteger.valueOf(2); i.compareTo(sqrt) <= 0; i = i.add(BigInteger.ONE)) {
+                    if (n.mod(i).compareTo(BigInteger.ZERO) == 0) {
+                        return BigComplex.valueOf(false);
+                    }
+                }
+            }
+
+            return BigComplex.valueOf(true);
         } else {
             String str = obj.toString();
-            int limit = str.length() / 2 + 1;
-            stack.push(str.substring(0, limit));
-            stack.push(str.substring(limit));
+            boolean isUppercase = Character.isUpperCase(str.charAt(0));
+            for (char c : str.toCharArray()) {
+                if (Character.isUpperCase(c) != isUppercase) {
+                    return BigComplex.valueOf(-1);
+                }
+            }
+
+            return BigComplex.valueOf(isUppercase);
         }
     }
 
-    public static void itemSplit(ProgramStack stack) {
+    public static Object itemSplit(ProgramStack stack) {
         Object obj = stack.pop();
         if (obj instanceof BigComplex complex) {
             obj = complex.re.toBigInteger().toString();
         }
         if (obj instanceof JyxalList list) {
-            for (Object item : list) {
+            int listSize = list.size() - 1;
+            for (int i = 0; i < listSize; i++) {
+                Object item = list.get(i);
                 stack.push(item);
             }
+            return list.get(listSize);
         } else {
-            for (char c : obj.toString().toCharArray()) {
+            char[] charArray = obj.toString().toCharArray();
+            for (int i = 0, charArrayLength = charArray.length - 1; i < charArrayLength; i++) {
+                char c = charArray[i];
                 stack.push(Character.toString(c));
             }
+            return Character.toString(charArray[charArray.length - 1]);
         }
     }
 
-    public static void lessThan(ProgramStack stack) {
-        if (RuntimeHelpers.vectorise(2, RuntimeMethods::lessThan, stack)) return;
-        compare(stack, i -> i < 0);
+    public static Object lessThan(ProgramStack stack) {
+        Object o = RuntimeHelpers.vectorise(2, RuntimeMethods::lessThan, stack);
+        if (o != null) return o;
+        return compare(stack, i -> i < 0);
     }
 
-    public static void lessThanOrEqual(ProgramStack stack) {
-        if (RuntimeHelpers.vectorise(2, RuntimeMethods::lessThanOrEqual, stack)) return;
-        compare(stack, i -> i <= 0);
+    public static Object lessThanOrEqual(ProgramStack stack) {
+        Object o = RuntimeHelpers.vectorise(2, RuntimeMethods::lessThanOrEqual, stack);
+        if (o != null) return o;
+        return compare(stack, i -> i <= 0);
     }
 
-    public static void logicalAnd(ProgramStack stack) {
+    public static Object logicalAnd(ProgramStack stack) {
         Object b = stack.pop();
         Object a = stack.pop();
         if (RuntimeHelpers.truthValue(a)) {
             if (RuntimeHelpers.truthValue(b)) {
-                stack.push(a);
+                return a;
             } else {
-                stack.push(b);
+                return b;
             }
         } else {
-            stack.push(a);
+            return a;
         }
     }
 
-    public static void logicalOr(ProgramStack stack) {
+    public static Object logicalOr(ProgramStack stack) {
         Object b = stack.pop();
         Object a = stack.pop();
         if (RuntimeHelpers.truthValue(a)) {
-            stack.push(a);
+            return a;
         } else {
             if (RuntimeHelpers.truthValue(b)) {
-                stack.push(b);
+                return b;
             } else {
-                stack.push(a);
+                return a;
             }
         }
     }
 
-    public static void multiCommand(ProgramStack stack) {
-        if (RuntimeHelpers.vectorise(2, RuntimeMethods::multiCommand, stack)) return;
+    public static Object multiCommand(ProgramStack stack) {
+        Object o = RuntimeHelpers.vectorise(2, RuntimeMethods::multiCommand, stack);
+        if (o != null) return o;
         Object b = stack.pop();
         Object a = stack.pop();
         if (a instanceof BigComplex ca) {
@@ -171,12 +261,12 @@ public final class RuntimeMethods {
                 // and ln(x) = ln(|x|) + i * arg(x)
                 BigComplex top = BigComplexMath.log(cb, MathContext.DECIMAL128);
                 BigComplex bottom = BigComplexMath.log(ca, MathContext.DECIMAL128);
-                stack.push(top.divide(bottom, MathContext.DECIMAL128));
+                return top.divide(bottom, MathContext.DECIMAL128);
             } else {
-                stack.push(RuntimeHelpers.repeatCharacters(b.toString(), ca.re.intValue()));
+                return RuntimeHelpers.repeatCharacters(b.toString(), ca.re.intValue());
             }
         } else if (b instanceof BigComplex cb) {
-            stack.push(RuntimeHelpers.repeatCharacters(a.toString(), cb.re.intValue()));
+            return RuntimeHelpers.repeatCharacters(a.toString(), cb.re.intValue());
         } else {
             StringBuilder sb = new StringBuilder();
             String aString = a.toString();
@@ -197,11 +287,46 @@ public final class RuntimeMethods {
                 sb.append(aString.substring(bString.length()));
             }
 
-            stack.push(sb.toString());
+            return sb.toString();
         }
     }
 
-    public static void splitOn(ProgramStack stack) {
+    public static Object multiply(ProgramStack stack) {
+        Object o = RuntimeHelpers.vectorise(2, RuntimeMethods::multiply, stack);
+        if (o != null) return o;
+        Object b = stack.pop();
+        Object a = stack.pop();
+        if (a instanceof BigComplex ca) {
+            if (b instanceof BigComplex cb) {
+                return ca.multiply(cb);
+            } else if (b instanceof Lambda lambda) {
+                return new Lambda(ca.re.intValue(), lambda.handle());
+            }
+            return b.toString().repeat(ca.re.intValue());
+        } else if (a instanceof Lambda lambda && b instanceof BigComplex cb) {
+            return new Lambda(cb.re.intValue(), lambda.handle());
+        } else {
+            String aString = a.toString();
+            if (b instanceof BigComplex cb) {
+                return aString.repeat(cb.re.intValue());
+            }
+
+            String bString = b.toString();
+            StringBuilder sb = new StringBuilder();
+            for (char c : bString.toCharArray()) {
+                int index = aString.indexOf(c);
+                if (index >= 0) {
+                    sb.append(aString.charAt((index + 1) % aString.length()));
+                } else {
+                    sb.append(c);
+                }
+            }
+
+            return sb.toString();
+        }
+    }
+
+    public static Object splitOn(ProgramStack stack) {
         Object b = stack.pop();
         Object a = stack.pop();
         if (a instanceof JyxalList list) {
@@ -216,39 +341,41 @@ public final class RuntimeMethods {
                 }
             }
             superList.add(newList);
-            stack.push(superList);
+            return superList;
         } else {
-            stack.push(JyxalList.create(a.toString().split(b.toString())));
+            return JyxalList.create(a.toString().split(b.toString()));
         }
     }
 
-    public static void multiply(ProgramStack stack) {
-        if (RuntimeHelpers.vectorise(2, RuntimeMethods::multiply, stack)) return;
-        Object b = stack.pop();
-        Object a = stack.pop();
-        if (a instanceof BigComplex ca) {
-            if (b instanceof BigComplex cb) {
-                stack.push(ca.multiply(cb));
-            }
-            stack.push(b.toString().repeat(ca.re.intValue()));
-        } else {
-            String aString = a.toString();
-            if (b instanceof BigComplex cb) {
-                stack.push(aString.repeat(cb.re.intValue()));
-            }
-        }
-    }
-
-    public static void triplicate(ProgramStack stack) {
+    public static Object triplicate(ProgramStack stack) {
         Object obj = Objects.requireNonNull(stack.peek());
         if (obj instanceof JyxalList jyxalList) {
             // deep copy
             stack.push(RuntimeHelpers.deepCopy(jyxalList));
-            stack.push(RuntimeHelpers.deepCopy(jyxalList));
+            return RuntimeHelpers.deepCopy(jyxalList);
         } else {
             stack.push(obj);
-            stack.push(obj);
+            return obj;
         }
     }
 
+    public static Object twoPow(Object obj) {
+        if (obj instanceof BigComplex complex) {
+            return BigComplexMath.pow(BigComplex.TWO, complex, MathContext.DECIMAL128);
+        } else {
+            return RuntimeHelpers.exec(obj.toString());
+        }
+    }
+
+    public static Object vectorise(Object obj, MethodHandle handle) throws Throwable {
+        if (obj instanceof JyxalList list) {
+            JyxalList result = JyxalList.create();
+            for (Object item : list) {
+                result.add(vectorise(item, handle));
+            }
+            return result;
+        }
+
+        return handle.invoke(obj);
+    }
 }

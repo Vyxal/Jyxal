@@ -5,9 +5,9 @@ import java.util.Set;
 
 public enum CompilerOptions {
 
-    VYXAL_CODEPAGE('v'),
-    PRINT_DEBUG_TREE('d'),
-    DONT_OPTIMISE('o');
+    VYXAL_CODEPAGE('V'),
+    PRINT_DEBUG_TREE('D'),
+    DONT_OPTIMISE('o'),
     ;
 
     public static Set<CompilerOptions> OPTIONS = EnumSet.noneOf(CompilerOptions.class);

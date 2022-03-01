@@ -56,6 +56,7 @@ class InfiniteList extends JyxalList {
     public Iterator<Object> iterator() {
         return new Iterator<>() {
             private int ind = 0;
+
             @Override
             public boolean hasNext() {
                 return InfiniteList.this.hasInd(ind);
@@ -63,8 +64,8 @@ class InfiniteList extends JyxalList {
 
             @Override
             public Object next() {
-                var elem = InfiniteList.this.get(ind);
-                ind ++;
+                Object elem = InfiniteList.this.get(ind);
+                ind++;
                 return elem;
             }
         };

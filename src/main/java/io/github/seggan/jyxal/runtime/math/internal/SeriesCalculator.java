@@ -29,7 +29,7 @@ import java.math.MathContext;
 import java.util.ArrayList;
 import java.util.List;
 
-import static java.util.Objects.*;
+import static java.util.Objects.requireNonNull;
 
 /**
  * Utility class to calculate taylor series efficiently until the maximum error (as defined by the precision in the {@link MathContext} is reached.

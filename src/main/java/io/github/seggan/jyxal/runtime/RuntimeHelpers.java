@@ -11,7 +11,6 @@ import java.math.BigInteger;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.Set;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.regex.Matcher;
@@ -178,18 +177,13 @@ public final class RuntimeHelpers {
         return true;
     }
 
-    public static boolean vectorise(int arity, Consumer<ProgramStack> consumer, ProgramStack stack) {
+    public static Object vectorise(int arity, Function<ProgramStack, Object> function, ProgramStack stack) {
         // <editor-fold desc="vectorise" defaultstate="collapsed">
         switch (arity) {
             case 1 -> {
                 Object obj = stack.pop();
                 if (obj instanceof JyxalList jyxalList) {
-                    jyxalList.map(o -> {
-                        ProgramStack newStack = new ProgramStack(o);
-                        consumer.accept(newStack);
-                        return newStack.pop();
-                    });
-                    return true;
+                    return jyxalList.map(o -> function.apply(new ProgramStack(o)));
                 }
                 stack.push(obj);
             }
@@ -198,33 +192,16 @@ public final class RuntimeHelpers {
                 Object left = stack.pop();
                 if (left instanceof JyxalList leftList) {
                     if (right instanceof JyxalList rightList) {
-                        JyxalList list = JyxalList.create();
+                        JyxalList result = JyxalList.create();
                         int size = slen(leftList, rightList);
                         for (int i = 0; i < size; i++) {
-                            ProgramStack newStack = new ProgramStack(leftList.get(i), rightList.get(i));
-                            consumer.accept(newStack);
-                            list.add(newStack.pop());
+                            result.add(function.apply(new ProgramStack(leftList.get(i), rightList.get(i))));
                         }
-                        stack.push(list);
-                    } else {
-                        stack.push(
-                            leftList.map(obj -> {
-                                ProgramStack newStack = new ProgramStack(obj, right);
-                                consumer.accept(newStack);
-                                return newStack.pop();
-                            })
-                        );
+                        return result;
                     }
-                    return true;
+                    return leftList.map(o -> function.apply(new ProgramStack(o, right)));
                 } else if (right instanceof JyxalList rightList) {
-                    stack.push(
-                        rightList.map(obj -> {
-                            ProgramStack newStack = new ProgramStack(left, obj);
-                            consumer.accept(newStack);
-                            return newStack.pop();
-                        })
-                    );
-                    return true;
+                    return rightList.map(o -> function.apply(new ProgramStack(left, o)));
                 }
                 stack.push(left);
                 stack.push(right);
@@ -236,84 +213,59 @@ public final class RuntimeHelpers {
                 if (left instanceof JyxalList leftList) {
                     if (middle instanceof JyxalList middleList) {
                         if (right instanceof JyxalList rightList) {
-                            JyxalList list = JyxalList.create();
+                            JyxalList result = JyxalList.create();
                             int size = slen(leftList, middleList, rightList);
                             for (int i = 0; i < size; i++) {
-                                ProgramStack newStack = new ProgramStack(leftList.get(i), middleList.get(i), rightList.get(i));
-                                consumer.accept(newStack);
-                                list.add(newStack.pop());
+                                result.add(function.apply(new ProgramStack(leftList.get(i), middleList.get(i), rightList.get(i))));
                             }
-                            stack.push(list);
-                            return true;
+                            return result;
                         }
-                        JyxalList list = JyxalList.create();
+                        JyxalList result = JyxalList.create();
                         int size = slen(leftList, middleList);
                         for (int i = 0; i < size; i++) {
-                            ProgramStack newStack = new ProgramStack(leftList.get(i), middleList.get(i), right);
-                            consumer.accept(newStack);
-                            list.add(newStack.pop());
+                            result.add(function.apply(new ProgramStack(leftList.get(i), middleList.get(i), right)));
                         }
-                        stack.push(list);
-                        return true;
+                        return result;
                     }
                     if (right instanceof JyxalList rightList) {
-                        JyxalList list = JyxalList.create();
+                        JyxalList result = JyxalList.create();
                         int size = slen(leftList, rightList);
                         for (int i = 0; i < size; i++) {
-                            ProgramStack newStack = new ProgramStack(leftList.get(i), middle, rightList.get(i));
-                            consumer.accept(newStack);
-                            list.add(newStack.pop());
+                            result.add(function.apply(new ProgramStack(leftList.get(i), middle, rightList.get(i))));
                         }
-                        stack.push(list);
-                        return true;
+                        return result;
                     }
-                    stack.push(
-                        leftList.map(obj -> {
-                            ProgramStack newStack = new ProgramStack(obj, middle, right);
-                            consumer.accept(newStack);
-                            return newStack.pop();
-                        })
-                    );
-                    return true;
-                }
-                if (middle instanceof JyxalList middleList) {
+                    return leftList.map(o -> function.apply(new ProgramStack(o, middle, right)));
+                } else if (middle instanceof JyxalList middleList) {
                     if (right instanceof JyxalList rightList) {
-                        JyxalList list = JyxalList.create();
+                        JyxalList result = JyxalList.create();
                         int size = slen(middleList, rightList);
                         for (int i = 0; i < size; i++) {
-                            ProgramStack newStack = new ProgramStack(left, middleList.get(i), rightList.get(i));
-                            consumer.accept(newStack);
-                            list.add(newStack.pop());
+                            result.add(function.apply(new ProgramStack(left, middleList.get(i), rightList.get(i))));
                         }
-                        stack.push(list);
-                        return true;
+                        return result;
                     }
-                    stack.push(
-                        middleList.map(obj -> {
-                            ProgramStack newStack = new ProgramStack(left, obj, right);
-                            consumer.accept(newStack);
-                            return newStack.pop();
-                        })
-                    );
-                    return true;
-                }
-                if (right instanceof JyxalList rightList) {
-                    rightList.map(obj -> {
-                        ProgramStack newStack = new ProgramStack(left, middle, obj);
-                        consumer.accept(newStack);
-                        return newStack.pop();
-                    });
-                    stack.push(rightList);
-                    return true;
+                    JyxalList result = JyxalList.create();
+                    int size = slen(middleList);
+                    for (int i = 0; i < size; i++) {
+                        result.add(function.apply(new ProgramStack(left, middleList.get(i), right)));
+                    }
+                    return result;
+                } else if (right instanceof JyxalList rightList) {
+                    JyxalList result = JyxalList.create();
+                    int size = slen(rightList);
+                    for (int i = 0; i < size; i++) {
+                        result.add(function.apply(new ProgramStack(left, middle, rightList.get(i))));
+                    }
+                    return result;
                 }
                 stack.push(left);
                 stack.push(middle);
                 stack.push(right);
             }
-            default -> throw new IllegalArgumentException("Invalid arity " + arity);
         }
 
-        return false;
+        return null;
         // </editor-fold>
     }
 }

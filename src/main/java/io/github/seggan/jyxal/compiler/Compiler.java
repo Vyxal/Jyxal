@@ -1,19 +1,27 @@
 package io.github.seggan.jyxal.compiler;
 
-import io.github.seggan.jyxal.CompilerOptions;
 import io.github.seggan.jyxal.antlr.VyxalParser;
 import io.github.seggan.jyxal.antlr.VyxalParserBaseVisitor;
 import io.github.seggan.jyxal.compiler.wrappers.ContextualVariable;
 import io.github.seggan.jyxal.compiler.wrappers.JyxalClassWriter;
 import io.github.seggan.jyxal.compiler.wrappers.JyxalMethod;
-import org.objectweb.asm.*;
+import org.objectweb.asm.ClassReader;
+import org.objectweb.asm.ClassWriter;
+import org.objectweb.asm.Handle;
+import org.objectweb.asm.Label;
+import org.objectweb.asm.MethodVisitor;
+import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.util.CheckClassAdapter;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintWriter;
-import java.util.*;
+import java.util.ArrayDeque;
+import java.util.Deque;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.regex.Pattern;
 
