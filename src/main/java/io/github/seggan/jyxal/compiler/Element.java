@@ -15,7 +15,6 @@ public enum Element {
     SPLIT_ON("\u20AC"),
     STACK_SIZE("!", mv -> {
         mv.loadStack();
-        mv.visitInsn(Opcodes.DUP);
         mv.visitMethodInsn(
                 Opcodes.INVOKEVIRTUAL,
                 "runtime/ProgramStack",
@@ -31,10 +30,12 @@ public enum Element {
                 "(J)Lruntime/math/BigComplex;",
                 false
         );
+        mv.loadStack();
         AsmHelper.push(mv);
     }),
     MULTI_COMMAND("\u2022"),
     FUNCTION_CALL("\u2020"),
+    MULTIPLY("*"),
     HALVE("\u00BD"),
     ALL("A", false),
     CHR_ORD("C", true),
@@ -61,12 +62,28 @@ public enum Element {
         mv.visitInsn(Opcodes.POP);
     }),
     PRINTLN(",", mv -> {
-        // Unfortunately, we cannot apply the push-pop optimization here as it does not push anything
-        // to the stack. Therefore, the program stack remains on the operand stack, and we'll get an
-        // inconsistent frame error.
-        mv.visitFieldInsn(Opcodes.GETSTATIC, "java/lang/System", "out", "Ljava/io/PrintStream;");
         AsmHelper.pop(mv);
+        mv.visitFieldInsn(Opcodes.GETSTATIC, "java/lang/System", "out", "Ljava/io/PrintStream;");
+        mv.visitInsn(Opcodes.SWAP);
         mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/io/PrintStream", "println", "(Ljava/lang/Object;)V", false);
+    }),
+    PRINT("\u20B4", mv -> {
+        AsmHelper.pop(mv);
+        mv.visitFieldInsn(Opcodes.GETSTATIC, "java/lang/System", "out", "Ljava/io/PrintStream;");
+        mv.visitInsn(Opcodes.SWAP);
+        mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/io/PrintStream", "print", "(Ljava/lang/Object;)V", false);
+    }),
+    PRINT_NO_POP("\u2026", mv -> {
+        mv.visitFieldInsn(Opcodes.GETSTATIC, "java/lang/System", "out", "Ljava/io/PrintStream;");
+        mv.loadStack();
+        mv.visitMethodInsn(
+                Opcodes.INVOKEVIRTUAL,
+                "runtime/ProgramStack",
+                "peek",
+                "()Ljava/lang/Object;",
+                false
+        );
+        mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/io/PrintStream", "print", "(Ljava/lang/Object;)V", false);
     }),
     ;
 

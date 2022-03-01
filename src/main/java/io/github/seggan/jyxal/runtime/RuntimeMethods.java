@@ -72,8 +72,9 @@ public final class RuntimeMethods {
     }
 
     public static void infinitePrimes(ProgramStack stack) {
-        stack.push(JyxalList.createInf(new Supplier<Object>() {
+        stack.push(JyxalList.createInf(new Supplier<>() {
             BigInteger next = BigInteger.ONE;
+
             @Override
             public Object get() {
                 next = next.nextProbablePrime();
@@ -218,6 +219,23 @@ public final class RuntimeMethods {
             stack.push(superList);
         } else {
             stack.push(JyxalList.create(a.toString().split(b.toString())));
+        }
+    }
+
+    public static void multiply(ProgramStack stack) {
+        if (RuntimeHelpers.vectorise(2, RuntimeMethods::multiply, stack)) return;
+        Object b = stack.pop();
+        Object a = stack.pop();
+        if (a instanceof BigComplex ca) {
+            if (b instanceof BigComplex cb) {
+                stack.push(ca.multiply(cb));
+            }
+            stack.push(b.toString().repeat(ca.re.intValue()));
+        } else {
+            String aString = a.toString();
+            if (b instanceof BigComplex cb) {
+                stack.push(aString.repeat(cb.re.intValue()));
+            }
         }
     }
 

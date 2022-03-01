@@ -12,7 +12,7 @@ public enum CompilerOptions {
 
     public static Set<CompilerOptions> OPTIONS = EnumSet.noneOf(CompilerOptions.class);
 
-    char c;
+    private final char c;
 
     CompilerOptions(char c) {
         this.c = c;

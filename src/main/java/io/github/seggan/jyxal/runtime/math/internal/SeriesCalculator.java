@@ -71,7 +71,7 @@ public abstract class SeriesCalculator {
 	public BigDecimal calculate(BigDecimal x, MathContext mathContext) {
 		BigDecimal acceptableError = BigDecimal.ONE.movePointLeft(mathContext.getPrecision() + 1);
 
-		io.github.seggan.jyxal.runtime.math.internal.PowerIterator powerIterator = createPowerIterator(x, mathContext);
+		PowerIterator powerIterator = createPowerIterator(x, mathContext);
 		
 		BigDecimal sum = BigDecimal.ZERO;
 		BigDecimal step;
@@ -103,11 +103,11 @@ public abstract class SeriesCalculator {
 	}
 	
 	/**
-	 * Creates the {@link io.github.seggan.jyxal.runtime.math.internal.PowerIterator} used for this series.
+	 * Creates the {@link PowerIterator} used for this series.
 	 * 
 	 * @param x the value x
 	 * @param mathContext the {@link MathContext}
-	 * @return the {@link io.github.seggan.jyxal.runtime.math.internal.PowerIterator}
+	 * @return the {@link PowerIterator}
 	 */
 	protected abstract PowerIterator createPowerIterator(BigDecimal x, MathContext mathContext);
 

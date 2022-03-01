@@ -28,7 +28,7 @@ import java.math.BigDecimal;
 import java.math.MathContext;
 
 /**
- * {@link io.github.seggan.jyxal.runtime.math.internal.PowerIterator} to calculate x<sup>n</sup>.
+ * {@link PowerIterator} to calculate x<sup>n</sup>.
  */
 public class PowerNIterator implements PowerIterator {
 

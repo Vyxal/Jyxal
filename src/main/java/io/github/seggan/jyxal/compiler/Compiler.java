@@ -56,25 +56,24 @@ public final class Compiler extends VyxalParserBaseVisitor<Void> implements Opco
 
         cw.visitSource(fileName, null);
 
-        MethodVisitor mv = cw.visitMethod(
+        MethodVisitor clinit = cw.visitMethod(
                 ACC_STATIC,
                 "<clinit>",
                 "()V",
                 null,
                 null
         );
-        mv.visitCode();
+        clinit.visitCode();
 
-        mv.visitFieldInsn(
+        clinit.visitFieldInsn(
                 GETSTATIC,
                 "runtime/math/BigComplex",
                 "ZERO",
                 "Lruntime/math/BigComplex;"
         );
-        mv.visitFieldInsn(PUTSTATIC, "jyxal/Main", "register", "Ljava/lang/Object;");
-        mv.visitInsn(RETURN);
+        clinit.visitFieldInsn(PUTSTATIC, "jyxal/Main", "register", "Ljava/lang/Object;");
 
-        Compiler compiler = new Compiler(parser, cw, mv);
+        Compiler compiler = new Compiler(parser, cw, clinit);
 
         JyxalMethod main = cw.visitMethod(
                 ACC_PUBLIC | ACC_STATIC,
@@ -87,16 +86,15 @@ public final class Compiler extends VyxalParserBaseVisitor<Void> implements Opco
         compiler.visit(parser.file());
 
         // finish up clinit
-        mv.visitInsn(RETURN);
-        mv.visitEnd();
-        mv.visitMaxs(-1, -1); // auto-calculate stack size and number of locals
+        clinit.visitInsn(RETURN);
+        clinit.visitEnd();
+        clinit.visitMaxs(0, 0);
 
         // TODO: reverse the signs for the variable assns
 
         // finish up main
         Label end = new Label();
-        main.visitVarInsn(ALOAD, main.getStackVar());
-        main.visitInsn(DUP);
+        main.loadStack();
         main.visitMethodInsn(
                 INVOKEVIRTUAL,
                 "runtime/ProgramStack",
@@ -106,7 +104,7 @@ public final class Compiler extends VyxalParserBaseVisitor<Void> implements Opco
         );
         main.visitJumpInsn(IFEQ, end);
 
-        main.visitInsn(DUP);
+        main.loadStack();
         main.visitMethodInsn(
                 INVOKEVIRTUAL,
                 "runtime/ProgramStack",
@@ -124,7 +122,7 @@ public final class Compiler extends VyxalParserBaseVisitor<Void> implements Opco
 
         try {
             main.visitEnd();
-            main.visitMaxs(-1, -1); // auto-calculate stack size and number of locals
+            main.visitMaxs(0, 0);
         } catch (Exception e) {
             try (OutputStream os = new FileOutputStream("debug.log")) {
                 CheckClassAdapter.verify(new ClassReader(cw.toByteArray()), true, new PrintWriter(os));
@@ -169,7 +167,7 @@ public final class Compiler extends VyxalParserBaseVisitor<Void> implements Opco
     public Void visitNormal_string(VyxalParser.Normal_stringContext ctx) {
         JyxalMethod mv = callStack.peek();
         mv.loadStack();
-        mv.visitLdcInsn(ctx.any().getText());
+        mv.visitLdcInsn(unescapeJavaString(ctx.any().getText()));
         AsmHelper.push(mv);
         return null;
     }
@@ -178,7 +176,7 @@ public final class Compiler extends VyxalParserBaseVisitor<Void> implements Opco
     public Void visitSingle_char_string(VyxalParser.Single_char_stringContext ctx) {
         JyxalMethod mv = callStack.peek();
         mv.loadStack();
-        mv.visitLdcInsn(ctx.getText().substring(1));
+        mv.visitLdcInsn(unescapeJavaString(ctx.getText().substring(1)));
         AsmHelper.push(mv);
         return null;
     }
@@ -187,7 +185,7 @@ public final class Compiler extends VyxalParserBaseVisitor<Void> implements Opco
     public Void visitDouble_char_string(VyxalParser.Double_char_stringContext ctx) {
         JyxalMethod mv = callStack.peek();
         mv.loadStack();
-        mv.visitLdcInsn(ctx.getText().substring(1));
+        mv.visitLdcInsn(unescapeJavaString(ctx.getText().substring(1)));
         AsmHelper.push(mv);
         return null;
     }
@@ -388,10 +386,6 @@ public final class Compiler extends VyxalParserBaseVisitor<Void> implements Opco
                 "(Ljava/lang/Object;)Ljava/util/Iterator;",
                 false
         );
-        if (!CompilerOptions.OPTIONS.contains(CompilerOptions.DONT_OPTIMISE)) {
-            mv.visitInsn(SWAP);
-            mv.visitInsn(POP);
-        }
         try (ContextualVariable iteratorVar = mv.reserveVar()) {
             iteratorVar.store();
             mv.visitLabel(start);
@@ -432,24 +426,12 @@ public final class Compiler extends VyxalParserBaseVisitor<Void> implements Opco
 
         AsmHelper.pop(mv);
         mv.visitMethodInsn(
-                INVOKEVIRTUAL,
-                "runtime/ProgramStack",
-                "pop",
-                "()Ljava/lang/Object;",
-                false
-        );
-        mv.visitMethodInsn(
                 INVOKESTATIC,
                 "runtime/RuntimeHelpers",
                 "truthValue",
                 "(Ljava/lang/Object;)Z",
                 false
         );
-
-        if (!CompilerOptions.OPTIONS.contains(CompilerOptions.DONT_OPTIMISE)) {
-            mv.visitInsn(SWAP);
-            mv.visitInsn(POP);
-        }
 
         mv.visitJumpInsn(IFEQ, end);
 
@@ -539,5 +521,93 @@ public final class Compiler extends VyxalParserBaseVisitor<Void> implements Opco
         lambdaCounter++;
 
         return null;
+    }
+
+
+    /**
+     * Unescapes a string that contains standard Java escape sequences.
+     * <ul>
+     * <li><strong>&#92;b &#92;f &#92;n &#92;r &#92;t &#92;" &#92;'</strong> :
+     * BS, FF, NL, CR, TAB, double and single quote.</li>
+     * <li><strong>&#92;X &#92;XX &#92;XXX</strong> : Octal character
+     * specification (0 - 377, 0x00 - 0xFF).</li>
+     * <li><strong>&#92;uXXXX</strong> : Hexadecimal based Unicode character.</li>
+     * </ul>
+     *
+     * Authored by uklimaschewski, placed in the public domain.
+     *
+     * @param st
+     *            A string optionally containing standard java escape sequences.
+     * @return The translated string.
+     */
+    private static String unescapeJavaString(String st) {
+
+        StringBuilder sb = new StringBuilder(st.length());
+
+        for (int i = 0; i < st.length(); i++) {
+            char ch = st.charAt(i);
+            if (ch == '\\') {
+                char nextChar = (i == st.length() - 1) ? '\\' : st
+                        .charAt(i + 1);
+                // Octal escape?
+                if (nextChar >= '0' && nextChar <= '7') {
+                    String code = "" + nextChar;
+                    i++;
+                    if ((i < st.length() - 1) && st.charAt(i + 1) >= '0'
+                            && st.charAt(i + 1) <= '7') {
+                        code += st.charAt(i + 1);
+                        i++;
+                        if ((i < st.length() - 1) && st.charAt(i + 1) >= '0'
+                                && st.charAt(i + 1) <= '7') {
+                            code += st.charAt(i + 1);
+                            i++;
+                        }
+                    }
+                    sb.append((char) Integer.parseInt(code, 8));
+                    continue;
+                }
+                switch (nextChar) {
+                    case '\\':
+                        ch = '\\';
+                        break;
+                    case 'b':
+                        ch = '\b';
+                        break;
+                    case 'f':
+                        ch = '\f';
+                        break;
+                    case 'n':
+                        ch = '\n';
+                        break;
+                    case 'r':
+                        ch = '\r';
+                        break;
+                    case 't':
+                        ch = '\t';
+                        break;
+                    case '\"':
+                        ch = '\"';
+                        break;
+                    case '\'':
+                        ch = '\'';
+                        break;
+                    // Hex Unicode: u????
+                    case 'u':
+                        if (i >= st.length() - 5) {
+                            ch = 'u';
+                            break;
+                        }
+                        int code = Integer.parseInt(
+                                "" + st.charAt(i + 2) + st.charAt(i + 3)
+                                        + st.charAt(i + 4) + st.charAt(i + 5), 16);
+                        sb.append(Character.toChars(code));
+                        i += 5;
+                        continue;
+                }
+                i++;
+            }
+            sb.append(ch);
+        }
+        return sb.toString();
     }
 }
