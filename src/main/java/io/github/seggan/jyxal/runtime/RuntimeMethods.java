@@ -63,8 +63,7 @@ public final class RuntimeMethods {
         if (obj instanceof Lambda lambda) {
             stack.push(lambda.call(stack));
         } else if (obj instanceof JyxalList list) {
-            list.map(o -> BigComplex.valueOf(!RuntimeHelpers.truthValue(o)));
-            stack.push(list);
+            stack.push(list.map(o -> BigComplex.valueOf(!RuntimeHelpers.truthValue(o))));
         } else if (obj instanceof BigComplex complex) {
             stack.push(RuntimeHelpers.primeFactors(complex, HashSet::new).size());
         } else {
@@ -73,7 +72,7 @@ public final class RuntimeMethods {
     }
 
     public static void infinitePrimes(ProgramStack stack) {
-        stack.push(JyxalList.create(new Supplier<Object>() {
+        stack.push(JyxalList.createInf(new Supplier<Object>() {
             BigInteger next = BigInteger.ONE;
             @Override
             public Object get() {

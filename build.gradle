@@ -46,7 +46,11 @@ generateGrammarSource {
     arguments += ["-lib", dir.getAbsolutePath(), '-visitor', '-no-listener', "-encoding", "UTF-8"]
 }
 
-compileJava.dependsOn generateGrammarSource
+compileJava {
+    dependsOn generateGrammarSource
+    sourceCompatibility = '17'
+    targetCompatibility = '17'
+}
 
 sourceSets {
     main {

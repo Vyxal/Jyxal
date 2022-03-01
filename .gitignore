@@ -4,3 +4,5 @@ test.*
 /.gradle
 *.log
 /test
+bin/
+.vscode/
