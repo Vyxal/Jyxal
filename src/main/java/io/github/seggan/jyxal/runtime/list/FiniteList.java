@@ -59,4 +59,9 @@ class FiniteList extends JyxalList {
     public String toString() {
         return vyxalListFormat(backing);
     }
+
+    @Override
+    public boolean hasInd(int ind) {
+        return this.size() > ind;
+    }
 }

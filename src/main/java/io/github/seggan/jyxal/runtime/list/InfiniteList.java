@@ -28,7 +28,17 @@ class InfiniteList extends JyxalList {
 
     @Override
     public int size() {
-        return -1;
+        if (!generator.hasNext()) {
+            return backing.size();
+        } else {
+            return -1;
+        }
+    }
+
+    @Override
+    public boolean hasInd(int ind) {
+        fill(ind);
+        return backing.size() > ind;
     }
 
     @Override
@@ -40,6 +50,24 @@ class InfiniteList extends JyxalList {
     @Override
     public boolean add(Object o) {
         throw new UnsupportedOperationException("Cannot add to the end of an infinite list");
+    }
+
+    @Override
+    public Iterator<Object> iterator() {
+        return new Iterator<>() {
+            private int ind = 0;
+            @Override
+            public boolean hasNext() {
+                return InfiniteList.this.hasInd(ind);
+            }
+
+            @Override
+            public Object next() {
+                var elem = InfiniteList.this.get(ind);
+                ind ++;
+                return elem;
+            }
+        };
     }
 
     @Override

@@ -51,6 +51,9 @@ public abstract class JyxalList extends AbstractList<Object> {
         return new FiniteList(list);
     }
 
+    /** Whether or not there exists an element at the given index */
+    public abstract boolean hasInd(int ind);
+
     public abstract void mapInPlace(Function<Object, Object> f);
 
     public abstract void filterInPlace(Predicate<Object> p);
