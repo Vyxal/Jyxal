@@ -1,21 +1,21 @@
 package io.github.seggan.jyxal.runtime.list;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.function.Supplier;
 
 class InfiniteList extends JyxalList {
 
-    private final Supplier<Object> generator;
+    private final Iterator<Object> generator;
 
     private List<Object> backing = new ArrayList<>();
 
     private Function<Object, Object> mapper = Function.identity();
     private Predicate<Object> filter = o -> true;
 
-    InfiniteList(Supplier<Object> generator) {
+    InfiniteList(Iterator<Object> generator) {
         super();
         this.generator = generator;
     }
@@ -28,7 +28,17 @@ class InfiniteList extends JyxalList {
 
     @Override
     public int size() {
-        return -1;
+        if (!generator.hasNext()) {
+            return backing.size();
+        } else {
+            return -1;
+        }
+    }
+
+    @Override
+    public boolean hasInd(int ind) {
+        fill(ind);
+        return backing.size() > ind;
     }
 
     @Override
@@ -43,7 +53,25 @@ class InfiniteList extends JyxalList {
     }
 
     @Override
-    public void map(Function<Object, Object> f) {
+    public Iterator<Object> iterator() {
+        return new Iterator<>() {
+            private int ind = 0;
+            @Override
+            public boolean hasNext() {
+                return InfiniteList.this.hasInd(ind);
+            }
+
+            @Override
+            public Object next() {
+                var elem = InfiniteList.this.get(ind);
+                ind ++;
+                return elem;
+            }
+        };
+    }
+
+    @Override
+    public void mapInPlace(Function<Object, Object> f) {
         List<Object> newBacking = new ArrayList<>();
         for (Object o : backing) {
             newBacking.add(f.apply(o));
@@ -53,7 +81,7 @@ class InfiniteList extends JyxalList {
     }
 
     @Override
-    public void filter(Predicate<Object> p) {
+    public void filterInPlace(Predicate<Object> p) {
         backing.removeIf(obj -> !p.test(obj));
         filter = filter.and(p);
     }
@@ -64,8 +92,8 @@ class InfiniteList extends JyxalList {
     }
 
     private void fill(int index) {
-        while (backing.size() <= index) {
-            Object next = mapper.apply(generator.get());
+        while (backing.size() <= index && generator.hasNext()) {
+            Object next = mapper.apply(generator.next());
             if (filter.test(next)) {
                 backing.add(next);
             }

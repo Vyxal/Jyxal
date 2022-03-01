@@ -4,4 +4,6 @@ test.*
 /.gradle
 *.log
 /test
+bin/
+.vscode/
 score.sh

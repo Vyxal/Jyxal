@@ -42,7 +42,7 @@ class FiniteList extends JyxalList {
     }
 
     @Override
-    public void map(Function<Object, Object> f) {
+    public void mapInPlace(Function<Object, Object> f) {
         List<Object> newBacking = new ArrayList<>();
         for (Object o : backing) {
             newBacking.add(f.apply(o));
@@ -51,12 +51,17 @@ class FiniteList extends JyxalList {
     }
 
     @Override
-    public void filter(Predicate<Object> p) {
+    public void filterInPlace(Predicate<Object> p) {
         backing.removeIf(obj -> !p.test(obj));
     }
 
     @Override
     public String toString() {
         return vyxalListFormat(backing);
+    }
+
+    @Override
+    public boolean hasInd(int ind) {
+        return this.size() > ind;
     }
 }

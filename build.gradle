@@ -51,6 +51,9 @@ generateGrammarSource {
 compileJava {
     dependsOn generateGrammarSource
 
+    sourceCompatibility = '17'
+    targetCompatibility = '17'
+
     doLast {
         List<String> names = new ArrayList<>()
         String dir = "$buildDir/classes/java/main/io/github/seggan/jyxal/runtime"
@@ -82,6 +85,19 @@ compileJava {
         })
 
         Files.write(dest.resolve("runtime.list"), names)
+    }
+}
+
+sourceSets {
+    main {
+        java {
+            srcDir 'src/main/antlr'
+        }
+    }
+    generated {
+        java {
+            srcDir "build/generated-src/antlr/main/"
+        }
     }
 }
 

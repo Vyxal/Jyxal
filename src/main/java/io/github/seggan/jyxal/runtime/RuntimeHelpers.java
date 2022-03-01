@@ -207,21 +207,23 @@ public final class RuntimeHelpers {
                         }
                         stack.push(list);
                     } else {
-                        leftList.map(obj -> {
-                            ProgramStack newStack = new ProgramStack(obj, right);
-                            consumer.accept(newStack);
-                            return newStack.pop();
-                        });
-                        stack.push(leftList);
+                        stack.push(
+                            leftList.map(obj -> {
+                                ProgramStack newStack = new ProgramStack(obj, right);
+                                consumer.accept(newStack);
+                                return newStack.pop();
+                            })
+                        );
                     }
                     return true;
                 } else if (right instanceof JyxalList rightList) {
-                    rightList.map(obj -> {
-                        ProgramStack newStack = new ProgramStack(left, obj);
-                        consumer.accept(newStack);
-                        return newStack.pop();
-                    });
-                    stack.push(rightList);
+                    stack.push(
+                        rightList.map(obj -> {
+                            ProgramStack newStack = new ProgramStack(left, obj);
+                            consumer.accept(newStack);
+                            return newStack.pop();
+                        })
+                    );
                     return true;
                 }
                 stack.push(left);
@@ -265,12 +267,13 @@ public final class RuntimeHelpers {
                         stack.push(list);
                         return true;
                     }
-                    leftList.map(obj -> {
-                        ProgramStack newStack = new ProgramStack(obj, middle, right);
-                        consumer.accept(newStack);
-                        return newStack.pop();
-                    });
-                    stack.push(leftList);
+                    stack.push(
+                        leftList.map(obj -> {
+                            ProgramStack newStack = new ProgramStack(obj, middle, right);
+                            consumer.accept(newStack);
+                            return newStack.pop();
+                        })
+                    );
                     return true;
                 }
                 if (middle instanceof JyxalList middleList) {
@@ -285,12 +288,13 @@ public final class RuntimeHelpers {
                         stack.push(list);
                         return true;
                     }
-                    middleList.map(obj -> {
-                        ProgramStack newStack = new ProgramStack(left, obj, right);
-                        consumer.accept(newStack);
-                        return newStack.pop();
-                    });
-                    stack.push(middleList);
+                    stack.push(
+                        middleList.map(obj -> {
+                            ProgramStack newStack = new ProgramStack(left, obj, right);
+                            consumer.accept(newStack);
+                            return newStack.pop();
+                        })
+                    );
                     return true;
                 }
                 if (right instanceof JyxalList rightList) {
