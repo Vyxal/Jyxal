@@ -37,15 +37,18 @@ dependencies {
 
 test {
     useJUnitPlatform()
+    minHeapSize = "128m"
+    maxHeapSize = "512m"
 }
 
 generateGrammarSource {
     maxHeapSize = "128m"
-    File dir = new File(buildDir, "/generated-src/antlr/main/io/github/seggan/jyxal/antlr")
+    JPath path = JPath.of("$buildDir/generated-src/antlr/main/io/github/seggan/jyxal/antlr")
+    Files.createDirectories(path)
     doFirst {
-        dir.mkdirs()
+        Files.createDirectories(path)
     }
-    arguments += ["-lib", dir.getAbsolutePath(), '-visitor', '-no-listener', "-encoding", "UTF-8"]
+    arguments += ["-lib", path.toAbsolutePath().toString(), '-visitor', '-no-listener', "-encoding", "UTF-8"]
 }
 
 compileJava {

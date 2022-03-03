@@ -834,9 +834,7 @@ System.out.println(BigDecimalMath.roundWithTrailingZeroes(new BigDecimal("0.0000
 		checkMathContext(mathContext);
 
 		switch (n.signum()) {
-			case -1:
-			case 0:
-				throw new ArithmeticException("Illegal root(x, n) for n <= 0: n = " + n);
+			case -1, 0 -> throw new ArithmeticException("Illegal root(x, n) for n <= 0: n = " + n);
 		}
 
 		switch (x.signum()) {
@@ -908,17 +906,11 @@ System.out.println(BigDecimalMath.roundWithTrailingZeroes(new BigDecimal("0.0000
 			return ZERO;
 		}
 		
-		BigDecimal result;
-		switch (x.compareTo(TEN)) {
-		case 0:
-			result = logTen(mathContext);
-			break;
-		case 1:
-			result = logUsingExponent(x, mathContext);
-			break;
-		default :
-			result = logUsingTwoThree(x, mathContext);
-		}
+		BigDecimal result = switch (x.compareTo(TEN)) {
+			case 0 -> logTen(mathContext);
+			case 1 -> logUsingExponent(x, mathContext);
+			default -> logUsingTwoThree(x, mathContext);
+		};
 
 		return round(result, mathContext);
 	}

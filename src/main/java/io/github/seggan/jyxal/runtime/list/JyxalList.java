@@ -2,10 +2,12 @@ package io.github.seggan.jyxal.runtime.list;
 
 import io.github.seggan.jyxal.runtime.math.BigComplex;
 
+import java.math.BigInteger;
 import java.util.AbstractList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -16,7 +18,7 @@ public abstract class JyxalList extends AbstractList<Object> {
         return new InfiniteList(generator);
     }
 
-    public static JyxalList create(Object[] array) {
+    public static JyxalList create(Object... array) {
         return new FiniteList(List.of(array));
     }
 
@@ -85,6 +87,28 @@ public abstract class JyxalList extends AbstractList<Object> {
 
     public abstract void filterInPlace(Predicate<Object> p);
 
+    public JyxalList removeAtIndex(BigInteger ind) {
+        Iterator<Object> it = this.iterator();
+        return new InfiniteList(new Iterator<>() {
+            BigInteger i = BigInteger.ZERO;
+
+            @Override
+            public boolean hasNext() {
+                return it.hasNext();
+            }
+
+            @Override
+            public Object next() {
+                if (i.equals(ind)) {
+                    it.next();
+                    i = i.add(BigInteger.ONE);
+                }
+                i = i.add(BigInteger.ONE);
+                return it.next();
+            }
+        });
+    }
+
     public JyxalList map(Function<Object, Object> f) {
         Iterator<Object> it = this.iterator();
         return new InfiniteList(new Iterator<>() {
@@ -127,7 +151,7 @@ public abstract class JyxalList extends AbstractList<Object> {
 
             private void findNext() {
                 while (it.hasNext()) {
-                    var next = it.next();
+                    Object next = it.next();
                     if (pred.test(next)) {
                         this.waiting = next;
                         break;
@@ -135,5 +159,21 @@ public abstract class JyxalList extends AbstractList<Object> {
                 }
             }
         });
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof JyxalList other)) return false;
+
+        Iterator<Object> it1 = this.iterator();
+        Iterator<Object> it2 = other.iterator();
+        while (it1.hasNext() && it2.hasNext()) {
+            if (!Objects.equals(it1.next(), it2.next())) {
+                return false;
+            }
+        }
+
+        return !it1.hasNext() && !it2.hasNext();
     }
 }

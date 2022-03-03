@@ -64,4 +64,13 @@ class FiniteList extends JyxalList {
     public boolean hasInd(int ind) {
         return this.size() > ind;
     }
+
+    @Override
+    public JyxalList map(Function<Object, Object> f) {
+        List<Object> newBacking = new ArrayList<>();
+        for (Object o : backing) {
+            newBacking.add(f.apply(o));
+        }
+        return new FiniteList(newBacking);
+    }
 }

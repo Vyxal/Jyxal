@@ -2,10 +2,26 @@
 
 Jyxal has a few differences from [Vyxal](https://github.com/Vyxal/Vyxal). They are listed here.
 
-## Elements
+## Changed Elements
 
 Element | Difference
 ------- | ----------
 `E` | The "eval Python" part of `E` evals Java, not Python. It loads the snippet into [JShell](https://en.wikipedia.org/wiki/JShell) and the pushes the result back onto the stack. The JShell instance is cached, meaning that the following code will push two zeros on the stack: ``` `int i = 0`E`i`E```
 `•` | `•` can perform logarithms on complex numbers. It will also not operate on lists and vectorize instead
 ``` ` ``` | Normal, uncompressed strings are not decompressed if they do not contain ASCII characters
+
+## Added Elements
+
+### `` øJ `` (JSON Parse)
+Parses a JSON string
+
+#### Overloads
+- str a: `json.parse(a)`
+- ----------------------
+
+### `` Þd `` (Get/Set Dictionary/Map)
+Gets a value from a dictionary/map (if not present, 0) or sets a value in the dictionary/map
+
+#### Overloads
+- any a, lst b: `if dict(b)[a] is None 0 else dict(b)[a]`
+- any a, lst b, any c: `dict(b)[a] = c`

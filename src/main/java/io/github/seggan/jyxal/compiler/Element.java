@@ -15,6 +15,11 @@ public enum Element {
     ADD("+"),
     ASTERISK("\u00D7", "*"),
     SPLIT_ON("\u20AC"),
+    REMOVE_AT_INDEX("\u27C7"),
+    INFINITE_REPLACE("\u00A2"),
+    COMPLEMENT("\u2310", true),
+    // inclusive zero range
+    IZR("\u0280", true),
     STACK_SIZE("!", mv -> {
         mv.loadStack();
         mv.visitMethodInsn(
@@ -97,6 +102,9 @@ public enum Element {
         );
         mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/io/PrintStream", "print", "(Ljava/lang/Object;)V", false);
     }),
+    GET_REQUEST("\u00A8U", true),
+    JSON_PARSE("\u00F8J", true),
+    MAP_GET_SET("\u00DEd"),
     ;
 
     final LinkedMethodType type;

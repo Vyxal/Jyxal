@@ -737,11 +737,10 @@ public class BigRational extends Number implements Comparable<BigRational>, Seri
 			return true;
 		}
 
-		if (!(obj instanceof BigRational)) {
+		if (!(obj instanceof BigRational other)) {
 			return false;
 		}
 
-		BigRational other = (BigRational) obj;
 		if (!numerator.equals(other.numerator)) {
 			return false;
 		}

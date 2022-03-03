@@ -4,17 +4,26 @@ import io.github.seggan.jyxal.runtime.list.JyxalList;
 import io.github.seggan.jyxal.runtime.math.BigComplex;
 import io.github.seggan.jyxal.runtime.math.BigComplexMath;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.lang.invoke.MethodHandle;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.math.MathContext;
+import java.net.URL;
+import java.net.URLConnection;
+import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Objects;
 import java.util.function.IntPredicate;
 import java.util.function.Supplier;
+import java.util.regex.Pattern;
 
 @SuppressWarnings("UnusedReturnValue")
 public final class RuntimeMethods {
+
+    private static final LazyInit<Pattern> COMMA_PATTERN = new LazyInit<>(() -> Pattern.compile(","));
 
     private RuntimeMethods() {
     }
@@ -78,6 +87,14 @@ public final class RuntimeMethods {
         }
     }
 
+    public static Object complement(Object obj) {
+        if (obj instanceof BigComplex complex) {
+            return BigComplex.ONE.subtract(complex);
+        } else {
+            return JyxalList.create((Object[]) COMMA_PATTERN.get().split(obj.toString()));
+        }
+    }
+
     public static Object duplicate(ProgramStack stack) {
         Object obj = Objects.requireNonNull(stack.peek());
         if (obj instanceof JyxalList jyxalList) {
@@ -111,6 +128,19 @@ public final class RuntimeMethods {
         } else {
             return RuntimeHelpers.exec(obj.toString());
         }
+    }
+
+    public static Object getRequest(Object obj) throws IOException {
+        String url = obj.toString();
+        URLConnection connection = new URL(url).openConnection();
+        connection.setRequestProperty("User-Agent", "Mozilla/5.0 Jyxal");
+        connection.setRequestProperty("Content-Type", "text/plain; charset=UTF-8");
+        connection.connect();
+        String s;
+        try (InputStream inputStream = connection.getInputStream()) {
+            s = new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
+        }
+        return s;
     }
 
     public static Object greaterThan(ProgramStack stack) {
@@ -149,6 +179,36 @@ public final class RuntimeMethods {
                 return next;
             }
         });
+    }
+
+    public static Object infiniteReplace(ProgramStack stack) {
+        Object c = stack.pop();
+        Object b = stack.pop();
+        Object a = stack.pop();
+
+        if (a instanceof JyxalList list) {
+            JyxalList prev = list;
+            do {
+                list = list.map(o -> o.equals(b) ? c : o);
+                if (list.equals(prev)) break;
+                prev = list;
+            } while (true);
+
+            return list;
+        } else {
+            String aString = a.toString();
+            String bString = b.toString();
+            String cString = c.toString();
+
+            String prev = aString;
+            do {
+                aString = aString.replace(bString, cString);
+                if (a.equals(prev)) break;
+                prev = aString;
+            } while (true);
+
+            return aString;
+        }
     }
 
     public static Object isPrime(Object obj) {
@@ -209,6 +269,22 @@ public final class RuntimeMethods {
         }
     }
 
+    public static Object izr(Object obj) {
+        if (obj instanceof BigComplex complex) {
+            return JyxalList.range(BigComplex.ZERO, complex.add(BigComplex.ONE));
+        } else {
+            JyxalList list = JyxalList.create();
+            for (char c : obj.toString().toCharArray()) {
+                list.add(BigComplex.valueOf(Character.isAlphabetic(c)));
+            }
+            return list;
+        }
+    }
+
+    public static Object jsonParse(Object obj) {
+        return new JsonParser(obj.toString()).parse();
+    }
+
     public static Object lessThan(ProgramStack stack) {
         Object o = RuntimeHelpers.vectorise(2, RuntimeMethods::lessThan, stack);
         if (o != null) return o;
@@ -247,6 +323,41 @@ public final class RuntimeMethods {
                 return a;
             }
         }
+    }
+
+    public static Object mapGetSet(ProgramStack stack) {
+        Object map = stack.pop();
+        Object key = stack.pop();
+        if (key instanceof JyxalList list) {
+            // set
+            key = stack.pop();
+            int i = 0;
+            for (Object o : list) {
+                if (o instanceof JyxalList pair && pair.size() >= 2 && pair.get(0).equals(key)) {
+                    return JyxalList.create(RuntimeHelpers.replacementIterator(
+                            list.iterator(),
+                            i,
+                            JyxalList.create(pair.get(0), map)
+                    ));
+                }
+                i++;
+            }
+            JyxalList newList = JyxalList.create(list);
+            newList.add(JyxalList.create(key, map));
+            return newList;
+        }
+        for (Object o : (JyxalList) map) {
+            if (o instanceof JyxalList pair && pair.size() >= 2 && pair.get(0).equals(key)) {
+                if (pair.size() == 2) {
+                    return pair.get(1);
+                } else {
+                    Iterator<Object> iterator = pair.iterator();
+                    iterator.next();
+                    return JyxalList.create(iterator);
+                }
+            }
+        }
+        return BigComplex.ZERO;
     }
 
     public static Object multiCommand(ProgramStack stack) {
@@ -326,6 +437,40 @@ public final class RuntimeMethods {
         }
     }
 
+    public static Object removeAtIndex(ProgramStack stack) {
+        Object a = stack.pop();
+        Object b = stack.pop();
+        if (a instanceof BigComplex ca) {
+            if (b instanceof JyxalList list) {
+                return list.removeAtIndex(ca.re.toBigInteger());
+            }
+            String str = b.toString();
+            int index = ca.re.intValue();
+            StringBuilder sb = new StringBuilder();
+            for (int i = 0; i < str.length(); i++) {
+                if (i != index) {
+                    sb.append(str.charAt(i));
+                }
+            }
+            return sb.toString();
+        } else if (b instanceof BigComplex cb) {
+            if (a instanceof JyxalList list) {
+                return list.removeAtIndex(cb.re.toBigInteger());
+            }
+            String str = a.toString();
+            int index = cb.re.intValue();
+            StringBuilder sb = new StringBuilder();
+            for (int i = 0; i < str.length(); i++) {
+                if (i != index) {
+                    sb.append(str.charAt(i));
+                }
+            }
+            return sb.toString();
+        } else {
+            throw new IllegalArgumentException("%s, %s".formatted(a, b));
+        }
+    }
+
     public static Object splitOn(ProgramStack stack) {
         Object b = stack.pop();
         Object a = stack.pop();
@@ -343,7 +488,7 @@ public final class RuntimeMethods {
             superList.add(newList);
             return superList;
         } else {
-            return JyxalList.create(a.toString().split(b.toString()));
+            return JyxalList.create((Object[]) a.toString().split(b.toString()));
         }
     }
 
