@@ -23,5 +23,5 @@ Parses a JSON string
 Gets a value from a dictionary/map (if not present, 0) or sets a value in the dictionary/map
 
 #### Overloads
-- any a, lst b: `if dict(b)[a] is None 0 else dict(b)[a]`
+- any a, lst b: `dict(b).get(a, 0)`
 - any a, lst b, any c: `dict(b)[a] = c`
