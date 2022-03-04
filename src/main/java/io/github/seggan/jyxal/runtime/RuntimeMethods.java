@@ -4,8 +4,11 @@ import io.github.seggan.jyxal.runtime.list.JyxalList;
 import io.github.seggan.jyxal.runtime.math.BigComplex;
 import io.github.seggan.jyxal.runtime.math.BigComplexMath;
 
+import java.io.ByteArrayInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.lang.invoke.MethodHandle;
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -19,6 +22,7 @@ import java.util.Objects;
 import java.util.function.IntPredicate;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
+import java.util.zip.GZIPInputStream;
 
 @SuppressWarnings("UnusedReturnValue")
 public final class RuntimeMethods {
@@ -136,11 +140,18 @@ public final class RuntimeMethods {
         connection.setRequestProperty("User-Agent", "Mozilla/5.0 Jyxal");
         connection.setRequestProperty("Content-Type", "text/plain; charset=UTF-8");
         connection.connect();
-        String s;
+        byte[] response;
         try (InputStream inputStream = connection.getInputStream()) {
-            s = new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
+            response = inputStream.readAllBytes();
         }
-        return s;
+        if (Objects.equals(connection.getContentEncoding(), "gzip")) {
+            try (GZIPInputStream in = new GZIPInputStream(new ByteArrayInputStream(response))) {
+                return new String(in.readAllBytes(), StandardCharsets.UTF_8);
+            } catch (IOException e) {
+                return new String(response, StandardCharsets.UTF_8);
+            }
+        }
+        return new String(response, StandardCharsets.UTF_8);
     }
 
     public static Object greaterThan(ProgramStack stack) {
@@ -434,6 +445,14 @@ public final class RuntimeMethods {
             }
 
             return sb.toString();
+        }
+    }
+
+    public static void printToFile(ProgramStack stack) throws IOException {
+        try (OutputStream os = new FileOutputStream("test.out")) {
+            while (!stack.isEmpty()) {
+                os.write(stack.pop().toString().getBytes(StandardCharsets.UTF_8));
+            }
         }
     }
 

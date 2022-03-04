@@ -1,10 +1,12 @@
 package io.github.seggan.jyxal.compiler;
 
+import io.github.seggan.jyxal.CompilerOptions;
 import io.github.seggan.jyxal.antlr.VyxalParser;
 import io.github.seggan.jyxal.antlr.VyxalParserBaseVisitor;
 import io.github.seggan.jyxal.compiler.wrappers.ContextualVariable;
 import io.github.seggan.jyxal.compiler.wrappers.JyxalClassWriter;
 import io.github.seggan.jyxal.compiler.wrappers.JyxalMethod;
+import io.github.seggan.jyxal.runtime.Compression;
 import io.github.seggan.jyxal.runtime.RuntimeHelpers;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
@@ -102,31 +104,42 @@ public final class Compiler extends VyxalParserBaseVisitor<Void> implements Opco
         // TODO: reverse the signs for the variable assns
 
         // finish up main
-        Label end = new Label();
-        main.loadStack();
-        main.visitMethodInsn(
-                INVOKEVIRTUAL,
-                "runtime/ProgramStack",
-                "size",
-                "()I",
-                false
-        );
-        main.visitJumpInsn(IFEQ, end);
+        if (CompilerOptions.OPTIONS.contains(CompilerOptions.PRINT_TO_FILE)) {
+            main.loadStack();
+            main.visitMethodInsn(
+                    INVOKESTATIC,
+                    "runtime/RuntimeMethods",
+                    "printToFile",
+                    "(Lruntime/ProgramStack;)V",
+                    false
+            );
+        } else {
+            Label end = new Label();
+            main.loadStack();
+            main.visitMethodInsn(
+                    INVOKEVIRTUAL,
+                    "runtime/ProgramStack",
+                    "size",
+                    "()I",
+                    false
+            );
+            main.visitJumpInsn(IFEQ, end);
 
-        main.loadStack();
-        main.visitMethodInsn(
-                INVOKEVIRTUAL,
-                "runtime/ProgramStack",
-                "pop",
-                "()Ljava/lang/Object;",
-                false
-        );
+            main.loadStack();
+            main.visitMethodInsn(
+                    INVOKEVIRTUAL,
+                    "runtime/ProgramStack",
+                    "pop",
+                    "()Ljava/lang/Object;",
+                    false
+            );
 
-        main.visitFieldInsn(GETSTATIC, "java/lang/System", "out", "Ljava/io/PrintStream;");
-        main.visitInsn(SWAP);
-        main.visitMethodInsn(INVOKEVIRTUAL, "java/io/PrintStream", "println", "(Ljava/lang/Object;)V", false);
+            main.visitFieldInsn(GETSTATIC, "java/lang/System", "out", "Ljava/io/PrintStream;");
+            main.visitInsn(SWAP);
+            main.visitMethodInsn(INVOKEVIRTUAL, "java/io/PrintStream", "println", "(Ljava/lang/Object;)V", false);
 
-        main.visitLabel(end);
+            main.visitLabel(end);
+        }
         main.visitInsn(RETURN);
 
         try {
@@ -176,7 +189,7 @@ public final class Compiler extends VyxalParserBaseVisitor<Void> implements Opco
     public Void visitNormal_string(VyxalParser.Normal_stringContext ctx) {
         JyxalMethod mv = callStack.peek();
         mv.loadStack();
-        mv.visitLdcInsn(RuntimeHelpers.unescapeString(ctx.any().getText()));
+        mv.visitLdcInsn(Compression.decompress(RuntimeHelpers.unescapeString(ctx.any().getText())));
         AsmHelper.push(mv);
         return null;
     }
@@ -185,7 +198,7 @@ public final class Compiler extends VyxalParserBaseVisitor<Void> implements Opco
     public Void visitSingle_char_string(VyxalParser.Single_char_stringContext ctx) {
         JyxalMethod mv = callStack.peek();
         mv.loadStack();
-        mv.visitLdcInsn(RuntimeHelpers.unescapeString(ctx.getText().substring(1)));
+        mv.visitLdcInsn(Compression.decompress(RuntimeHelpers.unescapeString(ctx.getText().substring(1))));
         AsmHelper.push(mv);
         return null;
     }
@@ -194,7 +207,7 @@ public final class Compiler extends VyxalParserBaseVisitor<Void> implements Opco
     public Void visitDouble_char_string(VyxalParser.Double_char_stringContext ctx) {
         JyxalMethod mv = callStack.peek();
         mv.loadStack();
-        mv.visitLdcInsn(RuntimeHelpers.unescapeString(ctx.getText().substring(1)));
+        mv.visitLdcInsn(Compression.decompress(RuntimeHelpers.unescapeString(ctx.getText().substring(1))));
         AsmHelper.push(mv);
         return null;
     }

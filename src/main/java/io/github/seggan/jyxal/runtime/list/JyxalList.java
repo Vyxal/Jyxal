@@ -71,6 +71,7 @@ public abstract class JyxalList extends AbstractList<Object> {
         Iterator<Object> it = list.iterator();
         while (true) {
             if (!it.hasNext()) {
+                sb.delete(sb.length() - 3, sb.length());
                 return sb.append("\u27E9").toString();
             }
             sb.append(it.next());

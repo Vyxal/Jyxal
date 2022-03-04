@@ -87,6 +87,9 @@ compileJava {
             }
         })
 
+        names.add("dictLong.txt")
+        names.add("dictShort.txt")
+
         Files.write(dest.resolve("runtime.list"), names)
     }
 }
@@ -127,6 +130,12 @@ shadowJar {
 
     from(dest.toFile().path) {
         include "**/*.*"
+    }
+
+    for (File f : sourceSets.main.resources.srcDirs) {
+        from(f) {
+            include "**/*.*"
+        }
     }
 
     from(rootDir) {

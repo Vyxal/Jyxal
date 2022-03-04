@@ -53,7 +53,8 @@ public class Optimiser implements Opcodes {
                         // one argument
                         codeBlock.insertBefore(insn, new InsnNode(SWAP));
                     }
-                } else if (methodInsnNode.owner.equals("runtime/RuntimeMethods")) {
+                } else if (methodInsnNode.owner.equals("runtime/RuntimeMethods")
+                        && methodInsnNode.desc.startsWith("(Lruntime/ProgramStack;)")) {
                     // these all take the stack as input
                     codeBlock.insertBefore(insn, new VarInsnNode(ALOAD, jyxalMethod.getStackVar()));
                 }

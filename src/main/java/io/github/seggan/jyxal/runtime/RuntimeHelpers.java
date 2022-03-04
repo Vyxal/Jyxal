@@ -8,8 +8,11 @@ import jdk.jshell.SnippetEvent;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -95,6 +98,14 @@ public final class RuntimeHelpers {
         }
     }
 
+    public static int fromBaseDigitsAlphabet(CharSequence digits, String alphabet) {
+        int result = 0;
+        for (int i = 0; i < digits.length(); i++) {
+            result = result * alphabet.length() + alphabet.indexOf(digits.charAt(i));
+        }
+        return result;
+    }
+
     public static <T extends Collection<BigComplex>> T primeFactors(BigComplex n, Supplier<T> factory) {
         T factors = factory.get();
         if (n.re.compareTo(BigDecimal.valueOf(Long.MAX_VALUE)) < 0
@@ -155,28 +166,6 @@ public final class RuntimeHelpers {
         return sb.toString();
     }
 
-    private static int slen(JyxalList first, JyxalList... rest) {
-        int size = first.size();
-        for (JyxalList list : rest) {
-            size = Math.min(size, list.size());
-        }
-        return size;
-    }
-
-    public static boolean truthValue(ProgramStack stack) {
-        return truthValue(stack.pop());
-    }
-
-    public static boolean truthValue(Object obj) {
-        if (obj instanceof JyxalList jyxalList) {
-            return jyxalList.size() != 0;
-        } else if (obj instanceof BigComplex bigComplex) {
-            return !bigComplex.equals(BigComplex.ZERO);
-        }
-
-        return true;
-    }
-
     public static Iterator<Object> replacementIterator(Iterator<Object> iterator, int index, Object replacement) {
         return new Iterator<>() {
             private int i = 0;
@@ -195,6 +184,54 @@ public final class RuntimeHelpers {
                 }
             }
         };
+    }
+
+    private static int slen(JyxalList first, JyxalList... rest) {
+        int size = first.size();
+        for (JyxalList list : rest) {
+            size = Math.min(size, list.size());
+        }
+        return size;
+    }
+
+    public static List<BigInteger> toBaseDigits(BigInteger integer, BigInteger base) {
+        List<BigInteger> result = new ArrayList<>();
+        BigInteger remainder = integer;
+        while (remainder.compareTo(base) >= 0) {
+            BigInteger[] div = remainder.divideAndRemainder(base);
+            result.add(div[1]);
+            remainder = div[0];
+        }
+        result.add(remainder);
+        Collections.reverse(result);
+        return result;
+    }
+
+    public static String toBaseDigitsAlphabet(long integer, String alphabet) {
+        StringBuilder sb = new StringBuilder();
+        long remainder = integer;
+        int base = alphabet.length();
+        while (remainder >= base) {
+            long div = remainder / base;
+            sb.append(alphabet.charAt((int) (remainder % base)));
+            remainder = div;
+        }
+        sb.append(alphabet.charAt((int) remainder));
+        return sb.reverse().toString();
+    }
+
+    public static boolean truthValue(ProgramStack stack) {
+        return truthValue(stack.pop());
+    }
+
+    public static boolean truthValue(Object obj) {
+        if (obj instanceof JyxalList jyxalList) {
+            return jyxalList.size() != 0;
+        } else if (obj instanceof BigComplex bigComplex) {
+            return !bigComplex.equals(BigComplex.ZERO);
+        }
+
+        return true;
     }
 
     /**

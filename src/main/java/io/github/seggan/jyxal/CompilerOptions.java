@@ -8,6 +8,7 @@ public enum CompilerOptions {
     VYXAL_CODEPAGE('V'),
     PRINT_DEBUG_TREE('D'),
     DONT_OPTIMISE('o'),
+    PRINT_TO_FILE('f'),
     ;
 
     public static Set<CompilerOptions> OPTIONS = EnumSet.noneOf(CompilerOptions.class);
