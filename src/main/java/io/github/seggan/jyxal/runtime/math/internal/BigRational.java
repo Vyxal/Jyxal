@@ -24,7 +24,6 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
  */
 
-import java.io.Serializable;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.math.MathContext;
@@ -65,7 +64,7 @@ import java.util.stream.IntStream;
  * <p>Any {@link BigRational} value can be converted into an arbitrary {@link #withPrecision(int) precision} (number of significant digits)
  * or {@link #withScale(int) scale} (number of digits after the decimal point).</p>
  */
-public class BigRational extends Number implements Comparable<BigRational>, Serializable {
+public class BigRational extends Number implements Comparable<BigRational> {
 
 	/**
 	 * The value 0 as {@link BigRational}.

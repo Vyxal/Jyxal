@@ -4,10 +4,9 @@ import io.github.seggan.jyxal.runtime.math.BigComplex;
 
 import java.util.ArrayDeque;
 import java.util.Collection;
-import java.util.Deque;
 import java.util.List;
 
-public class ProgramStack extends ArrayDeque<Object> implements Deque<Object> {
+public class ProgramStack extends ArrayDeque<Object> {
 
     public ProgramStack() {
         super();

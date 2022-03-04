@@ -51,11 +51,10 @@ generateGrammarSource {
     arguments += ["-lib", path.toAbsolutePath().toString(), '-visitor', '-no-listener', "-encoding", "UTF-8"]
 }
 
+sourceCompatibility = 17
+
 compileJava {
     dependsOn generateGrammarSource
-
-    sourceCompatibility = '17'
-    targetCompatibility = '17'
 
     doLast {
         List<String> names = new ArrayList<>()
