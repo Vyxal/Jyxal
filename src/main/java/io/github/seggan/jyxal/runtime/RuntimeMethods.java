@@ -13,8 +13,8 @@ import java.lang.invoke.MethodHandle;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.math.MathContext;
+import java.net.HttpURLConnection;
 import java.net.URL;
-import java.net.URLConnection;
 import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -24,10 +24,12 @@ import java.util.function.Supplier;
 import java.util.regex.Pattern;
 import java.util.zip.GZIPInputStream;
 
+// All return values must be either BigComplex, JyxalList, or String.
 @SuppressWarnings("UnusedReturnValue")
 public final class RuntimeMethods {
 
     private static final LazyInit<Pattern> COMMA_PATTERN = new LazyInit<>(() -> Pattern.compile(","));
+    private static final LazyInit<Pattern> SPACE_PATTERN = new LazyInit<>(() -> Pattern.compile(" "));
 
     private RuntimeMethods() {
     }
@@ -136,10 +138,25 @@ public final class RuntimeMethods {
 
     public static Object getRequest(Object obj) throws IOException {
         String url = obj.toString();
-        URLConnection connection = new URL(url).openConnection();
+        if (!url.startsWith("http://") && !url.startsWith("https://")) {
+            url = "http://" + url;
+        }
+        HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();
         connection.setRequestProperty("User-Agent", "Mozilla/5.0 Jyxal");
         connection.setRequestProperty("Content-Type", "text/plain; charset=UTF-8");
+        connection.setInstanceFollowRedirects(true);
         connection.connect();
+        int code = connection.getResponseCode();
+        if (code / 100 == 3) {
+            String location = connection.getHeaderField("Location");
+            if (location != null) {
+                return RuntimeMethods.getRequest(location);
+            } else {
+                throw new IOException("Redirect without location");
+            }
+        } else if (code / 100 != 2) {
+            return BigComplex.valueOf(code);
+        }
         byte[] response;
         try (InputStream inputStream = connection.getInputStream()) {
             response = inputStream.readAllBytes();
@@ -177,6 +194,26 @@ public final class RuntimeMethods {
             int limit = str.length() / 2 + 1;
             stack.push(str.substring(0, limit));
             return str.substring(limit);
+        }
+    }
+
+    public static Object head(Object obj) {
+        if (obj instanceof JyxalList list) {
+            return list.get(0);
+        } else {
+            if (obj.toString().length() > 0) {
+                return obj.toString().substring(0, 1);
+            } else {
+                return BigComplex.ZERO;
+            }
+        }
+    }
+
+    public static Object increment(Object obj) {
+        if (obj instanceof BigComplex c) {
+            return c.add(BigComplex.ONE);
+        } else {
+            return SPACE_PATTERN.get().matcher(obj.toString()).replaceAll("0");
         }
     }
 
@@ -371,6 +408,27 @@ public final class RuntimeMethods {
         return BigComplex.ZERO;
     }
 
+    public static Object moduloFormat(ProgramStack stack) {
+        Object o = RuntimeHelpers.vectorise(2, RuntimeMethods::multiCommand, stack);
+        if (o != null) return o;
+        Object b = stack.pop();
+        Object a = stack.pop();
+        if (a instanceof BigComplex ca && b instanceof BigComplex cb) {
+            // BigComplex has no mod method...
+            if (cb.isReal()) {
+                return BigComplex.valueOf(ca.re.remainder(cb.re), ca.im.remainder(cb.re));
+            } else {
+                throw new RuntimeException("Can't modulo complex numbers with non-real numbers");
+            }
+        } else {
+            if (a instanceof BigComplex) {
+                return b.toString().replace("%", a.toString());
+            } else {
+                return a.toString().replace("%", b.toString());
+            }
+        }
+    }
+
     public static Object multiCommand(ProgramStack stack) {
         Object o = RuntimeHelpers.vectorise(2, RuntimeMethods::multiCommand, stack);
         if (o != null) return o;
@@ -508,6 +566,28 @@ public final class RuntimeMethods {
             return superList;
         } else {
             return JyxalList.create((Object[]) a.toString().split(b.toString()));
+        }
+    }
+
+    public static Object tail(Object obj) {
+        if (obj instanceof JyxalList list) {
+            if (list.isLazy()) {
+                Iterator<Object> iterator = list.iterator();
+                Object last = BigComplex.ZERO;
+                while (iterator.hasNext()) {
+                    last = iterator.next();
+                }
+                return last;
+            } else {
+                return list.get(list.size() - 1);
+            }
+        } else {
+            String s = obj.toString();
+            if (s.length() == 0) {
+                return BigComplex.ZERO;
+            } else {
+                return s.charAt(s.length() - 1);
+            }
         }
     }
 

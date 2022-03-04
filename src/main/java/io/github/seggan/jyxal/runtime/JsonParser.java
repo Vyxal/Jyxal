@@ -141,7 +141,7 @@ public class JsonParser {
 
     private void checkEnd() {
         if (index == json.length()) {
-            throw new RuntimeException("Unexpected end of JSON string");
+            throw new RuntimeException("Unexpected end of JSON string '%s'".formatted(json));
         }
     }
 

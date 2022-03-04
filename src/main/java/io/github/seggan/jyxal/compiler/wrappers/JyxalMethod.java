@@ -72,22 +72,9 @@ public class JyxalMethod extends MethodNode implements Opcodes {
                 max = var.index;
             }
         }
-        if (max == 0) {
-            ContextualVariable var = new ContextualVariable(ctxVar + 1, this);
-            reservedVars.add(var);
-            return var;
-        } else {
-            for (int i = ctxVar + 1; i < max; i++) {
-                ContextualVariable var = new ContextualVariable(i, this);
-                if (!reservedVars.contains(var)) {
-                    reservedVars.add(var);
-                    return var;
-                }
-            }
-            ContextualVariable var = new ContextualVariable(ctxVar + 1, this);
-            reservedVars.add(var);
-            return var;
-        }
+        ContextualVariable var = new ContextualVariable(max == 0 ? ctxVar + 1 : max + 1, this);
+        reservedVars.add(var);
+        return var;
     }
 
     void freeVar(ContextualVariable var) {

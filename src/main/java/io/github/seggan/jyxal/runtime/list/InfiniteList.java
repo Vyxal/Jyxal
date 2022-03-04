@@ -1,5 +1,7 @@
 package io.github.seggan.jyxal.runtime.list;
 
+import io.github.seggan.jyxal.runtime.math.BigComplex;
+
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -23,7 +25,11 @@ class InfiniteList extends JyxalList {
     @Override
     public Object get(int index) {
         fill(index);
-        return backing.get(index);
+        if (backing.size() > index) {
+            return backing.get(index);
+        } else {
+            return BigComplex.ZERO;
+        }
     }
 
     @Override
@@ -50,6 +56,11 @@ class InfiniteList extends JyxalList {
     @Override
     public boolean add(Object o) {
         throw new UnsupportedOperationException("Cannot add to the end of an infinite list");
+    }
+
+    @Override
+    public boolean isLazy() {
+        return true;
     }
 
     @Override

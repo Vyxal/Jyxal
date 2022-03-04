@@ -9,7 +9,7 @@ options {
 }
 
 file
-    : program EOF?
+    : program EOF
     ;
 
 program
@@ -27,32 +27,12 @@ literal
     | list
     ;
 
-number
-    : integer (PERIOD integer)?
-    ;
-
-integer
-    : DIGIT+
-    ;
-
-compressed_number
-    : COMPRESSED_NUMBER any COMPRESSED_NUMBER
-    ;
-
-complex_number
-    : number COMPLEX_SEPARATOR number
-    ;
-
-list
-    : LIST_OPEN program (PIPE program)* LIST_CLOSE?
-    ;
-
 normal_string
-    : BACKTICK any BACKTICK
+    : BACKTICK (~BACKTICK .)+? BACKTICK
     ;
 
 compressed_string
-    : COMPRESSED_STRING any COMPRESSED_STRING
+    : COMPRESSED_STRING (~COMPRESSED_STRING .)+? COMPRESSED_STRING
     ;
 
 single_char_string
@@ -63,8 +43,24 @@ double_char_string
     : DOUBLE_CHAR_STRING . .
     ;
 
-any
-    : .+?
+number
+    : integer (PERIOD integer)?
+    ;
+
+integer
+    : DIGIT+
+    ;
+
+compressed_number
+    : COMPRESSED_NUMBER (~COMPRESSED_NUMBER .)+? COMPRESSED_NUMBER
+    ;
+
+complex_number
+    : number COMPLEX_SEPARATOR number
+    ;
+
+list
+    : LIST_OPEN program (PIPE program)* LIST_CLOSE?
     ;
 
 statement

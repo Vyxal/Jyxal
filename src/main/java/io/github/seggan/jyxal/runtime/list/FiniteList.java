@@ -1,5 +1,7 @@
 package io.github.seggan.jyxal.runtime.list;
 
+import io.github.seggan.jyxal.runtime.math.BigComplex;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
@@ -23,7 +25,11 @@ class FiniteList extends JyxalList {
 
     @Override
     public Object get(int index) {
-        return backing.get(index);
+        if (backing.size() > index) {
+            return backing.get(index);
+        } else {
+            return BigComplex.ZERO;
+        }
     }
 
     @Override
@@ -53,6 +59,11 @@ class FiniteList extends JyxalList {
     @Override
     public void filterInPlace(Predicate<Object> p) {
         backing.removeIf(obj -> !p.test(obj));
+    }
+
+    @Override
+    public boolean isLazy() {
+        return false;
     }
 
     @Override

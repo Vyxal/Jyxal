@@ -42,6 +42,7 @@ public final class Compiler extends VyxalParserBaseVisitor<Void> implements Opco
     private final Set<String> contextVariables = new HashSet<>();
 
     private final Deque<JyxalMethod> callStack = new ArrayDeque<>();
+    private final Deque<Loop> loopStack = new ArrayDeque<>();
 
     private int listCounter = 0;
     private int lambdaCounter = 0;
@@ -188,8 +189,9 @@ public final class Compiler extends VyxalParserBaseVisitor<Void> implements Opco
     @Override
     public Void visitNormal_string(VyxalParser.Normal_stringContext ctx) {
         JyxalMethod mv = callStack.peek();
+        String text = ctx.getText();
         mv.loadStack();
-        mv.visitLdcInsn(Compression.decompress(RuntimeHelpers.unescapeString(ctx.any().getText())));
+        mv.visitLdcInsn(Compression.decompress(RuntimeHelpers.unescapeString(text.substring(1, text.length() - 1))));
         AsmHelper.push(mv);
         return null;
     }
@@ -352,7 +354,12 @@ public final class Compiler extends VyxalParserBaseVisitor<Void> implements Opco
         Consumer<JyxalMethod> consumer = ctx.MODIFIER() == null ? null : visitModifier(ctx.MODIFIER().getText());
 
         JyxalMethod mv = callStack.peek();
-        Element.getByText(element).compile(classWriter, mv);
+        if (element.equals("X")) {
+            Loop loop = loopStack.peek();
+            mv.visitJumpInsn(GOTO, loop.end);
+        } else {
+            Element.getByText(element).compile(classWriter, mv);
+        }
 
         if (consumer != null) {
             consumer.accept(mv);
@@ -366,6 +373,8 @@ public final class Compiler extends VyxalParserBaseVisitor<Void> implements Opco
         Label start = new Label();
         Label end = new Label();
         int childIndex = 0;
+
+        loopStack.push(new Loop(start, end));
 
         JyxalMethod mv = callStack.peek();
         mv.visitLabel(start);
@@ -387,6 +396,8 @@ public final class Compiler extends VyxalParserBaseVisitor<Void> implements Opco
         mv.visitJumpInsn(GOTO, start);
         mv.visitLabel(end);
 
+        loopStack.pop();
+
         return null;
     }
 
@@ -399,6 +410,8 @@ public final class Compiler extends VyxalParserBaseVisitor<Void> implements Opco
         Label start = new Label();
         Label end = new Label();
         JyxalMethod mv = callStack.peek();
+
+        loopStack.push(new Loop(start, end));
 
         AsmHelper.pop(mv);
         mv.visitMethodInsn(
@@ -438,6 +451,8 @@ public final class Compiler extends VyxalParserBaseVisitor<Void> implements Opco
             mv.visitLabel(end);
         }
 
+        loopStack.pop();
+
         return null;
     }
 
@@ -445,6 +460,8 @@ public final class Compiler extends VyxalParserBaseVisitor<Void> implements Opco
     public Void visitIf_statement(VyxalParser.If_statementContext ctx) {
         JyxalMethod mv = callStack.peek();
         Label end = new Label();
+
+        loopStack.push(new Loop(end, end));
 
         AsmHelper.pop(mv);
         mv.visitMethodInsn(
@@ -470,6 +487,8 @@ public final class Compiler extends VyxalParserBaseVisitor<Void> implements Opco
         } else {
             mv.visitLabel(end);
         }
+
+        loopStack.pop();
 
         return null;
     }
@@ -545,5 +564,6 @@ public final class Compiler extends VyxalParserBaseVisitor<Void> implements Opco
         return null;
     }
 
-
+    private static record Loop(Label start, Label end) {
+    }
 }

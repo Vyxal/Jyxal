@@ -88,6 +88,8 @@ public abstract class JyxalList extends AbstractList<Object> {
 
     public abstract void filterInPlace(Predicate<Object> p);
 
+    public abstract boolean isLazy();
+
     public JyxalList removeAtIndex(BigInteger ind) {
         Iterator<Object> it = this.iterator();
         return new InfiniteList(new Iterator<>() {

@@ -125,3 +125,7 @@ SINGLE_CHAR_STRING
 DOUBLE_CHAR_STRING
     : '‛'
     ;
+
+LITERALLY_ANY_TEXT
+    : [\u0010-\uFFFF]
+    ;

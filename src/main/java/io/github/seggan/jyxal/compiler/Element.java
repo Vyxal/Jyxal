@@ -43,6 +43,30 @@ public enum Element {
     MULTI_COMMAND("\u2022"),
     FUNCTION_CALL("\u2020"),
     MULTIPLY("*"),
+    BOOLIFY("\u1E03", mv -> {
+        mv.loadStack();
+        AsmHelper.pop(mv);
+        mv.visitMethodInsn(
+                Opcodes.INVOKESTATIC,
+                "runtime/RuntimeHelpers",
+                "truthValue",
+                "(Ljava/lang/Object;)Z",
+                false
+        );
+        mv.visitInsn(Opcodes.I2L);
+        mv.visitMethodInsn(
+                Opcodes.INVOKESTATIC,
+                "runtime/math/BigComplex",
+                "valueOf",
+                "(J)Lruntime/math/BigComplex;",
+                false
+        );
+        AsmHelper.push(mv);
+    }),
+    MODULO_FORMAT("%"),
+    HEAD("h", false),
+    TAIL("t", false),
+    INCREMENT("\u203A", true),
     HALVE("\u00BD"),
     ALL("A", false),
     CHR_ORD("C", true),
