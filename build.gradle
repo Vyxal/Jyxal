@@ -15,7 +15,7 @@ plugins {
 }
 
 group 'io.github.seggan.jyxal'
-version '1.0-SNAPSHOT'
+version '0.1.0'
 
 mainClassName = 'io.github.seggan.jyxal.Main'
 
