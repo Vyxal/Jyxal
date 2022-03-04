@@ -16,8 +16,9 @@ Element | Difference
 Parses a JSON string
 
 #### Overloads
-- str a: `json.parse(a)`
-- ----------------------
+- lst a: vectorise
+- otherwise: `json.parse(str(a))`
+----------------------
 
 ### `` Þd `` (Get/Set Dictionary/Map)
 Gets a value from a dictionary/map (if not present, 0) or sets a value in the dictionary/map
