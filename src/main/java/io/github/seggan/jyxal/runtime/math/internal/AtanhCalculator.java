@@ -37,26 +37,26 @@ import java.math.MathContext;
  */
 public class AtanhCalculator extends SeriesCalculator {
 
-	public static final AtanhCalculator INSTANCE = new AtanhCalculator();
+    public static final AtanhCalculator INSTANCE = new AtanhCalculator();
 
-	private int n = 0;
+    private int n = 0;
 
-	private AtanhCalculator() {
-		super(true);
-	}
+    private AtanhCalculator() {
+        super(true);
+    }
 
-	@Override
-	protected BigRational getCurrentFactor() {
-		return BigRational.valueOf(1, 2 * n + 1);
-	}
+    @Override
+    protected BigRational getCurrentFactor() {
+        return BigRational.valueOf(1, 2 * n + 1);
+    }
 
-	@Override
-	protected void calculateNextFactor() {
-		n++;
-	}
+    @Override
+    protected void calculateNextFactor() {
+        n++;
+    }
 
-	@Override
-	protected PowerIterator createPowerIterator(BigDecimal x, MathContext mathContext) {
-		return new PowerTwoNPlusOneIterator(x, mathContext);
-	}
+    @Override
+    protected PowerIterator createPowerIterator(BigDecimal x, MathContext mathContext) {
+        return new PowerTwoNPlusOneIterator(x, mathContext);
+    }
 }

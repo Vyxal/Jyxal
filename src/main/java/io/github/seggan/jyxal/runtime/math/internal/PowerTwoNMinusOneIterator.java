@@ -32,26 +32,26 @@ import java.math.MathContext;
  */
 public class PowerTwoNMinusOneIterator implements PowerIterator {
 
-	private final MathContext mathContext;
+    private final MathContext mathContext;
 
-	private final BigDecimal xPowerTwo;
+    private final BigDecimal xPowerTwo;
 
-	private BigDecimal powerOfX;
+    private BigDecimal powerOfX;
 
-	public PowerTwoNMinusOneIterator(BigDecimal x, MathContext mathContext) {
-		this.mathContext = mathContext;
-		
-		xPowerTwo = x.multiply(x, mathContext);
-		powerOfX = BigDecimalMath.reciprocal(x, mathContext);
-	}
-	
-	@Override
-	public BigDecimal getCurrentPower() {
-		return powerOfX;
-	}
+    public PowerTwoNMinusOneIterator(BigDecimal x, MathContext mathContext) {
+        this.mathContext = mathContext;
 
-	@Override
-	public void calculateNextPower() {
-		powerOfX = powerOfX.multiply(xPowerTwo, mathContext);
-	}
+        xPowerTwo = x.multiply(x, mathContext);
+        powerOfX = BigDecimalMath.reciprocal(x, mathContext);
+    }
+
+    @Override
+    public BigDecimal getCurrentPower() {
+        return powerOfX;
+    }
+
+    @Override
+    public void calculateNextPower() {
+        powerOfX = powerOfX.multiply(xPowerTwo, mathContext);
+    }
 }

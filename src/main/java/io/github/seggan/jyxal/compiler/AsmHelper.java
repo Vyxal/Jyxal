@@ -14,43 +14,43 @@ public final class AsmHelper implements Opcodes {
         mv.visitInsn(DUP);
         mv.visitLdcInsn(number);
         mv.visitMethodInsn(
-            INVOKESPECIAL,
-            "java/math/BigDecimal",
-            "<init>",
-            "(Ljava/lang/String;)V",
-            false
+                INVOKESPECIAL,
+                "java/math/BigDecimal",
+                "<init>",
+                "(Ljava/lang/String;)V",
+                false
         );
     }
 
     public static void addBigComplex(String number, MethodVisitor mv) {
         AsmHelper.addBigDecimal(number, mv);
         mv.visitMethodInsn(
-            INVOKESTATIC,
-            "runtime/math/BigComplex",
-            "valueOf",
-            "(Ljava/math/BigDecimal;)Lruntime/math/BigComplex;",
-            false
+                INVOKESTATIC,
+                "runtime/math/BigComplex",
+                "valueOf",
+                "(Ljava/math/BigDecimal;)Lruntime/math/BigComplex;",
+                false
         );
     }
 
     public static void push(JyxalMethod mv) {
         mv.visitMethodInsn(
-            INVOKEVIRTUAL,
-            "runtime/ProgramStack",
-            "push",
-            "(Ljava/lang/Object;)V",
-            false
+                INVOKEVIRTUAL,
+                "runtime/ProgramStack",
+                "push",
+                "(Ljava/lang/Object;)V",
+                false
         );
     }
 
     public static void pop(JyxalMethod mv) {
         mv.loadStack();
         mv.visitMethodInsn(
-            INVOKEVIRTUAL,
-            "runtime/ProgramStack",
-            "pop",
-            "()Ljava/lang/Object;",
-            false
+                INVOKEVIRTUAL,
+                "runtime/ProgramStack",
+                "pop",
+                "()Ljava/lang/Object;",
+                false
         );
     }
 

@@ -10,7 +10,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 
 class FiniteList extends JyxalList {
-    
+
     private List<Object> backing;
 
     FiniteList(Collection<?> elements) {
