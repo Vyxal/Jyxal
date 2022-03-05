@@ -33,4 +33,4 @@ jobs:
       uses: actions/upload-artifact@v3
       with:
         name: jyxal
-        path: build/libs/Jyxal-*-all.jar
+        path: "build/libs/Jyxal v*.jar"

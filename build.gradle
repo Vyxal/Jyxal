@@ -141,4 +141,6 @@ shadowJar {
     from(rootDir) {
         include "LICENSE.txt"
     }
+
+    archiveFileName = "Jyxal v${project.version}.jar"
 }
