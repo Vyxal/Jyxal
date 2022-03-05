@@ -11,7 +11,7 @@ public enum CompilerOptions {
     PRINT_TO_FILE('f'),
     ;
 
-    public static Set<CompilerOptions> OPTIONS = EnumSet.noneOf(CompilerOptions.class);
+    public static final Set<CompilerOptions> OPTIONS = EnumSet.noneOf(CompilerOptions.class);
 
     private final char c;
 

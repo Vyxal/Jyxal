@@ -435,9 +435,7 @@ public class BigRational extends Number implements Comparable<BigRational>, Seri
 
 	// private, because we want to hide that we use BigDecimal internally
 	private BigRational multiply(BigDecimal value) {
-		BigDecimal n = numerator.multiply(value);
-		BigDecimal d = denominator;
-		return of(n, d);
+		return of(numerator.multiply(value), denominator);
 	}
 	
 	/**
@@ -496,15 +494,11 @@ public class BigRational extends Number implements Comparable<BigRational>, Seri
 			return this;
 		}
 
-		BigDecimal n = numerator.multiply(value.denominator);
-		BigDecimal d = denominator.multiply(value.numerator);
-		return of(n, d);
+		return of(numerator.multiply(value.denominator), denominator.multiply(value.numerator));
 	}
 
 	private BigRational divide(BigDecimal value) {
-		BigDecimal n = numerator;
-		BigDecimal d = denominator.multiply(value);
-		return of(n, d);
+		return of(numerator, denominator.multiply(value));
 	}
 	
 	/**
@@ -717,6 +711,7 @@ public class BigRational extends Number implements Comparable<BigRational>, Seri
 
 	@Override
 	public int compareTo(BigRational other) {
+		//noinspection NumberEquality
 		if (this == other) {
 			return 0;
 		}
@@ -1085,7 +1080,7 @@ public class BigRational extends Number implements Comparable<BigRational>, Seri
 		return result;
 	}
 
-	private static List<BigRational> bernoulliCache = new ArrayList<>();
+	private static final List<BigRational> bernoulliCache = new ArrayList<>();
 	
 	/**
 	 * Calculates the Bernoulli number for the specified index.

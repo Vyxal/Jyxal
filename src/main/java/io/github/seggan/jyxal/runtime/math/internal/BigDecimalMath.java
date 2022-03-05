@@ -27,16 +27,9 @@ SOFTWARE.
 import java.math.BigDecimal;
 import java.math.MathContext;
 import java.math.RoundingMode;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
-import static java.math.BigDecimal.ONE;
-import static java.math.BigDecimal.TEN;
-import static java.math.BigDecimal.ZERO;
-import static java.math.BigDecimal.valueOf;
+import static java.math.BigDecimal.*;
 
 /**
  * Provides advanced functions operating on {@link BigDecimal}s.
@@ -69,7 +62,7 @@ public class BigDecimalMath {
 
 	private static final int EXPECTED_INITIAL_PRECISION = 15;
 
-	private static BigDecimal[] factorialCache = new BigDecimal[100];
+	private static final BigDecimal[] factorialCache = new BigDecimal[100];
 
 	static {
 		BigDecimal result = ONE;
@@ -263,7 +256,7 @@ public class BigDecimalMath {
 	 * @return <code>true</code> if the value can be represented as <code>int</code> value
 	 */
 	public static boolean isIntValue(BigDecimal value) {
-				try {
+		try {
 			value.intValueExact();
 			return true;
 		} catch (ArithmeticException ex) {
@@ -281,7 +274,7 @@ public class BigDecimalMath {
 	 * @return <code>true</code> if the value can be represented as <code>long</code> value
 	 */
 	public static boolean isLongValue(BigDecimal value) {
-				try {
+		try {
 			value.longValueExact();
 			return true;
 		} catch (ArithmeticException ex) {
@@ -1077,42 +1070,40 @@ System.out.println(BigDecimalMath.roundWithTrailingZeroes(new BigDecimal("0.0000
             powerOfThree = 9;
         }
         else {
-            while (value > 1.4) { // never happens when called by logUsingExponent()
-                value /= 2;
-                factorOfTwo++;
-	            powerOfTwo <<= 1;
-            }
-        }
+					while (value > 1.4) { // never happens when called by logUsingExponent()
+						value /= 2;
+						factorOfTwo++;
+						powerOfTwo <<= 1;
+					}
+				}
 
-        BigDecimal correctedX = x;
-        BigDecimal result = ZERO;
+			BigDecimal correctedX = x;
+			BigDecimal result = ZERO;
 
-        if (factorOfTwo > 0) {
-            correctedX = correctedX.divide(valueOf(powerOfTwo), mc);
-            result = result.add(logTwo(mcDouble).multiply(valueOf(factorOfTwo), mc));
-        }
-        else if (factorOfTwo < 0) {
-            correctedX = correctedX.multiply(valueOf(powerOfTwo), mc);
-            result = result.subtract(logTwo(mcDouble).multiply(valueOf(-factorOfTwo), mc));
-        }
+			if (factorOfTwo > 0) {
+				correctedX = correctedX.divide(valueOf(powerOfTwo), mc);
+				result = result.add(logTwo(mcDouble).multiply(valueOf(factorOfTwo), mc));
+			} else if (factorOfTwo < 0) {
+				correctedX = correctedX.multiply(valueOf(powerOfTwo), mc);
+				result = result.subtract(logTwo(mcDouble).multiply(valueOf(-factorOfTwo), mc));
+			}
 
-        if (factorOfThree > 0) {
-            correctedX = correctedX.divide(valueOf(powerOfThree), mc);
-            result = result.add(logThree(mcDouble).multiply(valueOf(factorOfThree), mc));
-        }
-        else if (factorOfThree < 0) {
-            correctedX = correctedX.multiply(valueOf(powerOfThree), mc);
-            result = result.subtract(logThree(mcDouble).multiply(valueOf(-factorOfThree), mc));
-        }
+			if (factorOfThree > 0) {
+				correctedX = correctedX.divide(valueOf(powerOfThree), mc);
+				result = result.add(logThree(mcDouble).multiply(valueOf(factorOfThree), mc));
+			} else if (factorOfThree < 0) {
+				correctedX = correctedX.multiply(valueOf(powerOfThree), mc);
+				result = result.subtract(logThree(mcDouble).multiply(valueOf(-factorOfThree), mc));
+			}
 
-        if (x == correctedX && result == ZERO) {
-            return logUsingNewton(x, mathContext);
-        }
+			if (x.equals(correctedX) && result.equals(ZERO)) {
+				return logUsingNewton(x, mathContext);
+			}
 
-        result = result.add(logUsingNewton(correctedX, mc), mc);
+			result = result.add(logUsingNewton(correctedX, mc), mc);
 
-        return result;
-    }
+			return result;
+		}
 
     /**
 	 * Returns the number pi.
@@ -1125,7 +1116,7 @@ System.out.println(BigDecimalMath.roundWithTrailingZeroes(new BigDecimal("0.0000
 	 */
 	public static BigDecimal pi(MathContext mathContext) {
 		checkMathContext(mathContext);
-		BigDecimal result = null;
+		BigDecimal result;
 		
 		synchronized (piCacheLock) {
 			if (piCache != null && mathContext.getPrecision() <= piCache.precision()) {
@@ -1155,9 +1146,9 @@ System.out.println(BigDecimalMath.roundWithTrailingZeroes(new BigDecimal("0.0000
 		long dividendTerm1 = 5; // -(6*k - 5)
 		long dividendTerm2 = -1; // 2*k - 1
 		long dividendTerm3 = -1; // 6*k - 1
-		BigDecimal kPower3 = BigDecimal.ZERO;
+		BigDecimal kPower3;
 		
-		long iterationCount = (mc.getPrecision()+13) / 14;
+		long iterationCount = (mc.getPrecision() + 13) / 14;
 		for (long k = 1; k <= iterationCount; k++) {
 			BigDecimal valueK = BigDecimal.valueOf(k);
 			dividendTerm1 += -6;
@@ -1192,7 +1183,7 @@ System.out.println(BigDecimalMath.roundWithTrailingZeroes(new BigDecimal("0.0000
 	 */
 	public static BigDecimal e(MathContext mathContext) {
 		checkMathContext(mathContext);
-		BigDecimal result = null;
+		BigDecimal result;
 		
 		synchronized (eCacheLock) {
 			if (eCache != null && mathContext.getPrecision() <= eCache.precision()) {
@@ -1207,7 +1198,7 @@ System.out.println(BigDecimalMath.roundWithTrailingZeroes(new BigDecimal("0.0000
 	}
 	
 	private static BigDecimal logTen(MathContext mathContext) {
-		BigDecimal result = null;
+		BigDecimal result;
 		
 		synchronized (log10CacheLock) {
 			if (log10Cache != null && mathContext.getPrecision() <= log10Cache.precision()) {
@@ -1222,7 +1213,7 @@ System.out.println(BigDecimalMath.roundWithTrailingZeroes(new BigDecimal("0.0000
 	}
 	
 	private static BigDecimal logTwo(MathContext mathContext) {
-		BigDecimal result = null;
+		BigDecimal result;
 		
 		synchronized (log2CacheLock) {
 			if (log2Cache != null && mathContext.getPrecision() <= log2Cache.precision()) {
@@ -1237,7 +1228,7 @@ System.out.println(BigDecimalMath.roundWithTrailingZeroes(new BigDecimal("0.0000
 	}
 
 	private static BigDecimal logThree(MathContext mathContext) {
-		BigDecimal result = null;
+		BigDecimal result;
 		
 		synchronized (log3CacheLock) {
 			if (log3Cache != null && mathContext.getPrecision() <= log3Cache.precision()) {
