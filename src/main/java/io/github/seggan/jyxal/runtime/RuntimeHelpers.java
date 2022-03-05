@@ -47,13 +47,13 @@ public final class RuntimeHelpers {
 
     public static Object exec(String expr) {
         ProgramStack stack = new ProgramStack();
-        var shell = jShell.get();
-        for (SnippetEvent e : shell.eval(shell.sourceCodeAnalysis().analyzeCompletion(expr).source())) {
-            if (e.status() == Snippet.Status.VALID) {
-                pushExpr(stack, e.value());
-            } else {
-                shell.close();
-                throw new RuntimeException(e.toString());
+        try (JShell shell = jShell.get()) {
+            for (SnippetEvent e : shell.eval(shell.sourceCodeAnalysis().analyzeCompletion(expr).source())) {
+                if (e.status() == Snippet.Status.VALID) {
+                    pushExpr(stack, e.value());
+                } else {
+                    throw new RuntimeException(e.toString());
+                }
             }
         }
         return stack.pop();

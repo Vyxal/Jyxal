@@ -15,18 +15,15 @@ public class TestHelper {
         String fileName = Path.of(args[0]).getFileName().toString();
         Main.doMain(args, true);
         Path jar = Path.of(args[0]).resolveSibling(p.matcher(fileName).replaceAll(".jar"));
-        URLClassLoader cl = new URLClassLoader(
-                new URL[] { jar.toUri().toURL() },
-                TestHelper.class.getClassLoader()
-        );
-        try {
+        try (URLClassLoader cl = new URLClassLoader(
+            new URL[]{jar.toUri().toURL()},
+            TestHelper.class.getClassLoader()
+        )) {
             Class<?> clazz = cl.loadClass("jyxal.Main");
             clazz.getMethod("main", String[].class).invoke(null, (Object) new String[0]);
         } catch (ReflectiveOperationException e) {
-            cl.close();
             throw new RuntimeException(e);
         }
-        cl.close();
         Files.delete(jar);
     }
 }
