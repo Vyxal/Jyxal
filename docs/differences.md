@@ -27,3 +27,6 @@ Gets a value from a dictionary/map (if not present, 0) or sets a value in the di
 #### Overloads
 - any a, lst b: `dict(b).get(a, 0)`
 - any a, lst b, any c: `dict(b)[a] = c`
+
+## Aliases
+Aliases are a very powerful new feature in Jyxal. They allow you to reference digraphs in one byte. To use them, simply add a structure of the form `a|b` to the **start** of your program, where `a` is any digraph, and `b` is a single character. Any element previously assigned under `b` will be inaccessible to the program.
