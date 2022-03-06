@@ -1,6 +1,7 @@
 package io.github.seggan.jyxal.runtime;
 
 import java.util.function.Supplier;
+import java.util.regex.Pattern;
 
 public final class LazyInit<T> {
 
@@ -9,6 +10,10 @@ public final class LazyInit<T> {
 
     public LazyInit(Supplier<T> supplier) {
         this.supplier = supplier;
+    }
+
+    public static LazyInit<Pattern> regex(String regex) {
+        return new LazyInit<>(() -> Pattern.compile(regex));
     }
 
     public T get() {

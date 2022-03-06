@@ -106,6 +106,21 @@ public final class RuntimeHelpers {
         return result;
     }
 
+    public static Object mapLambda(Object obj, Lambda lambda) {
+        if (obj instanceof JyxalList jyxalList) {
+            return jyxalList.map(lambda::call);
+        } else if (obj instanceof BigComplex bigComplex) {
+            return JyxalList.range(BigComplex.ONE, bigComplex).map(lambda::call);
+        } else {
+            String s = obj.toString();
+            JyxalList list = JyxalList.create();
+            for (char c : s.toCharArray()) {
+                list.add(lambda.call(Character.toString(c)));
+            }
+            return list;
+        }
+    }
+
     public static <T extends Collection<BigComplex>> T primeFactors(BigComplex n, Supplier<T> factory) {
         T factors = factory.get();
         if (n.re.compareTo(BigDecimal.valueOf(Long.MAX_VALUE)) < 0

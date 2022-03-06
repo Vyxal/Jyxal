@@ -43,6 +43,7 @@ public enum Element {
     MULTI_COMMAND("\u2022"),
     FUNCTION_CALL("\u2020"),
     MULTIPLY("*"),
+    SUM("\u2211", false),
     BOOLIFY("\u1E03", mv -> {
         mv.loadStack();
         AsmHelper.pop(mv);
@@ -72,6 +73,7 @@ public enum Element {
     CHR_ORD("C", true),
     TRIPLICATE("D"),
     TWO_POW("E", true),
+    FLATTEN("f", false),
     DUPLICATE(":"),
     EQUALS("="),
     GREATER_THAN(">"),

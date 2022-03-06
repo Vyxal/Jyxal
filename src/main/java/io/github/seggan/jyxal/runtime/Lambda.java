@@ -18,4 +18,15 @@ public record Lambda(int arity, MethodHandle handle) {
             throw new RuntimeException(e);
         }
     }
+
+    public Object call(Object arg) {
+        if (arity != 1) {
+            throw new RuntimeException("Invalid arity");
+        }
+        try {
+            return handle.invoke(new ProgramStack(arg));
+        } catch (Throwable e) {
+            throw new RuntimeException(e);
+        }
+    }
 }

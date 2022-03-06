@@ -28,17 +28,33 @@ import java.util.zip.GZIPInputStream;
 @SuppressWarnings("UnusedReturnValue")
 public final class RuntimeMethods {
 
-    private static final LazyInit<Pattern> COMMA_PATTERN = new LazyInit<>(() -> Pattern.compile(","));
-    private static final LazyInit<Pattern> SPACE_PATTERN = new LazyInit<>(() -> Pattern.compile(" "));
+    private static final LazyInit<Pattern> COMMA_PATTERN = LazyInit.regex(",");
+    private static final LazyInit<Pattern> SPACE_PATTERN = LazyInit.regex(" ");
+    private static final LazyInit<Pattern> PLUS_SPACE_I_PATTERN = LazyInit.regex("[+\\si]");
 
     private RuntimeMethods() {
     }
 
     public static Object add(ProgramStack stack) {
-        Object o = RuntimeHelpers.vectorise(2, RuntimeMethods::add, stack);
-        if (o != null) return o;
         Object b = stack.pop();
         Object a = stack.pop();
+        return addImpl(a, b);
+    }
+
+    private static Object addImpl(Object a, Object b) {
+        if (a instanceof JyxalList listA) {
+            if (b instanceof JyxalList listB) {
+                JyxalList result = JyxalList.create();
+                for (int i = 0, size = Math.min(listA.size(), listB.size()); i < size; i++) {
+                    result.add(addImpl(listA.get(i), listB.get(i)));
+                }
+                return result;
+            }
+            return listA.map(item -> addImpl(item, b));
+        } else if (b instanceof JyxalList listB) {
+            return listB.map(item -> addImpl(a, item));
+        }
+
         if (a instanceof BigComplex ca && b instanceof BigComplex cb) {
             return ca.add(cb);
         } else {
@@ -121,6 +137,30 @@ public final class RuntimeMethods {
         } else {
             return BigComplex.valueOf(a.toString().equals(b.toString()));
         }
+    }
+
+    public static Object flatten(Object obj) {
+        if (obj instanceof JyxalList list) {
+            return flattenImpl(list);
+        } else {
+            JyxalList list = JyxalList.create();
+            for (char c : obj.toString().toCharArray()) {
+                list.add(Character.toString(c));
+            }
+            return list;
+        }
+    }
+
+    private static JyxalList flattenImpl(JyxalList list) {
+        JyxalList newList = JyxalList.create();
+        for (Object item : list) {
+            if (item instanceof JyxalList subList) {
+                newList.addAll(flattenImpl(subList));
+            } else {
+                newList.add(item);
+            }
+        }
+        return newList;
     }
 
     public static Object functionCall(ProgramStack stack) {
@@ -566,6 +606,29 @@ public final class RuntimeMethods {
             return superList;
         } else {
             return JyxalList.create((Object[]) a.toString().split(b.toString()));
+        }
+    }
+
+    public static Object sum(Object obj) {
+        if (obj instanceof JyxalList list) {
+            Object sum = BigComplex.ZERO;
+            for (Object item : list) {
+                sum = addImpl(sum, item);
+            }
+            return sum;
+        } else if (obj instanceof BigComplex) {
+            char[] chars = PLUS_SPACE_I_PATTERN.get().matcher(obj.toString()).replaceAll("").toCharArray();
+            long sum = 0;
+            for (char c : chars) {
+                sum += c - 48;
+            }
+            return BigComplex.valueOf(sum);
+        } else {
+            long sum = 0;
+            for (char c : obj.toString().toCharArray()) {
+                sum += c;
+            }
+            return BigComplex.valueOf(sum);
         }
     }
 

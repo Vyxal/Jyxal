@@ -22,8 +22,10 @@ import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.util.ArrayDeque;
 import java.util.Deque;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.regex.Pattern;
@@ -46,6 +48,8 @@ public final class Compiler extends VyxalParserBaseVisitor<Void> implements Opco
 
     private int listCounter = 0;
     private int lambdaCounter = 0;
+
+    private final Map<String, String> aliases = new HashMap<>();
 
     private Compiler(VyxalParser parser, JyxalClassWriter classWriter, MethodVisitor clinit) {
         this.parser = parser;
@@ -345,10 +349,18 @@ public final class Compiler extends VyxalParserBaseVisitor<Void> implements Opco
     }
 
     @Override
+    public Void visitAlias(VyxalParser.AliasContext ctx) {
+        aliases.put(ctx.element_type(1).getText(), ctx.PREFIX().getText() + ctx.element_type(0).getText());
+        return null;
+    }
+
+    @Override
     public Void visitElement(VyxalParser.ElementContext ctx) {
         String element = ctx.element_type().getText();
         if (ctx.PREFIX() != null) {
             element = ctx.PREFIX().getText() + element;
+        } else {
+            element = aliases.getOrDefault(element, element);
         }
 
         Consumer<JyxalMethod> consumer = ctx.MODIFIER() == null ? null : visitModifier(ctx.MODIFIER().getText());
@@ -534,7 +546,7 @@ public final class Compiler extends VyxalParserBaseVisitor<Void> implements Opco
 
         mv = callStack.peek();
 
-        // λ
+        // normal lambda
         if ("\u03BB".equals(ctx.LAMBDA_TYPE().getText())) {
             mv.loadStack();
 
@@ -556,6 +568,38 @@ public final class Compiler extends VyxalParserBaseVisitor<Void> implements Opco
                     "(ILjava/lang/invoke/MethodHandle;)V",
                     false
             );
+            AsmHelper.push(mv);
+        } else if ("\u019B".equals(ctx.LAMBDA_TYPE().getText())) {
+            AsmHelper.pop(mv);
+
+            mv.visitTypeInsn(NEW, "runtime/Lambda");
+            mv.visitInsn(DUP);
+            mv.visitInsn(ICONST_1);
+            mv.visitLdcInsn(new Handle(
+                    H_INVOKESTATIC,
+                    "jyxal/Main",
+                    lambdaName,
+                    "(Lruntime/ProgramStack;)Ljava/lang/Object;",
+                    false
+            ));
+            mv.visitMethodInsn(
+                    INVOKESPECIAL,
+                    "runtime/Lambda",
+                    "<init>",
+                    "(ILjava/lang/invoke/MethodHandle;)V",
+                    false
+            );
+
+            mv.visitMethodInsn(
+                    INVOKESTATIC,
+                    "runtime/RuntimeHelpers",
+                    "mapLambda",
+                    "(Ljava/lang/Object;Lruntime/Lambda;)Ljava/lang/Object;",
+                    false
+            );
+
+            mv.loadStack();
+            mv.visitInsn(SWAP);
             AsmHelper.push(mv);
         }
 

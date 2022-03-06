@@ -9,7 +9,11 @@ options {
 }
 
 file
-    : program EOF
+    : alias* program EOF
+    ;
+
+alias
+    : PREFIX element_type PIPE element_type WHITESPACE*
     ;
 
 program
@@ -28,11 +32,11 @@ literal
     ;
 
 normal_string
-    : BACKTICK (~BACKTICK .)+? BACKTICK
+    : BACKTICK (~BACKTICK .)*? BACKTICK
     ;
 
 compressed_string
-    : COMPRESSED_STRING (~COMPRESSED_STRING .)+? COMPRESSED_STRING
+    : COMPRESSED_STRING (~COMPRESSED_STRING .)*? COMPRESSED_STRING
     ;
 
 single_char_string
@@ -52,7 +56,7 @@ integer
     ;
 
 compressed_number
-    : COMPRESSED_NUMBER (~COMPRESSED_NUMBER .)+? COMPRESSED_NUMBER
+    : COMPRESSED_NUMBER (~COMPRESSED_NUMBER .)*? COMPRESSED_NUMBER
     ;
 
 complex_number
