@@ -3,6 +3,7 @@ package io.github.seggan.jyxal.runtime;
 import io.github.seggan.jyxal.runtime.list.JyxalList;
 import io.github.seggan.jyxal.runtime.math.BigComplex;
 import io.github.seggan.jyxal.runtime.math.BigComplexMath;
+import io.github.seggan.jyxal.runtime.text.JsonParser;
 
 import java.io.ByteArrayInputStream;
 import java.io.FileOutputStream;
@@ -606,6 +607,23 @@ public final class RuntimeMethods {
             return superList;
         } else {
             return JyxalList.create((Object[]) a.toString().split(b.toString()));
+        }
+    }
+
+    public static Object subtract(ProgramStack stack) {
+        Object o = RuntimeHelpers.vectorise(2, RuntimeMethods::subtract, stack);
+        if (o != null) return o;
+        Object b = stack.pop();
+        Object a = stack.pop();
+        if (a instanceof BigComplex ca) {
+            if (b instanceof BigComplex cb) {
+                return ca.subtract(cb);
+            }
+            return "-".repeat(ca.re.intValue()) + b;
+        } else if (b instanceof BigComplex cb) {
+            return a + "-".repeat(cb.re.intValue());
+        } else {
+            return a.toString().replace(b.toString(), "");
         }
     }
 

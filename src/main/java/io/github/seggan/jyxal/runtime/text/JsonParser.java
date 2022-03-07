@@ -1,5 +1,6 @@
-package io.github.seggan.jyxal.runtime;
+package io.github.seggan.jyxal.runtime.text;
 
+import io.github.seggan.jyxal.runtime.RuntimeHelpers;
 import io.github.seggan.jyxal.runtime.list.JyxalList;
 import io.github.seggan.jyxal.runtime.math.BigComplex;
 

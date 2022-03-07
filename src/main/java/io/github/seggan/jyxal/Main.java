@@ -3,7 +3,7 @@ package io.github.seggan.jyxal;
 import io.github.seggan.jyxal.antlr.VyxalLexer;
 import io.github.seggan.jyxal.antlr.VyxalParser;
 import io.github.seggan.jyxal.compiler.Compiler;
-import io.github.seggan.jyxal.runtime.Compression;
+import io.github.seggan.jyxal.runtime.text.Compression;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.objectweb.asm.ClassReader;

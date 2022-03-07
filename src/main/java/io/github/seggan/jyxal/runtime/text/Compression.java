@@ -1,4 +1,7 @@
-package io.github.seggan.jyxal.runtime;
+package io.github.seggan.jyxal.runtime.text;
+
+import io.github.seggan.jyxal.runtime.LazyInit;
+import io.github.seggan.jyxal.runtime.RuntimeHelpers;
 
 import java.io.IOException;
 import java.io.InputStream;

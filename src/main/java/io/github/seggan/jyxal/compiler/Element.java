@@ -12,38 +12,35 @@ import java.util.function.Consumer;
 
 public enum Element {
 
+    /**
+     * Math
+     */
     ADD("+"),
-    ASTERISK("\u00D7", "*"),
-    SPLIT_ON("\u20AC"),
-    REMOVE_AT_INDEX("\u27C7"),
-    INFINITE_REPLACE("\u00A2"),
     COMPLEMENT("\u2310", true),
-    // inclusive zero range
-    IZR("\u0280", true),
-    STACK_SIZE("!", mv -> {
+    HALVE("\u00BD"),
+    INCREMENT("\u203A", true),
+    INFINITE_PRIMES("\u00DEp", mv -> {
         mv.loadStack();
-        mv.visitMethodInsn(
-                Opcodes.INVOKEVIRTUAL,
-                "runtime/ProgramStack",
-                "size",
-                "()I",
-                false
-        );
-        mv.visitInsn(Opcodes.I2L);
         mv.visitMethodInsn(
                 Opcodes.INVOKESTATIC,
-                "runtime/math/BigComplex",
-                "valueOf",
-                "(J)Lruntime/math/BigComplex;",
+                "runtime/RuntimeMethods",
+                "infinitePrimes",
+                "()Lruntime/list/JyxalList;",
                 false
         );
-        mv.loadStack();
         AsmHelper.push(mv);
     }),
+    MODULO_FORMAT("%"),
     MULTI_COMMAND("\u2022"),
-    FUNCTION_CALL("\u2020"),
     MULTIPLY("*"),
+    SUBTRACT("-"),
     SUM("\u2211", false),
+    TWO_POW("E", true),
+
+    /**
+     * Boolean
+     */
+    ALL("A", false),
     BOOLIFY("\u1E03", mv -> {
         mv.loadStack();
         AsmHelper.pop(mv);
@@ -64,52 +61,79 @@ public enum Element {
         );
         AsmHelper.push(mv);
     }),
-    MODULO_FORMAT("%"),
-    HEAD("h", false),
-    TAIL("t", false),
-    INCREMENT("\u203A", true),
-    HALVE("\u00BD"),
-    ALL("A", false),
-    CHR_ORD("C", true),
-    TRIPLICATE("D"),
-    TWO_POW("E", true),
-    FLATTEN("f", false),
-    DUPLICATE(":"),
     EQUALS("="),
     GREATER_THAN(">"),
     GREATER_THAN_OR_EQUAL("\u2265"),
-    ITEM_SPLIT("\u00F7"),
     LESS_THAN("<"),
     LESS_THAN_OR_EQUAL("\u2264"),
     LOGICAL_AND("\u2227"),
     LOGICAL_OR("\u2228"),
+
+    /**
+     * String
+     */
+    CHR_ORD("C", true),
+    INFINITE_REPLACE("\u00A2"),
+    ITEM_SPLIT("\u00F7"),
+    JSON_PARSE("\u00F8J", true),
+    SPLIT_ON("\u20AC"),
+
+    /**
+     * Literals
+     */
+    ASTERISK("\u00D7", "*"),
+
+    /**
+     * List
+     */
+    FLATTEN("f", false),
+    HEAD("h", false),
+    // inclusive zero range
+    IZR("\u0280", true),
+    MAP_GET_SET("\u00DEd"),
+    REMOVE_AT_INDEX("\u27C7"),
+    STACK_SIZE("!", mv -> {
+        mv.loadStack();
+        mv.visitMethodInsn(
+                Opcodes.INVOKEVIRTUAL,
+                "runtime/ProgramStack",
+                "size",
+                "()I",
+                false
+        );
+        mv.visitInsn(Opcodes.I2L);
+        mv.visitMethodInsn(
+                Opcodes.INVOKESTATIC,
+                "runtime/math/BigComplex",
+                "valueOf",
+                "(J)Lruntime/math/BigComplex;",
+                false
+        );
+        mv.loadStack();
+        AsmHelper.push(mv);
+    }),
+    TAIL("t", false),
+
+    /**
+     * Stack
+     */
+    TRIPLICATE("D"),
+    DUPLICATE(":"),
+    POP("_", mv -> {
+        AsmHelper.pop(mv);
+        mv.visitInsn(Opcodes.POP);
+    }),
+
+    /**
+     * Misc
+     */
     CONTEXT_VAR("n", mv -> {
         mv.loadStack();
         mv.loadContextVar();
         AsmHelper.push(mv);
     }),
-    IS_PRIME("\u00E6", true),
-    INFINITE_PRIMES("\u00DEp", mv -> {
-        mv.loadStack();
-        mv.visitMethodInsn(
-                Opcodes.INVOKESTATIC,
-                "runtime/RuntimeMethods",
-                "infinitePrimes",
-                "()Lruntime/list/JyxalList;",
-                false
-        );
-        AsmHelper.push(mv);
-    }),
-    POP("_", mv -> {
-        AsmHelper.pop(mv);
-        mv.visitInsn(Opcodes.POP);
-    }),
-    PRINTLN(",", mv -> {
-        AsmHelper.pop(mv);
-        mv.visitFieldInsn(Opcodes.GETSTATIC, "java/lang/System", "out", "Ljava/io/PrintStream;");
-        mv.visitInsn(Opcodes.SWAP);
-        mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/io/PrintStream", "println", "(Ljava/lang/Object;)V", false);
-    }),
+    FUNCTION_CALL("\u2020"),
+    GET_REQUEST("\u00A8U", true),
     PRINT("\u20B4", mv -> {
         AsmHelper.pop(mv);
         mv.visitFieldInsn(Opcodes.GETSTATIC, "java/lang/System", "out", "Ljava/io/PrintStream;");
@@ -128,9 +152,12 @@ public enum Element {
         );
         mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/io/PrintStream", "print", "(Ljava/lang/Object;)V", false);
     }),
-    GET_REQUEST("\u00A8U", true),
-    JSON_PARSE("\u00F8J", true),
-    MAP_GET_SET("\u00DEd"),
+    PRINTLN(",", mv -> {
+        AsmHelper.pop(mv);
+        mv.visitFieldInsn(Opcodes.GETSTATIC, "java/lang/System", "out", "Ljava/io/PrintStream;");
+        mv.visitInsn(Opcodes.SWAP);
+        mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/io/PrintStream", "println", "(Ljava/lang/Object;)V", false);
+    }),
     ;
 
     final LinkedMethodType type;

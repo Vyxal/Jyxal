@@ -1,5 +1,6 @@
 package io.github.seggan.jyxal.runtime;
 
+import io.github.seggan.jyxal.runtime.text.Compression;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
