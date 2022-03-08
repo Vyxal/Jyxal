@@ -151,6 +151,19 @@ public enum Element {
     }),
     FUNCTION_CALL("\u2020"),
     GET_REQUEST("\u00A8U", true),
+    INPUT("?", mv -> {
+        mv.loadStack();
+        mv.visitMethodInsn(
+                Opcodes.INVOKEVIRTUAL,
+                "runtime/ProgramStack",
+                "getInput",
+                "()Ljava/lang/Object;",
+                false
+        );
+        mv.loadStack();
+        mv.visitInsn(Opcodes.SWAP);
+        AsmHelper.push(mv);
+    }),
     PRINT("\u20B4", mv -> {
         AsmHelper.pop(mv);
         mv.visitFieldInsn(Opcodes.GETSTATIC, "java/lang/System", "out", "Ljava/io/PrintStream;");

@@ -73,7 +73,7 @@ public final class RuntimeHelpers {
         ProgramStack stack = new ProgramStack();
         for (SnippetEvent e : jShell.get().eval(jShell.get().sourceCodeAnalysis().analyzeCompletion(expr).source())) {
             if (e.status() == Snippet.Status.VALID) {
-                pushExpr(stack, e.value());
+                stack.push(eval(e.value()));
             } else {
                 throw new RuntimeException(e.toString());
             }
@@ -194,21 +194,21 @@ public final class RuntimeHelpers {
         return factors;
     }
 
-    public static void pushExpr(ProgramStack stack, String expr) {
+    public static Object eval(String expr) {
         if (NUMBER_PATTERN.get().matcher(expr).matches()) {
-            stack.push(BigComplex.valueOf(new BigDecimal(expr)));
+            return BigComplex.valueOf(new BigDecimal(expr));
         } else {
             Matcher matcher = LIST_PATTERN.get().matcher(expr);
             if (matcher.matches()) {
-                ProgramStack newStack = new ProgramStack();
+                JyxalList list = JyxalList.create();
                 while (matcher.find()) {
-                    pushExpr(newStack, matcher.group());
+                    list.add(eval(matcher.group(1)));
                 }
-                stack.push(JyxalList.create(newStack));
+                return list;
             } else if (expr.startsWith("\"") && expr.endsWith("\"")) {
-                stack.push(expr.substring(1, expr.length() - 1));
+                return expr.substring(1, expr.length() - 1);
             } else {
-                stack.push(expr);
+                return expr;
             }
         }
     }

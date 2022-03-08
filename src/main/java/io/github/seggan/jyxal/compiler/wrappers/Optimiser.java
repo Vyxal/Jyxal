@@ -15,16 +15,21 @@ public class Optimiser implements Opcodes {
 
     public static void optimise(InsnList codeBlock, JyxalMethod jyxalMethod) {
         // first remove all stack loads
+        Set<AbstractInsnNode> toRemove = new HashSet<>();
         for (AbstractInsnNode insn : codeBlock) {
             if (insn instanceof VarInsnNode varInsnNode && varInsnNode.var == jyxalMethod.getStackVar()
                     && varInsnNode.getOpcode() == ALOAD) {
-                codeBlock.remove(insn);
-                if (insn.getNext().getOpcode() == SWAP) {
-                    codeBlock.remove(insn.getNext());
+                toRemove.add(insn);
+                AbstractInsnNode next = insn.getNext();
+                if (next != null && next.getOpcode() == SWAP) {
+                    toRemove.add(next);
                 }
             }
         }
-        Set<AbstractInsnNode> toRemove = new HashSet<>();
+        for (AbstractInsnNode insn : toRemove) {
+            codeBlock.remove(insn);
+        }
+        toRemove.clear();
         // then remove all push-pop pairs
         for (AbstractInsnNode insn : codeBlock) {
             if (insn.getOpcode() == INVOKEVIRTUAL

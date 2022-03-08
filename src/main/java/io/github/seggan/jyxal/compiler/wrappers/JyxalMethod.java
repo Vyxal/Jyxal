@@ -1,7 +1,6 @@
 package io.github.seggan.jyxal.compiler.wrappers;
 
 import io.github.seggan.jyxal.CompilerOptions;
-import io.github.seggan.jyxal.compiler.AsmHelper;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
@@ -9,7 +8,6 @@ import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.LabelNode;
 import org.objectweb.asm.tree.MethodNode;
-import org.objectweb.asm.tree.VarInsnNode;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -38,14 +36,24 @@ public class JyxalMethod extends MethodNode implements Opcodes {
 
             visitTypeInsn(NEW, "runtime/ProgramStack");
             visitInsn(DUP);
-            visitMethodInsn(INVOKESPECIAL, "runtime/ProgramStack", "<init>", "()V", false);
+            if (name.equals("main") && desc.equals("([Ljava/lang/String;)V") && access == (ACC_PUBLIC | ACC_STATIC)) {
+                visitVarInsn(ALOAD, 0);
+                visitMethodInsn(INVOKESPECIAL, "runtime/ProgramStack", "<init>", "([Ljava/lang/String;)V", false);
+            } else {
+                visitMethodInsn(INVOKESPECIAL, "runtime/ProgramStack", "<init>", "()V", false);
+            }
             visitVarInsn(ASTORE, stackVar1);
         }
 
         this.stackVar = stackVar1;
         this.ctxVar = stackVar + 1;
 
-        AsmHelper.addBigComplex("0", this);
+        mv.visitFieldInsn(
+                GETSTATIC,
+                "runtime/math/BigComplex",
+                "ZERO",
+                "Lruntime/math/BigComplex;"
+        );
         visitVarInsn(ASTORE, ctxVar);
     }
 
@@ -109,38 +117,6 @@ public class JyxalMethod extends MethodNode implements Opcodes {
 
             for (InsnList block : codeBlocks) {
                 instructions.add(block);
-            }
-
-            // The instruction sequence for the context var
-            InsnSequence contextInit = new InsnSequence(NEW, DUP, LDC, INVOKESPECIAL, INVOKESTATIC, ASTORE);
-            List<AbstractInsnNode> contextVarInit = null;
-            boolean contextVarUsed = false;
-
-            ListIterator<AbstractInsnNode> it = instructions.iterator();
-            while (it.hasNext()) {
-                AbstractInsnNode insn = it.next();
-                if (contextVarInit == null) {
-                    List<AbstractInsnNode> matches = contextInit.matches(insn);
-                    if (!matches.isEmpty()
-                            && matches.get(matches.size() - 1) instanceof VarInsnNode varInsnNode
-                            && varInsnNode.var == ctxVar) {
-                        contextVarInit = matches;
-                        int size = contextVarInit.size() - 1;
-                        for (int i = 0; i < size; i++) {
-                            it.next();
-                        }
-                    }
-                }
-
-                if (insn instanceof VarInsnNode varInsnNode && varInsnNode.var == ctxVar) {
-                    contextVarUsed = true;
-                }
-            }
-
-            if (contextVarInit != null && !contextVarUsed) {
-                for (AbstractInsnNode insn : contextVarInit) {
-                    instructions.remove(insn);
-                }
             }
         }
 
