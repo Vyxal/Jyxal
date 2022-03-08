@@ -19,6 +19,9 @@ public class Optimiser implements Opcodes {
             if (insn instanceof VarInsnNode varInsnNode && varInsnNode.var == jyxalMethod.getStackVar()
                     && varInsnNode.getOpcode() == ALOAD) {
                 codeBlock.remove(insn);
+                if (insn.getNext().getOpcode() == SWAP) {
+                    codeBlock.remove(insn.getNext());
+                }
             }
         }
         Set<AbstractInsnNode> toRemove = new HashSet<>();

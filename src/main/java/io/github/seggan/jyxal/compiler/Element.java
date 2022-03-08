@@ -17,6 +17,8 @@ public enum Element {
      */
     ADD("+"),
     COMPLEMENT("\u2310", true),
+    DIVIDE("/"),
+    DOUBLE_REPEAT("d", true),
     HALVE("\u00BD"),
     INCREMENT("\u203A", true),
     INFINITE_PRIMES("\u00DEp", mv -> {
@@ -76,12 +78,14 @@ public enum Element {
     INFINITE_REPLACE("\u00A2"),
     ITEM_SPLIT("\u00F7"),
     JSON_PARSE("\u00F8J", true),
+    REVERSE("\u1E58", false),
     SPLIT_ON("\u20AC"),
 
     /**
      * Literals
      */
     ASTERISK("\u00D7", "*"),
+    SPACE("\u00F0", " "),
 
     /**
      * List
@@ -90,7 +94,10 @@ public enum Element {
     HEAD("h", false),
     // inclusive zero range
     IZR("\u0280", true),
+    LENGTH("L", false),
     MAP_GET_SET("\u00DEd"),
+    MERGE("J"),
+    PREPEND("p"),
     REMOVE_AT_INDEX("\u27C7"),
     STACK_SIZE("!", mv -> {
         mv.loadStack();
@@ -122,6 +129,16 @@ public enum Element {
     POP("_", mv -> {
         AsmHelper.pop(mv);
         mv.visitInsn(Opcodes.POP);
+    }),
+    PUSH_REGISTER("\u00A5", mv -> {
+        mv.loadStack();
+        mv.visitFieldInsn(
+                Opcodes.GETSTATIC,
+                "jyxal/Main",
+                "register",
+                "Ljava/lang/Object;"
+        );
+        AsmHelper.push(mv);
     }),
 
     /**

@@ -546,10 +546,28 @@ public final class Compiler extends VyxalParserBaseVisitor<Void> implements Opco
 
         mv = callStack.peek();
 
-        // normal lambda
-        if ("\u03BB".equals(ctx.LAMBDA_TYPE().getText())) {
-            mv.loadStack();
+        mv.visitTypeInsn(NEW, "runtime/Lambda");
+        mv.visitInsn(DUP);
+        mv.visitInsn(ICONST_1);
+        mv.visitLdcInsn(new Handle(
+                H_INVOKESTATIC,
+                "jyxal/Main",
+                lambdaName,
+                "(Lruntime/ProgramStack;)Ljava/lang/Object;",
+                false
+        ));
+        mv.visitMethodInsn(
+                INVOKESPECIAL,
+                "runtime/Lambda",
+                "<init>",
+                "(ILjava/lang/invoke/MethodHandle;)V",
+                false
+        );
 
+        String lambdaType = ctx.LAMBDA_TYPE().getText();
+
+        // normal lambda
+        if ("\u03BB".equals(lambdaType)) {
             mv.visitTypeInsn(NEW, "runtime/Lambda");
             mv.visitInsn(DUP);
 
@@ -568,36 +586,42 @@ public final class Compiler extends VyxalParserBaseVisitor<Void> implements Opco
                     "(ILjava/lang/invoke/MethodHandle;)V",
                     false
             );
+            mv.loadStack();
+            mv.visitInsn(SWAP);
             AsmHelper.push(mv);
-        } else if ("\u019B".equals(ctx.LAMBDA_TYPE().getText())) {
+        } else if ("\u019B".equals(lambdaType)) {
             AsmHelper.pop(mv);
-
-            mv.visitTypeInsn(NEW, "runtime/Lambda");
-            mv.visitInsn(DUP);
-            mv.visitInsn(ICONST_1);
-            mv.visitLdcInsn(new Handle(
-                    H_INVOKESTATIC,
-                    "jyxal/Main",
-                    lambdaName,
-                    "(Lruntime/ProgramStack;)Ljava/lang/Object;",
-                    false
-            ));
-            mv.visitMethodInsn(
-                    INVOKESPECIAL,
-                    "runtime/Lambda",
-                    "<init>",
-                    "(ILjava/lang/invoke/MethodHandle;)V",
-                    false
-            );
-
             mv.visitMethodInsn(
                     INVOKESTATIC,
                     "runtime/RuntimeHelpers",
                     "mapLambda",
-                    "(Ljava/lang/Object;Lruntime/Lambda;)Ljava/lang/Object;",
+                    "(Lruntime/Lambda;Ljava/lang/Object;)Ljava/lang/Object;",
                     false
             );
-
+            mv.loadStack();
+            mv.visitInsn(SWAP);
+            AsmHelper.push(mv);
+        } else if ("'".equals(lambdaType)) {
+            AsmHelper.pop(mv);
+            mv.visitMethodInsn(
+                    INVOKESTATIC,
+                    "runtime/RuntimeHelpers",
+                    "filterLambda",
+                    "(Lruntime/Lambda;Ljava/lang/Object;)Ljava/lang/Object;",
+                    false
+            );
+            mv.loadStack();
+            mv.visitInsn(SWAP);
+            AsmHelper.push(mv);
+        } else if ("\u27D1".equals(lambdaType)) {
+            AsmHelper.pop(mv);
+            mv.visitMethodInsn(
+                    INVOKESTATIC,
+                    "runtime/RuntimeHelpers",
+                    "applyLambda",
+                    "(Lruntime/Lambda;Ljava/lang/Object;)Ljava/lang/Object;",
+                    false
+            );
             mv.loadStack();
             mv.visitInsn(SWAP);
             AsmHelper.push(mv);

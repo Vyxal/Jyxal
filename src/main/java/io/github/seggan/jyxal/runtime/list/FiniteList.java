@@ -43,6 +43,27 @@ class FiniteList extends JyxalList {
     }
 
     @Override
+    public JyxalList addNew(int ind, Object val) {
+        List<Object> newBacking = new ArrayList<>(backing);
+        newBacking.add(ind, val);
+        return new FiniteList(newBacking);
+    }
+
+    @Override
+    public JyxalList addAllNew(JyxalList list) {
+        List<Object> newBacking = new ArrayList<>(backing);
+        newBacking.addAll(list);
+        return new FiniteList(newBacking);
+    }
+
+    @Override
+    public JyxalList append(Object val) {
+        List<Object> newBacking = new ArrayList<>(backing);
+        newBacking.add(val);
+        return new FiniteList(newBacking);
+    }
+
+    @Override
     public Iterator<Object> iterator() {
         return backing.iterator();
     }

@@ -118,6 +118,78 @@ public final class RuntimeMethods {
         }
     }
 
+    public static Object divide(ProgramStack stack) {
+        Object o = RuntimeHelpers.vectorise(2, RuntimeMethods::divide, stack);
+        if (o != null) return o;
+        Object b = stack.pop();
+        Object a = stack.pop();
+        if (a instanceof BigComplex ca) {
+            if (b instanceof BigComplex cb) {
+                return ca.divide(cb, MathContext.DECIMAL128);
+            }
+            JyxalList list = JyxalList.create();
+            StringBuilder sb = new StringBuilder();
+            BigInteger count = BigInteger.ZERO;
+            BigInteger max = ca.re.toBigInteger();
+            for (char c : a.toString().toCharArray()) {
+                if (count.equals(max)) {
+                    list.add(sb.toString());
+                    sb = new StringBuilder();
+                }
+                sb.append(c);
+                count = count.add(BigInteger.ONE);
+            }
+            if (sb.length() > 0) {
+                list.add(sb.toString());
+            }
+            return list;
+        } else if (b instanceof BigComplex cb) {
+            JyxalList list = JyxalList.create();
+            StringBuilder sb = new StringBuilder();
+            BigInteger count = BigInteger.ZERO;
+            BigInteger max = cb.re.toBigInteger();
+            for (char c : a.toString().toCharArray()) {
+                if (count.equals(max)) {
+                    list.add(sb.toString());
+                    sb = new StringBuilder();
+                }
+                sb.append(c);
+                count = count.add(BigInteger.ONE);
+            }
+            if (sb.length() > 0) {
+                list.add(sb.toString());
+            }
+            return list;
+        } else {
+            JyxalList list = JyxalList.create();
+            String str = a.toString();
+            String delimiter = b.toString();
+            int start = 0;
+            int end = str.indexOf(delimiter);
+            while (end != -1) {
+                list.add(str.substring(start, end));
+                start = end + delimiter.length();
+                end = str.indexOf(delimiter, start);
+            }
+            if (start < str.length()) {
+                list.add(str.substring(start));
+            }
+            return list;
+        }
+    }
+
+    public static Object doubleRepeat(Object obj) {
+        if (obj instanceof JyxalList list) {
+            return list.map(RuntimeMethods::doubleRepeat);
+        } else if (obj instanceof BigComplex complex) {
+            return complex.multiply(2);
+        } else if (obj instanceof Lambda lambda) {
+            return new Lambda(2, lambda.handle());
+        } else {
+            return obj.toString().repeat(2);
+        }
+    }
+
     public static Object duplicate(ProgramStack stack) {
         Object obj = Objects.requireNonNull(stack.peek());
         if (obj instanceof JyxalList jyxalList) {
@@ -374,6 +446,22 @@ public final class RuntimeMethods {
         return new JsonParser(obj.toString()).parse();
     }
 
+    public static Object length(Object obj) {
+        if (obj instanceof JyxalList list) {
+            if (list.isLazy()) {
+                long length = 0;
+                for (Object ignored : list) {
+                    length++;
+                }
+                return BigInteger.valueOf(length);
+            } else {
+                return BigComplex.valueOf(list.size());
+            }
+        } else {
+            return BigComplex.valueOf(obj.toString().length());
+        }
+    }
+
     public static Object lessThan(ProgramStack stack) {
         Object o = RuntimeHelpers.vectorise(2, RuntimeMethods::lessThan, stack);
         if (o != null) return o;
@@ -447,6 +535,22 @@ public final class RuntimeMethods {
             }
         }
         return BigComplex.ZERO;
+    }
+
+    public static Object merge(ProgramStack stack) {
+        Object b = stack.pop();
+        Object a = stack.pop();
+        if (a instanceof JyxalList jyxalList) {
+            if (b instanceof JyxalList jyxalList2) {
+                return jyxalList.addAllNew(jyxalList2);
+            } else {
+                return jyxalList.append(b);
+            }
+        } else if (b instanceof JyxalList jyxalList) {
+            return jyxalList.addNew(0, a);
+        } else {
+            return a + b.toString();
+        }
     }
 
     public static Object moduloFormat(ProgramStack stack) {
@@ -547,6 +651,18 @@ public final class RuntimeMethods {
         }
     }
 
+    public static Object prepend(ProgramStack stack) {
+        Object b = stack.pop();
+        Object a = stack.pop();
+        if (a instanceof JyxalList list) {
+            return list.addNew(0, b);
+        } else if (a instanceof BigComplex ca && b instanceof BigComplex cb) {
+            return BigComplex.valueOf(new BigDecimal(cb + ca.toString()));
+        } else {
+            return a + b.toString();
+        }
+    }
+
     public static void printToFile(ProgramStack stack) throws IOException {
         try (OutputStream os = new FileOutputStream("test.out")) {
             while (!stack.isEmpty()) {
@@ -586,6 +702,23 @@ public final class RuntimeMethods {
             return sb.toString();
         } else {
             throw new IllegalArgumentException("%s, %s".formatted(a, b));
+        }
+    }
+
+    public static Object reverse(Object obj) {
+        if (obj instanceof JyxalList list) {
+            JyxalList newList = JyxalList.create();
+            for (Object item : list) {
+                newList.add(0, item);
+            }
+            return newList;
+        } else {
+            String str = obj.toString();
+            StringBuilder sb = new StringBuilder();
+            for (int i = str.length() - 1; i >= 0; i--) {
+                sb.append(str.charAt(i));
+            }
+            return sb.toString();
         }
     }
 

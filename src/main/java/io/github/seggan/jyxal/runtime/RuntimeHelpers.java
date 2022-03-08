@@ -33,6 +33,30 @@ public final class RuntimeHelpers {
     private RuntimeHelpers() {
     }
 
+    public static Object applyLambda(Lambda lambda, Object obj) {
+        if (obj instanceof JyxalList jyxalList) {
+            JyxalList list = JyxalList.create();
+            for (Object o : jyxalList) {
+                list.add(lambda.call(o));
+            }
+            return list;
+        } else if (obj instanceof BigComplex bigComplex) {
+            BigComplex current = BigComplex.ONE;
+            JyxalList list = JyxalList.create();
+            while (current.compareTo(bigComplex) <= 0) {
+                list.add(lambda.call(current));
+            }
+            return list;
+        } else {
+            String s = obj.toString();
+            JyxalList list = JyxalList.create();
+            for (char c : s.toCharArray()) {
+                list.add(lambda.call(Character.toString(c)));
+            }
+            return list;
+        }
+    }
+
     public static JyxalList deepCopy(JyxalList list) {
         JyxalList copy = JyxalList.create();
         for (Object obj : list) {
@@ -55,6 +79,23 @@ public final class RuntimeHelpers {
             }
         }
         return stack.pop();
+    }
+
+    public static Object filterLambda(Lambda lambda, Object obj) {
+        if (obj instanceof JyxalList jyxalList) {
+            return jyxalList.filter(o -> truthValue(lambda.call(o)));
+        } else if (obj instanceof BigComplex bigComplex) {
+            return JyxalList.range(BigComplex.ONE, bigComplex).filter(o -> truthValue(lambda.call(o)));
+        } else {
+            String s = obj.toString();
+            JyxalList list = JyxalList.create();
+            for (char c : s.toCharArray()) {
+                if (truthValue(lambda.call(Character.toString(c)))) {
+                    list.add(Character.toString(c));
+                }
+            }
+            return list;
+        }
     }
 
     public static Iterator<Object> forify(ProgramStack stack) {
@@ -106,7 +147,7 @@ public final class RuntimeHelpers {
         return result;
     }
 
-    public static Object mapLambda(Object obj, Lambda lambda) {
+    public static Object mapLambda(Lambda lambda, Object obj) {
         if (obj instanceof JyxalList jyxalList) {
             return jyxalList.map(lambda::call);
         } else if (obj instanceof BigComplex bigComplex) {

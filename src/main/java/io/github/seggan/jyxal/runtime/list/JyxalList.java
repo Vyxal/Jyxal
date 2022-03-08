@@ -164,6 +164,73 @@ public abstract class JyxalList extends AbstractList<Object> {
         });
     }
 
+    public JyxalList addNew(int ind, Object val) {
+        Iterator<Object> it = this.iterator();
+        return new InfiniteList(new Iterator<>() {
+            int i = 0;
+
+            @Override
+            public boolean hasNext() {
+                return it.hasNext() || i == ind;
+            }
+
+            @Override
+            public Object next() {
+                if (i == ind) {
+                    i++;
+                    return val;
+                }
+                i++;
+                return it.next();
+            }
+        });
+    }
+
+    public JyxalList append(Object val) {
+        Iterator<Object> it = this.iterator();
+        return new InfiniteList(new Iterator<>() {
+
+            private boolean hasNext = true;
+
+            @Override
+            public boolean hasNext() {
+                return it.hasNext() || hasNext;
+            }
+
+            @Override
+            public Object next() {
+                if (it.hasNext()) {
+                    return it.next();
+                } else {
+                    hasNext = false;
+                    return val;
+                }
+            }
+        });
+    }
+
+    public JyxalList addAllNew(JyxalList list) {
+        Iterator<Object> it = this.iterator();
+        return new InfiniteList(new Iterator<>() {
+
+            Iterator<Object> listIt = list.iterator();
+
+            @Override
+            public boolean hasNext() {
+                return it.hasNext() || listIt.hasNext();
+            }
+
+            @Override
+            public Object next() {
+                if (it.hasNext()) {
+                    return it.next();
+                } else {
+                    return listIt.next();
+                }
+            }
+        });
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
