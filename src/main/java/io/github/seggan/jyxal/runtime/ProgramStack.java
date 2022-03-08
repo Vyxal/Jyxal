@@ -9,16 +9,21 @@ import java.util.List;
 
 public class ProgramStack extends ArrayDeque<Object> implements Deque<Object> {
 
+    private final Object[] input;
+
     public ProgramStack() {
         super();
+        this.input = null;
     }
 
     public ProgramStack(Object... objects) {
         super(List.of(objects));
+        this.input = null;
     }
 
     public ProgramStack(Collection<?> c) {
         super(c);
+        this.input = null;
     }
 
     public void swap() {

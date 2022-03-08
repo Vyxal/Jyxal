@@ -394,11 +394,12 @@ public final class Compiler extends VyxalParserBaseVisitor<Void> implements Opco
             // we have a finite loop
             visit(ctx.program(0));
             childIndex = 1;
+            AsmHelper.pop(mv);
             mv.visitMethodInsn(
                     INVOKESTATIC,
                     "runtime/RuntimeHelpers",
                     "truthValue",
-                    "(Lruntime/ProgramStack;)Z",
+                    "(Ljava/lang/Object;)Z",
                     false
             );
             mv.visitJumpInsn(IFEQ, end);

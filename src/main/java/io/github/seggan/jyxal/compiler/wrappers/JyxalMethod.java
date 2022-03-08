@@ -97,7 +97,7 @@ public class JyxalMethod extends MethodNode implements Opcodes {
                 if (insn instanceof LabelNode || insn.getOpcode() == RETURN || insn.getOpcode() == ATHROW
                         || insn.getOpcode() == IRETURN || insn.getOpcode() == LRETURN
                         || insn.getOpcode() == FRETURN || insn.getOpcode() == DRETURN
-                        || insn.getOpcode() == ARETURN) {
+                        || insn.getOpcode() == ARETURN || insn.getOpcode() == GOTO) {
                     codeBlocks.add(code);
                     code = new InsnList();
                 }
