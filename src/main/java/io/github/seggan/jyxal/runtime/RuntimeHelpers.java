@@ -81,6 +81,27 @@ public final class RuntimeHelpers {
         return stack.pop();
     }
 
+    public static Iterator<Object> iterator(Object obj) {
+        if (obj instanceof JyxalList jyxalList) {
+            return jyxalList.iterator();
+        } else {
+            String s = obj.toString();
+            return new Iterator<>() {
+                private int index = 0;
+
+                @Override
+                public boolean hasNext() {
+                    return index < s.length();
+                }
+
+                @Override
+                public Object next() {
+                    return Character.toString(s.charAt(index++));
+                }
+            };
+        }
+    }
+
     public static Object filterLambda(Lambda lambda, Object obj) {
         if (obj instanceof JyxalList jyxalList) {
             return jyxalList.filter(o -> truthValue(lambda.call(o)));

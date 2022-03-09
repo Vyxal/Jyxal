@@ -17,11 +17,17 @@ import java.math.MathContext;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
 import java.util.function.IntPredicate;
 import java.util.function.Supplier;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.zip.GZIPInputStream;
 
@@ -32,6 +38,8 @@ public final class RuntimeMethods {
     private static final LazyInit<Pattern> COMMA_PATTERN = LazyInit.regex(",");
     private static final LazyInit<Pattern> SPACE_PATTERN = LazyInit.regex(" ");
     private static final LazyInit<Pattern> PLUS_SPACE_I_PATTERN = LazyInit.regex("[+\\si]");
+
+    private static final Map<String, Pattern> regexCache = new HashMap<>();
 
     private RuntimeMethods() {
     }
@@ -372,6 +380,16 @@ public final class RuntimeMethods {
         }
     }
 
+    public static Object ior(Object obj) {
+        if (obj instanceof JyxalList list) {
+            return list.map(RuntimeMethods::ior);
+        } else if (obj instanceof BigComplex complex) {
+            return JyxalList.range(BigComplex.ONE, complex.add(BigComplex.ONE));
+        } else {
+            return obj.toString().toUpperCase(Locale.ROOT);
+        }
+    }
+
     public static Object isPrime(Object obj) {
         if (obj instanceof BigComplex complex) {
             BigInteger n = complex.re.toBigInteger();
@@ -439,6 +457,26 @@ public final class RuntimeMethods {
                 list.add(BigComplex.valueOf(Character.isAlphabetic(c)));
             }
             return list;
+        }
+    }
+
+    public static Object joinByNothing(Object obj) {
+        if (obj instanceof JyxalList list) {
+            StringBuilder sb = new StringBuilder();
+            for (Object item : list) {
+                sb.append(item);
+            }
+            return sb.toString();
+        } else if (obj instanceof BigComplex complex) {
+            return BigComplex.valueOf(complex.abs(MathContext.DECIMAL128).compareTo(BigDecimal.ONE) <= 0);
+        } else if (obj instanceof Lambda lambda) {
+            BigComplex result = BigComplex.ZERO;
+            while (!RuntimeHelpers.truthValue(lambda.call(result))) {
+                result = result.add(BigComplex.ONE);
+            }
+            return result;
+        } else {
+            return obj.toString();
         }
     }
 
@@ -719,6 +757,73 @@ public final class RuntimeMethods {
                 sb.append(str.charAt(i));
             }
             return sb.toString();
+        }
+    }
+
+    public static Object sliceUntil(ProgramStack stack) {
+        Object o = RuntimeHelpers.vectorise(2, RuntimeMethods::sliceUntil, stack);
+        if (o != null) return o;
+        Object b = stack.pop();
+        Object a = stack.pop();
+        if (a instanceof BigComplex ca) {
+            return sliceUntilImpl(b, ca.re.toBigInteger());
+        } else if (b instanceof BigComplex cb) {
+            return sliceUntilImpl(a, cb.re.toBigInteger());
+        } else {
+            Matcher matcher = regexCache.computeIfAbsent(a.toString(), Pattern::compile).matcher(b.toString());
+            JyxalList list = JyxalList.create();
+            while (matcher.find()) {
+                list.add(matcher.group());
+            }
+            return list;
+        }
+    }
+
+    private static Object sliceUntilImpl(Object a, BigInteger b) {
+        Iterator<Object> iterator = RuntimeHelpers.iterator(a);
+        return JyxalList.create(new Iterator<>() {
+            private BigInteger count = BigInteger.ZERO;
+
+            @Override
+            public boolean hasNext() {
+                return count.compareTo(b) < 0;
+            }
+
+            @Override
+            public Object next() {
+                count = count.add(BigInteger.ONE);
+                return iterator.next();
+            }
+        });
+    }
+
+    public static Object sortByFunction(ProgramStack stack) {
+        Object b = stack.pop();
+        Object a = stack.pop();
+        if (b instanceof Lambda lambda) {
+            List<Object> list = new ArrayList<>();
+            RuntimeHelpers.iterator(a).forEachRemaining(list::add);
+            list.sort((o1, o2) -> {
+                BigComplex r1 = sortByFunctionHelper(lambda.call(o1));
+                BigComplex r2 = sortByFunctionHelper(lambda.call(o2));
+                return r1.compareTo(r2);
+            });
+            return JyxalList.create(list);
+        } else if (a instanceof BigComplex ca && b instanceof BigComplex cb) {
+            return JyxalList.range(ca, cb);
+        } else {
+            String[] split = regexCache.computeIfAbsent(b.toString(), Pattern::compile).split(a.toString());
+            return JyxalList.create((Object[]) split);
+        }
+    }
+
+    private static BigComplex sortByFunctionHelper(Object obj) {
+        if (obj instanceof BigComplex c) {
+            return c;
+        } else if (obj instanceof JyxalList list) {
+            return BigComplex.valueOf(list.size());
+        } else {
+            return BigComplex.valueOf(obj.toString().length());
         }
     }
 

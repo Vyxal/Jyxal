@@ -213,7 +213,7 @@ public abstract class JyxalList extends AbstractList<Object> {
         Iterator<Object> it = this.iterator();
         return new InfiniteList(new Iterator<>() {
 
-            Iterator<Object> listIt = list.iterator();
+            private final Iterator<Object> listIt = list.iterator();
 
             @Override
             public boolean hasNext() {

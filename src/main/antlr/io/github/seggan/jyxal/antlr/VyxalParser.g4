@@ -17,7 +17,11 @@ alias
     ;
 
 program
-    : (literal | statement | element | WHITESPACE)+
+    : (program_node | WHITESPACE)+
+    ;
+
+program_node
+    : literal | statement | element
     ;
 
 literal
@@ -72,6 +76,9 @@ statement
     | for_loop
     | while_loop
     | lambda
+    | one_element_lambda
+    | two_element_lambda
+    | three_element_lambda
     | function
     | variable_assn
     ;
@@ -90,6 +97,18 @@ while_loop
 
 lambda
     : LAMBDA_TYPE (integer PIPE)? program SEMICOLON?
+    ;
+
+one_element_lambda
+    : ONE_ELEMENT_LAMBDA program_node
+    ;
+
+two_element_lambda
+    : TWO_ELEMENT_LAMBDA program_node program_node
+    ;
+
+three_element_lambda
+    : THREE_ELEMENT_LAMBDA program_node program_node program_node
     ;
 
 function

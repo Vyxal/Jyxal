@@ -26,7 +26,7 @@ PREFIX
     ;
 
 MODIFIER
-    : [ßvƒɖ⁽‡≬⁺₌₍~]
+    : [ßvƒɖ⁺₌₍~]
     ;
 
 DIGIT
@@ -124,6 +124,18 @@ SINGLE_CHAR_STRING
 
 DOUBLE_CHAR_STRING
     : '‛'
+    ;
+
+ONE_ELEMENT_LAMBDA
+    : '⁽'
+    ;
+
+TWO_ELEMENT_LAMBDA
+    : '‡'
+    ;
+
+THREE_ELEMENT_LAMBDA
+    : '≬'
     ;
 
 LITERALLY_ANY_TEXT

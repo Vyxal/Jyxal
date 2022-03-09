@@ -77,6 +77,7 @@ public enum Element {
     CHR_ORD("C", true),
     INFINITE_REPLACE("\u00A2"),
     ITEM_SPLIT("\u00F7"),
+    JOIN_BY_NOTHING("\u1E45", false),
     JSON_PARSE("\u00F8J", true),
     REVERSE("\u1E58", false),
     SPLIT_ON("\u20AC"),
@@ -92,6 +93,8 @@ public enum Element {
      */
     FLATTEN("f", false),
     HEAD("h", false),
+    // inclusive one range
+    IOR("\u027E", true),
     // inclusive zero range
     IZR("\u0280", true),
     LENGTH("L", false),
@@ -99,6 +102,8 @@ public enum Element {
     MERGE("J"),
     PREPEND("p"),
     REMOVE_AT_INDEX("\u27C7"),
+    SLICE_UNTIL("\u1E8E"),
+    SORT_BY_FUNCTION("\u1E61"),
     STACK_SIZE("!", mv -> {
         mv.loadStack();
         mv.visitMethodInsn(

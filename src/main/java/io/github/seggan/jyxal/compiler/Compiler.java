@@ -633,6 +633,67 @@ public final class Compiler extends VyxalParserBaseVisitor<Void> implements Opco
         return null;
     }
 
+    @Override
+    public Void visitOne_element_lambda(VyxalParser.One_element_lambdaContext ctx) {
+        visitLimitedLambda(List.of(ctx.program_node()));
+        return null;
+    }
+
+    @Override
+    public Void visitTwo_element_lambda(VyxalParser.Two_element_lambdaContext ctx) {
+        visitLimitedLambda(ctx.program_node());
+        return null;
+    }
+
+    @Override
+    public Void visitThree_element_lambda(VyxalParser.Three_element_lambdaContext ctx) {
+        visitLimitedLambda(ctx.program_node());
+        return null;
+    }
+
+    private void visitLimitedLambda(List<VyxalParser.Program_nodeContext> nodes) {
+        String lambdaName = "lambda$" + lambdaCounter;
+        JyxalMethod mv = classWriter.visitMethod(
+                ACC_PRIVATE | ACC_STATIC,
+                lambdaName,
+                "(Lruntime/ProgramStack;)Ljava/lang/Object;"
+        );
+
+        callStack.push(mv);
+        for (VyxalParser.Program_nodeContext node : nodes) {
+            visit(node);
+        }
+        callStack.pop();
+
+        AsmHelper.pop(mv);
+        mv.visitInsn(ARETURN);
+        mv.visitMaxs(-1, -1);
+        mv.visitEnd();
+
+        mv = callStack.peek();
+
+        mv.visitTypeInsn(NEW, "runtime/Lambda");
+        mv.visitInsn(DUP);
+        mv.visitInsn(ICONST_1);
+        mv.visitLdcInsn(new Handle(
+                H_INVOKESTATIC,
+                "jyxal/Main",
+                lambdaName,
+                "(Lruntime/ProgramStack;)Ljava/lang/Object;",
+                false
+        ));
+        mv.visitMethodInsn(
+                INVOKESPECIAL,
+                "runtime/Lambda",
+                "<init>",
+                "(ILjava/lang/invoke/MethodHandle;)V",
+                false
+        );
+        mv.loadStack();
+        mv.visitInsn(SWAP);
+        AsmHelper.push(mv);
+    }
+
     private static record Loop(Label start, Label end) {
     }
 }

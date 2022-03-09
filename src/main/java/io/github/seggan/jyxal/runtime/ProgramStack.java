@@ -2,6 +2,9 @@ package io.github.seggan.jyxal.runtime;
 
 import io.github.seggan.jyxal.runtime.math.BigComplex;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayDeque;
 import java.util.Collection;
 import java.util.Deque;
@@ -21,14 +24,19 @@ public class ProgramStack extends ArrayDeque<Object> implements Deque<Object> {
     }
 
     // the String[] is the program args
-    public ProgramStack(String[] strings) {
+    public ProgramStack(String[] strings) throws IOException {
         super();
         if (strings.length > 0) {
             this.flags = strings[0];
             if (strings.length > 1) {
-                this.input = new Object[strings.length - 1];
-                for (int i = 1; i < strings.length; i++) {
-                    this.input[i - 1] = RuntimeHelpers.eval(strings[i]);
+                if (this.flags.indexOf('f') != -1) {
+                    this.input = new Object[1];
+                    this.input[0] = Files.readString(Path.of(strings[1]));
+                } else {
+                    this.input = new Object[strings.length - 1];
+                    for (int i = 1; i < strings.length; i++) {
+                        this.input[i - 1] = RuntimeHelpers.eval(strings[i]);
+                    }
                 }
             } else {
                 this.input = null;
