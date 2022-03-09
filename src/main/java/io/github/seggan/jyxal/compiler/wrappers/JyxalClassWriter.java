@@ -1,6 +1,7 @@
 package io.github.seggan.jyxal.compiler.wrappers;
 
 import org.objectweb.asm.ClassWriter;
+import org.objectweb.asm.Opcodes;
 
 import java.util.regex.Pattern;
 
@@ -20,6 +21,11 @@ public class JyxalClassWriter extends ClassWriter {
     }
 
     public JyxalMethod visitMethod(int access, String name, String desc) {
-        return new JyxalMethod(this, access, name, desc);
+        if (name.equals("main") && desc.equals("([Ljava/lang/String;)V")
+                && access == (Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC)) {
+            return new MainMethod(this, access, name, desc);
+        } else {
+            return new Function(this, access, name, desc);
+        }
     }
 }

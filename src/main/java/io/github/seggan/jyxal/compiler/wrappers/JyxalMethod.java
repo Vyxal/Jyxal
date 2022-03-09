@@ -3,7 +3,6 @@ package io.github.seggan.jyxal.compiler.wrappers;
 import io.github.seggan.jyxal.CompilerOptions;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Opcodes;
-import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.LabelNode;
@@ -15,46 +14,16 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Set;
 
-public class JyxalMethod extends MethodNode implements Opcodes {
+public abstract class JyxalMethod extends MethodNode implements Opcodes {
 
-    private final int stackVar;
-    private final int ctxVar;
+    protected int stackVar;
+    protected int ctxVar;
     private final Set<ContextualVariable> reservedVars = new HashSet<>();
     private boolean optimise = !CompilerOptions.OPTIONS.contains(CompilerOptions.DONT_OPTIMISE);
 
     JyxalMethod(ClassWriter cw, int access, String name, String desc) {
         super(Opcodes.ASM7, access, name, desc, null, null);
         this.mv = cw.visitMethod(access, name, desc, null, null);
-
-        int stackVar1;
-
-        // lambdas have the program stack passed as the only argument
-        if (name.startsWith("lambda$")) {
-            stackVar1 = 0;
-        } else {
-            stackVar1 = Type.getArgumentTypes(desc).length;
-
-            visitTypeInsn(NEW, "runtime/ProgramStack");
-            visitInsn(DUP);
-            if (name.equals("main") && desc.equals("([Ljava/lang/String;)V") && access == (ACC_PUBLIC | ACC_STATIC)) {
-                visitVarInsn(ALOAD, 0);
-                visitMethodInsn(INVOKESPECIAL, "runtime/ProgramStack", "<init>", "([Ljava/lang/String;)V", false);
-            } else {
-                visitMethodInsn(INVOKESPECIAL, "runtime/ProgramStack", "<init>", "()V", false);
-            }
-            visitVarInsn(ASTORE, stackVar1);
-        }
-
-        this.stackVar = stackVar1;
-        this.ctxVar = stackVar + 1;
-
-        mv.visitFieldInsn(
-                GETSTATIC,
-                "runtime/math/BigComplex",
-                "ZERO",
-                "Lruntime/math/BigComplex;"
-        );
-        visitVarInsn(ASTORE, ctxVar);
     }
 
     public int getStackVar() {
