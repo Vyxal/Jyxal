@@ -389,6 +389,15 @@ public final class Compiler extends VyxalParserBaseVisitor<Void> implements Opco
         loopStack.push(new Loop(start, end));
 
         JyxalMethod mv = callStack.peek();
+
+        mv.visitFieldInsn(
+                GETSTATIC,
+                "runtime/math/BigComplex",
+                "ZERO",
+                "Lruntime/math/BigComplex;"
+        );
+        mv.visitVarInsn(ASTORE, mv.getCtxVar());
+
         mv.visitLabel(start);
         if (ctx.program().size() > 1) {
             // we have a finite loop
@@ -406,6 +415,23 @@ public final class Compiler extends VyxalParserBaseVisitor<Void> implements Opco
         }
 
         visit(ctx.program(childIndex));
+
+        mv.visitVarInsn(ALOAD, mv.getCtxVar());
+        mv.visitFieldInsn(
+                GETSTATIC,
+                "runtime/math/BigComplex",
+                "ONE",
+                "Lruntime/math/BigComplex;"
+        );
+        mv.visitMethodInsn(
+                INVOKEVIRTUAL,
+                "runtime/math/BigComplex",
+                "add",
+                "(Lruntime/math/BigComplex;)Lruntime/math/BigComplex;",
+                false
+        );
+        mv.visitVarInsn(ASTORE, mv.getCtxVar());
+
         mv.visitJumpInsn(GOTO, start);
         mv.visitLabel(end);
 
@@ -692,6 +718,11 @@ public final class Compiler extends VyxalParserBaseVisitor<Void> implements Opco
         mv.loadStack();
         mv.visitInsn(SWAP);
         AsmHelper.push(mv);
+    }
+
+    @Override
+    public Void visitFunction(VyxalParser.FunctionContext ctx) {
+        throw new JyxalCompileException("Functions not yet supported");
     }
 
     private static record Loop(Label start, Label end) {
