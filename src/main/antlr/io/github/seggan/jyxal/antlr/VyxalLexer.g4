@@ -22,7 +22,11 @@ NON_ALPHA_ELEMENT
     ;
 
 PREFIX
-    : [¨Þkø∆]
+    : [¨Þø∆]
+    ;
+
+CONSTANT_PREFIX
+    : 'k'
     ;
 
 MODIFIER

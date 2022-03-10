@@ -281,6 +281,15 @@ public final class Compiler extends VyxalParserBaseVisitor<Void> implements Opco
     }
 
     @Override
+    public Void visitConstant(VyxalParser.ConstantContext ctx) {
+        JyxalMethod mv = callStack.peek();
+        mv.loadStack();
+        Constants.compile(ctx.getText(), classWriter, mv);
+        AsmHelper.push(mv);
+        return null;
+    }
+
+    @Override
     public Void visitVariable_assn(VyxalParser.Variable_assnContext ctx) {
         String name = ctx.variable().getText();
         if (contextVariables.contains(name)) {

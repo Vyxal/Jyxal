@@ -33,6 +33,7 @@ literal
     | compressed_number
     | complex_number
     | list
+    | constant
     ;
 
 normal_string
@@ -69,6 +70,10 @@ complex_number
 
 list
     : LIST_OPEN program (PIPE program)* LIST_CLOSE?
+    ;
+
+constant
+    : CONSTANT_PREFIX (element_type | DIGIT)
     ;
 
 statement
