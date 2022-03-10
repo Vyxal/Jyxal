@@ -397,15 +397,21 @@ public final class RuntimeMethods {
             if (n.compareTo(BigInteger.valueOf(Long.MAX_VALUE)) < 0
                     && n.compareTo(BigInteger.valueOf(Long.MIN_VALUE)) > 0) {
                 long l = n.longValue();
+                if (l < 2) return false;
+                if (l == 2 || l == 3) return true;
+                if ((l & 1) == 0) return false;
+
                 long sqrt = bsqrt.longValue();
-                for (long i = 2; i <= sqrt; i++) {
+                for (long i = 5; i <= sqrt; i += 2) {
                     if (l % i == 0) {
                         return BigComplex.valueOf(false);
                     }
                 }
             } else {
+                if (!n.testBit(0)) return false;
+
                 BigInteger sqrt = bsqrt.toBigInteger();
-                for (BigInteger i = BigInteger.valueOf(2); i.compareTo(sqrt) <= 0; i = i.add(BigInteger.ONE)) {
+                for (BigInteger i = BigInteger.valueOf(3); i.compareTo(sqrt) <= 0; i = i.add(BigInteger.TWO)) {
                     if (n.mod(i).compareTo(BigInteger.ZERO) == 0) {
                         return BigComplex.valueOf(false);
                     }
