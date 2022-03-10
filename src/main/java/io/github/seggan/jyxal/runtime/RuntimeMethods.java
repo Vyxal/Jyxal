@@ -402,8 +402,8 @@ public final class RuntimeMethods {
                 if ((l & 1) == 0) return false;
 
                 long sqrt = bsqrt.longValue();
-                for (long i = 5; i <= sqrt; i += 2) {
-                    if (l % i == 0) {
+                for (long i = 6L; i <= sqrt; i += 6) {
+                    if (l % (i - 1) == 0 || l % (i + 1) == 0) {
                         return BigComplex.valueOf(false);
                     }
                 }
