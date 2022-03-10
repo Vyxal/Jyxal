@@ -1,8 +1,12 @@
 package io.github.seggan.jyxal.compiler.wrappers;
 
 import org.objectweb.asm.ClassWriter;
+import org.objectweb.asm.Label;
 
 public class MainMethod extends JyxalMethod {
+
+    private final Label start = new Label();
+    private final Label end = new Label();
 
     MainMethod(ClassWriter cw, int access, String name, String desc) {
         super(cw, access, name, desc);
@@ -23,5 +27,16 @@ public class MainMethod extends JyxalMethod {
                 "Lruntime/math/BigComplex;"
         );
         visitVarInsn(ASTORE, ctxVar);
+
+        visitLabel(start);
+        visitLocalVariable("stack", "Lruntime/ProgramStack;", null, start, end, stackVar);
+
+        visitLocalVariable("ctx", "Ljava/lang/Object;", null, start, end, ctxVar);
+    }
+
+    @Override
+    public void visitEnd() {
+        visitLabel(end);
+        super.visitEnd();
     }
 }

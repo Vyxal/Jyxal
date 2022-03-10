@@ -39,6 +39,8 @@ public final class RuntimeMethods {
     private static final LazyInit<Pattern> SPACE_PATTERN = LazyInit.regex(" ");
     private static final LazyInit<Pattern> PLUS_SPACE_I_PATTERN = LazyInit.regex("[+\\si]");
 
+    private static final long[] notPrimes = new long[]{7957, 8321, 13747, 18721, 19951};
+
     private static final Map<String, Pattern> regexCache = new HashMap<>();
 
     private RuntimeMethods() {
@@ -198,16 +200,6 @@ public final class RuntimeMethods {
         }
     }
 
-    public static Object duplicate(ProgramStack stack) {
-        Object obj = Objects.requireNonNull(stack.peek());
-        if (obj instanceof JyxalList jyxalList) {
-            // deep copy
-            return RuntimeHelpers.deepCopy(jyxalList);
-        } else {
-            return obj;
-        }
-    }
-
     public static Object equals(ProgramStack stack) {
         Object o = RuntimeHelpers.vectorise(2, RuntimeMethods::equals, stack);
         if (o != null) return o;
@@ -330,6 +322,19 @@ public final class RuntimeMethods {
         }
     }
 
+    public static Object headExtract(ProgramStack stack) {
+        Object obj = stack.pop();
+        if (obj instanceof JyxalList list) {
+            stack.push(list.get(0));
+            Iterator<Object> iterator = list.iterator();
+            iterator.next();
+            return JyxalList.create(iterator);
+        } else {
+            stack.push(obj.toString().substring(1));
+            return obj.toString().substring(0, 1);
+        }
+    }
+
     public static Object increment(Object obj) {
         if (obj instanceof BigComplex c) {
             return c.add(BigComplex.ONE);
@@ -340,12 +345,15 @@ public final class RuntimeMethods {
 
     public static Object infinitePrimes() {
         return JyxalList.createInf(new Supplier<>() {
-            BigInteger next = BigInteger.ONE;
+            BigComplex i = BigComplex.ONE;
 
             @Override
             public Object get() {
-                next = next.nextProbablePrime();
-                return next;
+                i = i.add(BigComplex.ONE);
+                while (isPrime(i) == BigComplex.ZERO) {
+                    i = i.add(BigComplex.ONE);
+                }
+                return i;
             }
         });
     }
@@ -393,32 +401,35 @@ public final class RuntimeMethods {
     public static Object isPrime(Object obj) {
         if (obj instanceof BigComplex complex) {
             BigInteger n = complex.re.toBigInteger();
-            BigDecimal bsqrt = complex.re.sqrt(MathContext.DECIMAL128);
             if (n.compareTo(BigInteger.valueOf(Long.MAX_VALUE)) < 0
                     && n.compareTo(BigInteger.valueOf(Long.MIN_VALUE)) > 0) {
                 long l = n.longValue();
-                if (l < 2) return false;
-                if (l == 2 || l == 3) return true;
-                if ((l & 1) == 0) return false;
+                if (l < 2) return BigComplex.ZERO;
+                if (l == 2 || l == 3) return BigComplex.ONE;
+                if ((l & 1) == 0 || l % 3 == 0) return BigComplex.ZERO;
 
-                long sqrt = bsqrt.longValue();
-                for (long i = 6L; i <= sqrt; i += 6) {
-                    if (l % (i - 1) == 0 || l % (i + 1) == 0) {
-                        return BigComplex.valueOf(false);
+                long sqrt = (long) Math.sqrt(n.doubleValue()) + 1;
+                int step = 4;
+                for (long i = 6L; i <= sqrt; step = 6 - step, i += step) {
+                    if (l % i == 0) {
+                        return BigComplex.ZERO;
                     }
                 }
             } else {
-                if (!n.testBit(0)) return false;
+                // we don't need to check if n is a small prime, because the other branch will do it
+                if (!n.testBit(0)) return BigComplex.ZERO;
 
-                BigInteger sqrt = bsqrt.toBigInteger();
-                for (BigInteger i = BigInteger.valueOf(3); i.compareTo(sqrt) <= 0; i = i.add(BigInteger.TWO)) {
-                    if (n.mod(i).compareTo(BigInteger.ZERO) == 0) {
-                        return BigComplex.valueOf(false);
+                BigInteger sqrt = n.sqrt().add(BigInteger.ONE);
+                BigInteger six = BigInteger.valueOf(6);
+                for (BigInteger i = six; i.compareTo(sqrt) <= 0; i = i.add(six)) {
+                    if (n.mod(i.subtract(BigInteger.ONE)).equals(BigInteger.ZERO)
+                            || n.mod(i.add(BigInteger.ONE)).equals(BigInteger.ZERO)) {
+                        return BigComplex.ZERO;
                     }
                 }
             }
 
-            return BigComplex.valueOf(true);
+            return BigComplex.ONE;
         } else {
             String str = obj.toString();
             boolean isUppercase = Character.isUpperCase(str.charAt(0));
@@ -484,6 +495,16 @@ public final class RuntimeMethods {
         } else {
             return obj.toString();
         }
+    }
+
+    public static Object joinByNewlines(Object obj) {
+        StringBuilder sb = new StringBuilder();
+        Iterator<Object> it = RuntimeHelpers.iterator(obj);
+        while (it.hasNext()) {
+            sb.append(it.next());
+            sb.append('\n');
+        }
+        return sb.toString();
     }
 
     public static Object jsonParse(Object obj) {
@@ -917,15 +938,10 @@ public final class RuntimeMethods {
     }
 
     public static Object triplicate(ProgramStack stack) {
-        Object obj = Objects.requireNonNull(stack.peek());
-        if (obj instanceof JyxalList jyxalList) {
-            // deep copy
-            stack.push(RuntimeHelpers.deepCopy(jyxalList));
-            return RuntimeHelpers.deepCopy(jyxalList);
-        } else {
-            stack.push(obj);
-            return obj;
-        }
+        Object obj = stack.pop();
+        stack.push(RuntimeHelpers.copy(obj));
+        stack.push(RuntimeHelpers.copy(obj));
+        return obj;
     }
 
     public static Object twoPow(Object obj) {

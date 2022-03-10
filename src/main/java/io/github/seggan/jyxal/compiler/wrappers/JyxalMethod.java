@@ -2,6 +2,7 @@ package io.github.seggan.jyxal.compiler.wrappers;
 
 import io.github.seggan.jyxal.CompilerOptions;
 import org.objectweb.asm.ClassWriter;
+import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.InsnList;
@@ -42,7 +43,7 @@ public abstract class JyxalMethod extends MethodNode implements Opcodes {
         visitVarInsn(ALOAD, ctxVar);
     }
 
-    public ContextualVariable reserveVar() {
+    public ContextualVariable reserveVar(String name) {
         int max = 0;
         for (ContextualVariable var : reservedVars) {
             if (var.index > max) {
@@ -51,11 +52,21 @@ public abstract class JyxalMethod extends MethodNode implements Opcodes {
         }
         ContextualVariable var = new ContextualVariable(max == 0 ? ctxVar + 1 : max + 1, this);
         reservedVars.add(var);
+        if (name != null) {
+            Label start = new Label();
+            visitLabel(start);
+            visitLocalVariable(name, "Ljava/lang/Object;", null, start, var.end, var.index);
+        }
         return var;
+    }
+
+    public ContextualVariable reserveVar() {
+        return reserveVar(null);
     }
 
     void freeVar(ContextualVariable var) {
         reservedVars.remove(var);
+        visitLabel(var.end);
     }
 
     public void setOptimise(boolean optimise) {

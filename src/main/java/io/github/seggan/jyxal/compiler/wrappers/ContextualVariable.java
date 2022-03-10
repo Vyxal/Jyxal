@@ -1,11 +1,14 @@
 package io.github.seggan.jyxal.compiler.wrappers;
 
+import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
 
 public class ContextualVariable implements AutoCloseable {
 
     final int index;
     private final JyxalMethod mv;
+
+    final Label end = new Label();
 
     private boolean isClosed = false;
 

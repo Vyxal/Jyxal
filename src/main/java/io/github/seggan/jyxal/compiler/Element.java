@@ -1,9 +1,12 @@
 package io.github.seggan.jyxal.compiler;
 
+import io.github.seggan.jyxal.CompilerOptions;
+import io.github.seggan.jyxal.compiler.wrappers.ContextualVariable;
 import io.github.seggan.jyxal.compiler.wrappers.JyxalMethod;
 import io.github.seggan.jyxal.runtime.ProgramStack;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Handle;
+import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 
@@ -32,6 +35,7 @@ public enum Element {
         );
         AsmHelper.push(mv);
     }),
+    IS_PRIME("\u00E6", true),
     MODULO_FORMAT("%"),
     MULTI_COMMAND("\u2022"),
     MULTIPLY("*"),
@@ -69,6 +73,34 @@ public enum Element {
     LESS_THAN("<"),
     LESS_THAN_OR_EQUAL("\u2264"),
     LOGICAL_AND("\u2227"),
+    LOGICAL_NOT("\u00AC", mv -> {
+        AsmHelper.pop(mv);
+        mv.visitMethodInsn(
+                Opcodes.INVOKESTATIC,
+                "runtime/RuntimeHelpers",
+                "truthValue",
+                "(Ljava/lang/Object;)Z",
+                false
+        );
+        Label elseStart = new Label();
+        Label elseEnd = new Label();
+        mv.visitJumpInsn(Opcodes.IFEQ, elseStart);
+        mv.visitInsn(Opcodes.LCONST_0);
+        mv.visitJumpInsn(Opcodes.GOTO, elseEnd);
+        mv.visitLabel(elseStart);
+        mv.visitInsn(Opcodes.LCONST_1);
+        mv.visitLabel(elseEnd);
+        mv.visitMethodInsn(
+                Opcodes.INVOKESTATIC,
+                "runtime/math/BigComplex",
+                "valueOf",
+                "(J)Lruntime/math/BigComplex;",
+                false
+        );
+        mv.loadStack();
+        mv.visitInsn(Opcodes.SWAP);
+        AsmHelper.push(mv);
+    }),
     LOGICAL_OR("\u2228"),
 
     /**
@@ -77,6 +109,7 @@ public enum Element {
     CHR_ORD("C", true),
     INFINITE_REPLACE("\u00A2"),
     ITEM_SPLIT("\u00F7"),
+    JOIN_BY_NEWLINES("\u204B", false),
     JOIN_BY_NOTHING("\u1E45", false),
     JSON_PARSE("\u00F8J", true),
     REVERSE("\u1E58", false),
@@ -93,6 +126,7 @@ public enum Element {
      */
     FLATTEN("f", false),
     HEAD("h", false),
+    HEAD_EXTRACT("\u1E23"),
     // inclusive one range
     IOR("\u027E", true),
     // inclusive zero range
@@ -130,7 +164,25 @@ public enum Element {
      * Stack
      */
     TRIPLICATE("D"),
-    DUPLICATE(":"),
+    DUPLICATE(":", mv -> {
+        AsmHelper.pop(mv);
+        try (ContextualVariable obj = mv.reserveVar()) {
+            obj.store();
+            mv.loadStack();
+            obj.load();
+            mv.visitMethodInsn(
+                    Opcodes.INVOKESTATIC,
+                    "runtime/RuntimeHelpers",
+                    "copy",
+                    "(Ljava/lang/Object;)Ljava/lang/Object;",
+                    false
+            );
+            AsmHelper.push(mv);
+            mv.loadStack();
+            obj.load();
+            AsmHelper.push(mv);
+        }
+    }),
     POP("_", mv -> {
         AsmHelper.pop(mv);
         mv.visitInsn(Opcodes.POP);
@@ -143,6 +195,28 @@ public enum Element {
                 "register",
                 "Ljava/lang/Object;"
         );
+        AsmHelper.push(mv);
+    }),
+    SET_REGISTER("\u00A3", mv -> {
+        AsmHelper.pop(mv);
+        mv.visitFieldInsn(
+                Opcodes.PUTSTATIC,
+                "jyxal/Main",
+                "register",
+                "Ljava/lang/Object;"
+        );
+    }),
+    WRAP("W", mv -> {
+        mv.loadStack();
+        mv.visitMethodInsn(
+                Opcodes.INVOKESTATIC,
+                "runtime/list/JyxalList",
+                "create",
+                "(Lruntime/ProgramStack;)Lruntime/list/JyxalList;",
+                false
+        );
+        mv.loadStack();
+        mv.visitInsn(Opcodes.SWAP);
         AsmHelper.push(mv);
     }),
 
@@ -250,7 +324,7 @@ public enum Element {
         this.text = text;
         String methodName = screamingSnakeToCamel(name());
         this.compileMethod = (cw, mv) -> {
-            if (vectorise) {
+            if (vectorise && !CompilerOptions.OPTIONS.contains(CompilerOptions.DONT_VECTORISE_MONADS)) {
                 mv.loadStack();
                 AsmHelper.pop(mv);
                 mv.visitLdcInsn(new Handle(

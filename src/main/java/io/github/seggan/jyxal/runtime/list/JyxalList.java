@@ -1,9 +1,11 @@
 package io.github.seggan.jyxal.runtime.list;
 
+import io.github.seggan.jyxal.runtime.ProgramStack;
 import io.github.seggan.jyxal.runtime.math.BigComplex;
 
 import java.math.BigInteger;
 import java.util.AbstractList;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
@@ -24,6 +26,14 @@ public abstract class JyxalList extends AbstractList<Object> {
 
     public static JyxalList create(Collection<?> collection) {
         return new FiniteList(collection);
+    }
+
+    public static JyxalList create(ProgramStack stack) {
+        List<Object> list = new ArrayList<>(stack.size());
+        while (!stack.isEmpty()) {
+            list.add(stack.removeLast());
+        }
+        return new FiniteList(list);
     }
 
     public static JyxalList create() {
@@ -71,7 +81,9 @@ public abstract class JyxalList extends AbstractList<Object> {
         Iterator<Object> it = list.iterator();
         while (true) {
             if (!it.hasNext()) {
-                sb.delete(sb.length() - 3, sb.length());
+                if (sb.length() > 1) {
+                    sb.delete(sb.length() - 3, sb.length());
+                }
                 return sb.append("\u27E9").toString();
             }
             sb.append(it.next());

@@ -30,7 +30,7 @@ CONSTANT_PREFIX
     ;
 
 MODIFIER
-    : [ßvƒɖ⁺₌₍~]
+    : [ßvƒɖ⁺₌₍~&]
     ;
 
 DIGIT

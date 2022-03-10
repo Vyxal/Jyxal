@@ -57,16 +57,11 @@ public final class RuntimeHelpers {
         }
     }
 
-    public static JyxalList deepCopy(JyxalList list) {
-        JyxalList copy = JyxalList.create();
-        for (Object obj : list) {
-            if (obj instanceof JyxalList jyxalList) {
-                copy.add(deepCopy(jyxalList));
-            } else {
-                copy.add(obj);
-            }
+    public static Object copy(Object obj) {
+        if (obj instanceof JyxalList jyxalList) {
+            return jyxalList.map(RuntimeHelpers::copy);
         }
-        return copy;
+        return obj;
     }
 
     public static Object exec(String expr) {
@@ -305,7 +300,7 @@ public final class RuntimeHelpers {
         if (obj instanceof JyxalList jyxalList) {
             return jyxalList.size() != 0;
         } else if (obj instanceof BigComplex bigComplex) {
-            return !bigComplex.equals(BigComplex.ZERO);
+            return bigComplex != BigComplex.ZERO;
         }
 
         return true;

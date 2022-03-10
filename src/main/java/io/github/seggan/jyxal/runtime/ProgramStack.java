@@ -12,8 +12,8 @@ import java.util.List;
 
 public class ProgramStack extends ArrayDeque<Object> implements Deque<Object> {
 
-    private final Object[] input;
-    private final String flags;
+    private Object[] input;
+    private String flags;
 
     private int index;
 
@@ -38,12 +38,7 @@ public class ProgramStack extends ArrayDeque<Object> implements Deque<Object> {
                         this.input[i - 1] = RuntimeHelpers.eval(strings[i]);
                     }
                 }
-            } else {
-                this.input = null;
             }
-        } else {
-            this.input = null;
-            this.flags = null;
         }
     }
 
@@ -73,6 +68,19 @@ public class ProgramStack extends ArrayDeque<Object> implements Deque<Object> {
         Object b = this.pop();
         this.push(a);
         this.push(b);
+    }
+
+    /**
+     * This modifies this stack
+     */
+    public ProgramStack reverse() {
+        ProgramStack reversed = new ProgramStack();
+        while (!this.isEmpty()) {
+            reversed.push(this.pop());
+        }
+        reversed.input = this.input;
+        reversed.flags = this.flags;
+        return reversed;
     }
 
     public void push(boolean b) {

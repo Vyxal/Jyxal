@@ -1,6 +1,7 @@
 package io.github.seggan.jyxal.compiler;
 
 import io.github.seggan.jyxal.runtime.RuntimeMethods;
+import io.github.seggan.jyxal.runtime.math.BigComplex;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -28,5 +29,7 @@ public class ElementTest {
                 }, "Method not found: " + methodName);
             }
         }
+
+        RuntimeMethods.isPrime(BigComplex.valueOf(2809));
     }
 }

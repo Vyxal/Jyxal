@@ -45,11 +45,11 @@ public final class Compiler extends VyxalParserBaseVisitor<Void> implements Opco
 
     private final Deque<JyxalMethod> callStack = new ArrayDeque<>();
     private final Deque<Loop> loopStack = new ArrayDeque<>();
+    private final Map<String, String> aliases = new HashMap<>();
 
     private int listCounter = 0;
     private int lambdaCounter = 0;
-
-    private final Map<String, String> aliases = new HashMap<>();
+    private int ctxStoreCounter = 0;
 
     private Compiler(VyxalParser parser, JyxalClassWriter classWriter, MethodVisitor clinit) {
         this.parser = parser;
@@ -63,7 +63,7 @@ public final class Compiler extends VyxalParserBaseVisitor<Void> implements Opco
 
         // add the register
         cw.visitField(
-                ACC_PRIVATE + ACC_STATIC + ACC_FINAL,
+                ACC_PRIVATE + ACC_STATIC,
                 "register",
                 "Ljava/lang/Object;",
                 null,
@@ -399,50 +399,59 @@ public final class Compiler extends VyxalParserBaseVisitor<Void> implements Opco
 
         JyxalMethod mv = callStack.peek();
 
-        mv.visitFieldInsn(
-                GETSTATIC,
-                "runtime/math/BigComplex",
-                "ZERO",
-                "Lruntime/math/BigComplex;"
-        );
-        mv.visitVarInsn(ASTORE, mv.getCtxVar());
+        try (ContextualVariable ctxStore = mv.reserveVar()) {
+            mv.visitVarInsn(ALOAD, mv.getCtxVar());
+            ctxStore.store();
 
-        mv.visitLabel(start);
-        if (ctx.program().size() > 1) {
-            // we have a finite loop
-            visit(ctx.program(0));
-            childIndex = 1;
-            AsmHelper.pop(mv);
+            mv.visitFieldInsn(
+                    GETSTATIC,
+                    "runtime/math/BigComplex",
+                    "ZERO",
+                    "Lruntime/math/BigComplex;"
+            );
+            mv.visitVarInsn(ASTORE, mv.getCtxVar());
+
+            mv.visitLabel(start);
+            if (ctx.program().size() > 1) {
+                // we have a finite loop
+                visit(ctx.program(0));
+                childIndex = 1;
+                AsmHelper.pop(mv);
+                mv.visitMethodInsn(
+                        INVOKESTATIC,
+                        "runtime/RuntimeHelpers",
+                        "truthValue",
+                        "(Ljava/lang/Object;)Z",
+                        false
+                );
+                mv.visitJumpInsn(IFEQ, end);
+            }
+
+            visit(ctx.program(childIndex));
+
+            mv.visitVarInsn(ALOAD, mv.getCtxVar());
+            mv.visitTypeInsn(CHECKCAST, "runtime/math/BigComplex");
+            mv.visitFieldInsn(
+                    GETSTATIC,
+                    "runtime/math/BigComplex",
+                    "ONE",
+                    "Lruntime/math/BigComplex;"
+            );
             mv.visitMethodInsn(
-                    INVOKESTATIC,
-                    "runtime/RuntimeHelpers",
-                    "truthValue",
-                    "(Ljava/lang/Object;)Z",
+                    INVOKEVIRTUAL,
+                    "runtime/math/BigComplex",
+                    "add",
+                    "(Lruntime/math/BigComplex;)Lruntime/math/BigComplex;",
                     false
             );
-            mv.visitJumpInsn(IFEQ, end);
+            mv.visitVarInsn(ASTORE, mv.getCtxVar());
+
+            mv.visitJumpInsn(GOTO, start);
+            mv.visitLabel(end);
+
+            ctxStore.load();
+            mv.visitVarInsn(ASTORE, mv.getCtxVar());
         }
-
-        visit(ctx.program(childIndex));
-
-        mv.visitVarInsn(ALOAD, mv.getCtxVar());
-        mv.visitFieldInsn(
-                GETSTATIC,
-                "runtime/math/BigComplex",
-                "ONE",
-                "Lruntime/math/BigComplex;"
-        );
-        mv.visitMethodInsn(
-                INVOKEVIRTUAL,
-                "runtime/math/BigComplex",
-                "add",
-                "(Lruntime/math/BigComplex;)Lruntime/math/BigComplex;",
-                false
-        );
-        mv.visitVarInsn(ASTORE, mv.getCtxVar());
-
-        mv.visitJumpInsn(GOTO, start);
-        mv.visitLabel(end);
 
         loopStack.pop();
 
@@ -469,7 +478,11 @@ public final class Compiler extends VyxalParserBaseVisitor<Void> implements Opco
                 "(Ljava/lang/Object;)Ljava/util/Iterator;",
                 false
         );
-        try (ContextualVariable iteratorVar = mv.reserveVar()) {
+        try (ContextualVariable iteratorVar = mv.reserveVar();
+             ContextualVariable ctxStore = mv.reserveVar()) {
+            mv.visitVarInsn(ALOAD, mv.getCtxVar());
+            ctxStore.store();
+
             iteratorVar.store();
             mv.visitLabel(start);
 
@@ -497,6 +510,9 @@ public final class Compiler extends VyxalParserBaseVisitor<Void> implements Opco
 
             mv.visitJumpInsn(GOTO, start);
             mv.visitLabel(end);
+
+            ctxStore.load();
+            mv.visitVarInsn(ASTORE, mv.getCtxVar());
         }
 
         loopStack.pop();
@@ -547,16 +563,34 @@ public final class Compiler extends VyxalParserBaseVisitor<Void> implements Opco
         if ("\u00DF".equals(modifier)) {
             Label end = new Label();
 
-            mv.loadStack();
+            AsmHelper.pop(mv);
             mv.visitMethodInsn(
                     INVOKESTATIC,
                     "runtime/RuntimeHelpers",
                     "truthValue",
-                    "(Lruntime/ProgramStack;)Z",
+                    "(Ljava/lang/Object;)Z",
                     false
             );
             mv.visitJumpInsn(IFEQ, end);
             return m -> m.visitLabel(end);
+        } else if ("&".equals(modifier)) {
+            mv.loadStack();
+            mv.visitFieldInsn(
+                    GETSTATIC,
+                    "jyxal/Main",
+                    "register",
+                    "Ljava/lang/Object;"
+            );
+            AsmHelper.push(mv);
+            return m -> {
+                AsmHelper.pop(m);
+                m.visitFieldInsn(
+                        PUTSTATIC,
+                        "jyxal/Main",
+                        "register",
+                        "Ljava/lang/Object;"
+                );
+            };
         }
 
         return null;
