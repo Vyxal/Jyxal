@@ -43,12 +43,19 @@ test {
 
 generateGrammarSource {
     maxHeapSize = "128m"
-    JPath path = JPath.of("$buildDir/generated-src/antlr/main/io/github/seggan/jyxal/antlr")
-    Files.createDirectories(path)
+    JPath path = JPath.of("$buildDir/generated-src/")
+    JPath fullPath = path.resolve("antlr/main/io/github/seggan/jyxal/antlr/")
+    Files.createDirectories(fullPath)
     doFirst {
-        Files.createDirectories(path)
+        // gotta do this because antlr doesn't like the package name
+        Files.walk(path).forEach {
+            if (Files.isRegularFile(it) && !it.fileName.toString().endsWith(".tokens")) {
+                Files.deleteIfExists(it)
+            }
+        }
+        Files.createDirectories(fullPath)
     }
-    arguments += ["-lib", path.toAbsolutePath().toString(), '-visitor', '-no-listener', "-encoding", "UTF-8"]
+    arguments += ["-lib", fullPath.toAbsolutePath().toString(), '-visitor', '-no-listener', "-encoding", "UTF-8"]
 }
 
 compileJava {

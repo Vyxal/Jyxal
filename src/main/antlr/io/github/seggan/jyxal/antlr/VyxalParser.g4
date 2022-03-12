@@ -5,7 +5,7 @@ package io.github.seggan.jyxal.antlr;
 }
 
 options {
-    tokenVocab='io/github/seggan/jyxal/antlr/VyxalLexer';
+    tokenVocab=VyxalLexer;
 }
 
 file
