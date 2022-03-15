@@ -1,0 +1,683 @@
+package io.github.seggan.jyxal.compiler
+
+import io.github.seggan.jyxal.CompilerOptions
+import io.github.seggan.jyxal.antlr.VyxalParser
+import io.github.seggan.jyxal.antlr.VyxalParser.*
+import io.github.seggan.jyxal.antlr.VyxalParserBaseVisitor
+import io.github.seggan.jyxal.compiler.wrappers.JyxalClassWriter
+import io.github.seggan.jyxal.compiler.wrappers.JyxalMethod
+import io.github.seggan.jyxal.runtime.text.Compression.decompress
+import io.github.seggan.jyxal.runtime.unescapeString
+import org.objectweb.asm.ClassReader
+import org.objectweb.asm.ClassWriter
+import org.objectweb.asm.Handle
+import org.objectweb.asm.Label
+import org.objectweb.asm.MethodVisitor
+import org.objectweb.asm.Opcodes
+import org.objectweb.asm.util.CheckClassAdapter
+import java.io.FileOutputStream
+import java.io.PrintWriter
+import java.util.ArrayDeque
+import java.util.Deque
+import java.util.function.Consumer
+import java.util.regex.Pattern
+
+class Compiler private constructor(val classWriter: JyxalClassWriter, private val clinit: MethodVisitor) : VyxalParserBaseVisitor<Void?>(), Opcodes {
+
+    private val variables: MutableSet<String> = HashSet()
+    private val contextVariables: MutableSet<String> = HashSet()
+
+    private val callStack: Deque<JyxalMethod> = ArrayDeque()
+    private val loopStack: Deque<Loop> = ArrayDeque()
+
+    private val aliases: MutableMap<String, String> = HashMap()
+
+    private var listCounter = 0
+    private var lambdaCounter = 0
+
+    override fun visitInteger(ctx: IntegerContext): Void? {
+        val mv = callStack.peek()
+        mv.loadStack()
+        AsmHelper.addBigComplex(ctx.text, mv)
+        AsmHelper.push(mv)
+        return null
+    }
+
+    override fun visitComplex_number(ctx: Complex_numberContext): Void? {
+        val mv = callStack.peek()
+        val parts = COMPLEX_SEPARATOR.split(ctx.text)
+        mv.loadStack()
+        AsmHelper.addBigDecimal(parts[0], mv)
+        AsmHelper.addBigDecimal(parts[1], mv)
+        mv.visitMethodInsn(
+                Opcodes.INVOKESTATIC,
+                "runtime/math/BigComplex",
+                "valueOf",
+                "(Ljava/math/BigDecimal;Ljava/math/BigDecimal;)Lruntime/math/BigComplex;",
+                false
+        )
+        AsmHelper.push(mv)
+        return null
+    }
+
+    override fun visitNormal_string(ctx: Normal_stringContext): Void? {
+        val mv = callStack.peek()
+        val text = ctx.text
+        mv.loadStack()
+        mv.visitLdcInsn(decompress(unescapeString(text.substring(1, text.length - 1))))
+        AsmHelper.push(mv)
+        return null
+    }
+
+    override fun visitSingle_char_string(ctx: Single_char_stringContext): Void? {
+        val mv = callStack.peek()
+        mv.loadStack()
+        mv.visitLdcInsn(decompress(unescapeString(ctx.text.substring(1))))
+        AsmHelper.push(mv)
+        return null
+    }
+
+    override fun visitDouble_char_string(ctx: Double_char_stringContext): Void? {
+        val mv = callStack.peek()
+        mv.loadStack()
+        mv.visitLdcInsn(decompress(unescapeString(ctx.text.substring(1))))
+        AsmHelper.push(mv)
+        return null
+    }
+
+    override fun visitList(ctx: ListContext): Void? {
+        val method = callStack.peek()
+        method.loadStack()
+        AsmHelper.selectNumberInsn(method, ctx.program().size)
+        method.visitTypeInsn(Opcodes.ANEWARRAY, "java/lang/Object")
+        val program = ctx.program()
+        for (i in program.indices) {
+            val item = program[i]
+            method.visitInsn(Opcodes.DUP)
+            AsmHelper.selectNumberInsn(method, i)
+            if (item.childCount == 1 && item.getChild(0) is LiteralContext) {
+                // we can inline the literal
+                visit(item.getChild(0))
+                // we need to pop the literal value, it's going to get optimized away anyway
+                AsmHelper.pop(method)
+                method.visitInsn(Opcodes.SWAP)
+                method.visitInsn(Opcodes.POP)
+            } else {
+                val methodName = "listInit$" + listCounter++
+                val mv = classWriter.visitMethod(
+                        Opcodes.ACC_PRIVATE or Opcodes.ACC_STATIC,
+                        methodName,
+                        "()Ljava/lang/Object;"
+                )
+                mv.visitCode()
+                callStack.push(mv)
+                visit(item)
+                callStack.pop()
+                AsmHelper.pop(mv)
+                mv.visitInsn(Opcodes.ARETURN)
+                mv.visitMaxs(-1, -1) // auto-calculate stack size and number of locals
+                mv.visitEnd()
+                method.visitMethodInsn(
+                        Opcodes.INVOKESTATIC,
+                        "jyxal/Main",
+                        methodName,
+                        "()Ljava/lang/Object;",
+                        false
+                )
+            }
+            method.visitInsn(Opcodes.AASTORE)
+        }
+        method.visitMethodInsn(
+                Opcodes.INVOKESTATIC,
+                "runtime/list/JyxalList",
+                "create",
+                "([Ljava/lang/Object;)Lruntime/list/JyxalList;",
+                false
+        )
+        AsmHelper.push(method)
+        return null
+    }
+
+    override fun visitConstant(ctx: ConstantContext): Void? {
+        val mv = callStack.peek()
+        mv.loadStack()
+        Constants.compile(ctx.text, classWriter, mv)
+        AsmHelper.push(mv)
+        return null
+    }
+
+    override fun visitVariable_assn(ctx: Variable_assnContext): Void? {
+        val name = ctx.variable().text
+        if (contextVariables.contains(name)) {
+            val mv = callStack.peek()
+            if (ctx.ASSN_SIGN().text == "→") {
+                // set
+                AsmHelper.pop(mv)
+                mv.visitVarInsn(Opcodes.ASTORE, mv.ctxVar)
+            } else {
+                // get
+                mv.loadStack()
+                mv.visitVarInsn(Opcodes.ALOAD, mv.ctxVar)
+                AsmHelper.push(mv)
+            }
+        } else {
+            if (!variables.contains(name)) {
+                variables.add(name)
+                classWriter.visitField(
+                        Opcodes.ACC_PRIVATE or Opcodes.ACC_STATIC,
+                        name,
+                        "Ljava/lang/Object;",
+                        null,
+                        null
+                )
+                clinit.visitFieldInsn(
+                        Opcodes.GETSTATIC,
+                        "runtime/math/BigComplex",
+                        "ZERO",
+                        "Lruntime/math/BigComplex;"
+                )
+                clinit.visitFieldInsn(
+                        Opcodes.PUTSTATIC,
+                        "jyxal/Main",
+                        name,
+                        "Ljava/lang/Object;"
+                )
+            }
+            val mv = callStack.peek()
+            if (ctx.ASSN_SIGN().text == "→") {
+                // set
+                AsmHelper.pop(mv)
+                mv.visitFieldInsn(
+                        Opcodes.PUTSTATIC,
+                        "jyxal/Main",
+                        name,
+                        "Ljava/lang/Object;"
+                )
+            } else {
+                // get
+                mv.loadStack()
+                mv.loadStack()
+                mv.visitFieldInsn(
+                        Opcodes.GETSTATIC,
+                        "jyxal/Main",
+                        name,
+                        "Ljava/lang/Object;"
+                )
+                AsmHelper.push(mv)
+            }
+        }
+        return null
+    }
+
+    override fun visitAlias(ctx: AliasContext): Void? {
+        aliases[ctx.element_type(1).text] = ctx.PREFIX().text + ctx.element_type(0).text
+        return null
+    }
+
+    override fun visitElement(ctx: ElementContext): Void? {
+        var element = ctx.element_type().text
+        element = if (ctx.PREFIX() != null) {
+            ctx.PREFIX().text + element
+        } else {
+            aliases.getOrDefault(element, element)
+        }
+
+        val consumer = if (ctx.MODIFIER() == null) null else visitModifier(ctx.MODIFIER().text)
+        val mv = callStack.peek()
+
+        if (element == "X") {
+            val loop = loopStack.peek()
+            mv.visitJumpInsn(Opcodes.GOTO, loop.end)
+        } else {
+            Constants.compile(element, classWriter, mv)
+        }
+        consumer?.accept(mv)
+        return null
+    }
+
+    override fun visitWhile_loop(ctx: While_loopContext): Void? {
+        val start = Label()
+        val end = Label()
+        var childIndex = 0
+        loopStack.push(Loop(start, end))
+        val mv = callStack.peek()
+        mv.reserveVar().use { ctxStore ->
+            mv.visitVarInsn(Opcodes.ALOAD, mv.ctxVar)
+            ctxStore.store()
+            mv.visitFieldInsn(
+                    Opcodes.GETSTATIC,
+                    "runtime/math/BigComplex",
+                    "ZERO",
+                    "Lruntime/math/BigComplex;"
+            )
+            mv.visitVarInsn(Opcodes.ASTORE, mv.ctxVar)
+            mv.visitLabel(start)
+            if (ctx.program().size > 1) {
+                // we have a finite loop
+                visit(ctx.program(0))
+                childIndex = 1
+                AsmHelper.pop(mv)
+                mv.visitMethodInsn(
+                        Opcodes.INVOKESTATIC,
+                        "runtime/RuntimeHelpers",
+                        "truthValue",
+                        "(Ljava/lang/Object;)Z",
+                        false
+                )
+                mv.visitJumpInsn(Opcodes.IFEQ, end)
+            }
+            visit(ctx.program(childIndex))
+            mv.visitVarInsn(Opcodes.ALOAD, mv.ctxVar)
+            mv.visitTypeInsn(Opcodes.CHECKCAST, "runtime/math/BigComplex")
+            mv.visitFieldInsn(
+                    Opcodes.GETSTATIC,
+                    "runtime/math/BigComplex",
+                    "ONE",
+                    "Lruntime/math/BigComplex;"
+            )
+            mv.visitMethodInsn(
+                    Opcodes.INVOKEVIRTUAL,
+                    "runtime/math/BigComplex",
+                    "plus",
+                    "(Lruntime/math/BigComplex;)Lruntime/math/BigComplex;",
+                    false
+            )
+            mv.visitVarInsn(Opcodes.ASTORE, mv.ctxVar)
+            mv.visitJumpInsn(Opcodes.GOTO, start)
+            mv.visitLabel(end)
+            ctxStore.load()
+            mv.visitVarInsn(Opcodes.ASTORE, mv.ctxVar)
+        }
+        loopStack.pop()
+        return null
+    }
+
+    override fun visitFor_loop(ctx: For_loopContext): Void? {
+        if (ctx.variable() != null) {
+            contextVariables.add(ctx.variable().text)
+        }
+        val start = Label()
+        val end = Label()
+        val mv = callStack.peek()
+        loopStack.push(Loop(start, end))
+        AsmHelper.pop(mv)
+        mv.visitMethodInsn(
+                Opcodes.INVOKESTATIC,
+                "runtime/RuntimeHelpers",
+                "forify",
+                "(Ljava/lang/Object;)Ljava/util/Iterator;",
+                false
+        )
+        mv.reserveVar().use { iteratorVar ->
+            mv.reserveVar().use { ctxStore ->
+                mv.visitVarInsn(Opcodes.ALOAD, mv.ctxVar)
+                ctxStore.store()
+                iteratorVar.store()
+                mv.visitLabel(start)
+                iteratorVar.load()
+                mv.visitMethodInsn(
+                        Opcodes.INVOKEINTERFACE,
+                        "java/util/Iterator",
+                        "hasNext",
+                        "()Z",
+                        true
+                )
+                mv.visitJumpInsn(Opcodes.IFEQ, end)
+                iteratorVar.load()
+                mv.visitMethodInsn(
+                        Opcodes.INVOKEINTERFACE,
+                        "java/util/Iterator",
+                        "next",
+                        "()Ljava/lang/Object;",
+                        true
+                )
+                mv.visitVarInsn(Opcodes.ASTORE, mv.ctxVar)
+                visit(ctx.program())
+                mv.visitJumpInsn(Opcodes.GOTO, start)
+                mv.visitLabel(end)
+                ctxStore.load()
+                mv.visitVarInsn(Opcodes.ASTORE, mv.ctxVar)
+            }
+        }
+        loopStack.pop()
+        return null
+    }
+
+    override fun visitIf_statement(ctx: If_statementContext): Void? {
+        val mv = callStack.peek()
+        val end = Label()
+        loopStack.push(Loop(end, end))
+        AsmHelper.pop(mv)
+        mv.visitMethodInsn(
+                Opcodes.INVOKESTATIC,
+                "runtime/RuntimeHelpers",
+                "truthValue",
+                "(Ljava/lang/Object;)Z",
+                false
+        )
+        mv.visitJumpInsn(Opcodes.IFEQ, end)
+        visit(ctx.program(0))
+        if (ctx.program().size > 1) {
+            val elseEnd = Label()
+            mv.visitJumpInsn(Opcodes.GOTO, elseEnd)
+            mv.visitLabel(end)
+            visit(ctx.program(1))
+            mv.visitLabel(elseEnd)
+        } else {
+            mv.visitLabel(end)
+        }
+        loopStack.pop()
+        return null
+    }
+
+    private fun visitModifier(modifier: String): Consumer<JyxalMethod>? {
+        val mv = callStack.peek()
+        // ß
+        if ("\u00DF" == modifier) {
+            val end = Label()
+            AsmHelper.pop(mv)
+            mv.visitMethodInsn(
+                    Opcodes.INVOKESTATIC,
+                    "runtime/RuntimeHelpers",
+                    "truthValue",
+                    "(Ljava/lang/Object;)Z",
+                    false
+            )
+            mv.visitJumpInsn(Opcodes.IFEQ, end)
+            return Consumer { m: JyxalMethod -> m.visitLabel(end) }
+        } else if ("&" == modifier) {
+            mv.loadStack()
+            mv.visitFieldInsn(
+                    Opcodes.GETSTATIC,
+                    "jyxal/Main",
+                    "register",
+                    "Ljava/lang/Object;"
+            )
+            AsmHelper.push(mv)
+            return Consumer { m: JyxalMethod ->
+                AsmHelper.pop(m)
+                m.visitFieldInsn(
+                        Opcodes.PUTSTATIC,
+                        "jyxal/Main",
+                        "register",
+                        "Ljava/lang/Object;"
+                )
+            }
+        }
+        return null
+    }
+
+    override fun visitLambda(ctx: LambdaContext): Void? {
+        val lambdaName = "lambda$$lambdaCounter"
+        var mv = classWriter.visitMethod(
+                Opcodes.ACC_PRIVATE or Opcodes.ACC_STATIC,
+                lambdaName,
+                "(Lruntime/ProgramStack;)Ljava/lang/Object;"
+        )
+        callStack.push(mv)
+        visit(ctx.program())
+        callStack.pop()
+        AsmHelper.pop(mv)
+        mv.visitInsn(Opcodes.ARETURN)
+        mv.visitMaxs(-1, -1)
+        mv.visitEnd()
+        mv = callStack.peek()
+        mv.visitTypeInsn(Opcodes.NEW, "runtime/Lambda")
+        mv.visitInsn(Opcodes.DUP)
+        mv.visitInsn(Opcodes.ICONST_1)
+        mv.visitLdcInsn(
+                Handle(
+                        Opcodes.H_INVOKESTATIC,
+                        "jyxal/Main",
+                        lambdaName,
+                        "(Lruntime/ProgramStack;)Ljava/lang/Object;",
+                        false
+                )
+        )
+        mv.visitMethodInsn(
+                Opcodes.INVOKESPECIAL,
+                "runtime/Lambda",
+                "<init>",
+                "(ILjava/lang/invoke/MethodHandle;)V",
+                false
+        )
+
+        // normal lambda
+        when (ctx.LAMBDA_TYPE().text) {
+            "\u03BB" -> {
+                mv.visitTypeInsn(Opcodes.NEW, "runtime/Lambda")
+                mv.visitInsn(Opcodes.DUP)
+                AsmHelper.selectNumberInsn(mv, if (ctx.integer() == null) 1 else ctx.integer().text.toInt())
+                mv.visitLdcInsn(
+                        Handle(
+                                Opcodes.H_INVOKESTATIC,
+                                "jyxal/Main",
+                                lambdaName,
+                                "(Lruntime/ProgramStack;)Ljava/lang/Object;",
+                                false
+                        )
+                )
+                mv.visitMethodInsn(
+                        Opcodes.INVOKESPECIAL,
+                        "runtime/Lambda",
+                        "<init>",
+                        "(ILjava/lang/invoke/MethodHandle;)V",
+                        false
+                )
+                mv.loadStack()
+                mv.visitInsn(Opcodes.SWAP)
+                AsmHelper.push(mv)
+            }
+            "\u019B" -> {
+                AsmHelper.pop(mv)
+                mv.visitMethodInsn(
+                        Opcodes.INVOKESTATIC,
+                        "runtime/RuntimeHelpers",
+                        "mapLambda",
+                        "(Lruntime/Lambda;Ljava/lang/Object;)Ljava/lang/Object;",
+                        false
+                )
+                mv.loadStack()
+                mv.visitInsn(Opcodes.SWAP)
+                AsmHelper.push(mv)
+            }
+            "'" -> {
+                AsmHelper.pop(mv)
+                mv.visitMethodInsn(
+                        Opcodes.INVOKESTATIC,
+                        "runtime/RuntimeHelpers",
+                        "filterLambda",
+                        "(Lruntime/Lambda;Ljava/lang/Object;)Ljava/lang/Object;",
+                        false
+                )
+                mv.loadStack()
+                mv.visitInsn(Opcodes.SWAP)
+                AsmHelper.push(mv)
+            }
+            "\u27D1" -> {
+                AsmHelper.pop(mv)
+                mv.visitMethodInsn(
+                        Opcodes.INVOKESTATIC,
+                        "runtime/RuntimeHelpers",
+                        "applyLambda",
+                        "(Lruntime/Lambda;Ljava/lang/Object;)Ljava/lang/Object;",
+                        false
+                )
+                mv.loadStack()
+                mv.visitInsn(Opcodes.SWAP)
+                AsmHelper.push(mv)
+            }
+        }
+        lambdaCounter++
+        return null
+    }
+
+    override fun visitOne_element_lambda(ctx: One_element_lambdaContext): Void? {
+        visitLimitedLambda(listOf(ctx.program_node()))
+        return null
+    }
+
+    override fun visitTwo_element_lambda(ctx: Two_element_lambdaContext): Void? {
+        visitLimitedLambda(ctx.program_node())
+        return null
+    }
+
+    override fun visitThree_element_lambda(ctx: Three_element_lambdaContext): Void? {
+        visitLimitedLambda(ctx.program_node())
+        return null
+    }
+
+    private fun visitLimitedLambda(nodes: List<Program_nodeContext>) {
+        val lambdaName = "lambda$$lambdaCounter"
+        var mv = classWriter.visitMethod(
+                Opcodes.ACC_PRIVATE or Opcodes.ACC_STATIC,
+                lambdaName,
+                "(Lruntime/ProgramStack;)Ljava/lang/Object;"
+        )
+        callStack.push(mv)
+        for (node in nodes) {
+            visit(node)
+        }
+        callStack.pop()
+        AsmHelper.pop(mv)
+        mv.visitInsn(Opcodes.ARETURN)
+        mv.visitMaxs(-1, -1)
+        mv.visitEnd()
+        mv = callStack.peek()
+        mv.visitTypeInsn(Opcodes.NEW, "runtime/Lambda")
+        mv.visitInsn(Opcodes.DUP)
+        mv.visitInsn(Opcodes.ICONST_1)
+        mv.visitLdcInsn(
+                Handle(
+                        Opcodes.H_INVOKESTATIC,
+                        "jyxal/Main",
+                        lambdaName,
+                        "(Lruntime/ProgramStack;)Ljava/lang/Object;",
+                        false
+                )
+        )
+        mv.visitMethodInsn(
+                Opcodes.INVOKESPECIAL,
+                "runtime/Lambda",
+                "<init>",
+                "(ILjava/lang/invoke/MethodHandle;)V",
+                false
+        )
+        mv.loadStack()
+        mv.visitInsn(Opcodes.SWAP)
+        AsmHelper.push(mv)
+    }
+
+    override fun visitFunction(ctx: FunctionContext): Void? {
+        throw JyxalCompileException("Functions not yet supported")
+    }
+
+    private data class Loop(val start: Label, val end: Label)
+
+    companion object {
+        private val COMPLEX_SEPARATOR = Pattern.compile("\u00B0")
+        private val RUNTIME = Pattern.compile("^runtime\\.")
+
+        fun compile(parser: VyxalParser, fileName: String?): ByteArray {
+            val cw = JyxalClassWriter(ClassWriter.COMPUTE_FRAMES)
+            cw.visit(Opcodes.V17, Opcodes.ACC_PUBLIC + Opcodes.ACC_FINAL, "jyxal/Main", null, "java/lang/Object", null)
+
+            // plus the register
+            cw.visitField(
+                    Opcodes.ACC_PRIVATE + Opcodes.ACC_STATIC,
+                    "register",
+                    "Ljava/lang/Object;",
+                    null,
+                    null
+            ).visitEnd()
+            cw.visitSource(fileName, null)
+            val clinit = cw.visitMethod(
+                    Opcodes.ACC_STATIC,
+                    "<clinit>",
+                    "()V",
+                    null,
+                    null
+            )
+            clinit.visitCode()
+            clinit.visitFieldInsn(
+                    Opcodes.GETSTATIC,
+                    "runtime/math/BigComplex",
+                    "ZERO",
+                    "Lruntime/math/BigComplex;"
+            )
+            clinit.visitFieldInsn(Opcodes.PUTSTATIC, "jyxal/Main", "register", "Ljava/lang/Object;")
+            val compiler = Compiler(cw, clinit)
+            val main = cw.visitMethod(
+                    Opcodes.ACC_PUBLIC or Opcodes.ACC_STATIC,
+                    "main",
+                    "([Ljava/lang/String;)V"
+            )
+            compiler.callStack.push(main)
+            main.visitCode()
+            compiler.visit(parser.file())
+
+            // finish up clinit
+            clinit.visitInsn(Opcodes.RETURN)
+            clinit.visitEnd()
+            clinit.visitMaxs(0, 0)
+
+            // TODO: reverse the signs for the variable assns
+
+            // finish up main
+            if (CompilerOptions.OPTIONS.contains(CompilerOptions.PRINT_TO_FILE)) {
+                main.loadStack()
+                main.visitMethodInsn(
+                        Opcodes.INVOKESTATIC,
+                        "runtime/RuntimeMethods",
+                        "printToFile",
+                        "(Lruntime/ProgramStack;)V",
+                        false
+                )
+            } else {
+                val end = Label()
+                main.loadStack()
+                main.visitMethodInsn(
+                        Opcodes.INVOKEVIRTUAL,
+                        "runtime/ProgramStack",
+                        "size",
+                        "()I",
+                        false
+                )
+                main.visitJumpInsn(Opcodes.IFEQ, end)
+                main.loadStack()
+                main.visitMethodInsn(
+                        Opcodes.INVOKEVIRTUAL,
+                        "runtime/ProgramStack",
+                        "pop",
+                        "()Ljava/lang/Object;",
+                        false
+                )
+                main.visitFieldInsn(Opcodes.GETSTATIC, "java/lang/System", "out", "Ljava/io/PrintStream;")
+                main.visitInsn(Opcodes.SWAP)
+                main.visitMethodInsn(
+                        Opcodes.INVOKEVIRTUAL,
+                        "java/io/PrintStream",
+                        "println",
+                        "(Ljava/lang/Object;)V",
+                        false
+                )
+                main.visitLabel(end)
+            }
+            main.visitInsn(Opcodes.RETURN)
+            try {
+                main.visitEnd()
+                main.visitMaxs(0, 0)
+            } catch (e: Exception) {
+                FileOutputStream("debug.log").use { os ->
+                    CheckClassAdapter.verify(
+                            ClassReader(cw.toByteArray()),
+                            true,
+                            PrintWriter(os)
+                    )
+                }
+                throw RuntimeException(e)
+            }
+            return cw.toByteArray()
+        }
+    }
+}
