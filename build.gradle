@@ -5,9 +5,12 @@ import org.objectweb.asm.commons.Remapper
 
 import java.nio.file.Files
 import java.nio.file.Path as JPath
+import java.nio.file.StandardCopyOption
 import java.util.jar.JarEntry
 import java.util.jar.JarInputStream
 import java.util.regex.Pattern
+
+import java.util.stream.Collectors
 
 plugins {
     id 'java'
@@ -22,14 +25,14 @@ version '0.3.0'
 
 mainClassName = 'io.github.seggan.jyxal.Main'
 
-JPath dest = JPath.of("$buildDir/runtime-classes/")
+JPath dest = JPath.of("$buildDir/runtime-classes/runtime/")
 
 repositories {
     mavenCentral()
 }
 
 configurations {
-    kotlinRuntime
+    runtimeLib
 }
 
 dependencies {
@@ -37,7 +40,7 @@ dependencies {
     implementation 'org.ow2.asm:asm-commons:9.2'
     implementation 'org.ow2.asm:asm-util:9.2'
     implementation 'org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.6.10'
-    kotlinRuntime('org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.6.10') {
+    runtimeLib('org.jetbrains.kotlin:kotlin-stdlib:1.6.20-RC') {
         transitive = false
     }
     antlr 'org.antlr:antlr4:4.9.3'
@@ -63,7 +66,7 @@ generateGrammarSource {
         Files.walk(path)
                 .filter(Files::isRegularFile)
                 .filter(f -> !f.toString().endsWith(".tokens"))
-                .forEach(File::delete)
+                .forEach(Files::delete)
         Files.createDirectories(fullPath)
     }
     arguments += ["-lib", fullPath.toAbsolutePath().toString(), '-visitor', '-no-listener', "-encoding", "UTF-8"]
@@ -92,35 +95,60 @@ sourceSets {
     }
 }
 
-task extractKoltinRuntime() {
-    File f = configurations.kotlinRuntime.singleFile
-    try (JarInputStream inputStream = new JarInputStream(new FileInputStream(f))) {
-        JarEntry entry
-        while ((entry = inputStream.getNextJarEntry()) != null) {
-            if (entry.isDirectory() || !entry.getName().endsWith(".class")) {
-                continue
-            }
-            JPath path = dest.resolve(entry.getName())
-            JPath parent = path.getParent()
-            if (!Files.exists(parent)) {
-                Files.createDirectories(parent)
-            }
-            Files.write(path, inputStream.readAllBytes())
+task extractLibs() {
+    doLast {
+        JPath list = dest.resolve("runtime.list")
+        if (!Files.exists(list)) {
+            Files.createDirectories(dest)
+            Files.createFile(list)
         }
+        JPath libsDir = buildDir.toPath().resolve("runtime-libs")
+        Files.createDirectories(libsDir)
+        Set<String> classes = new HashSet<>(Files.readAllLines(list))
+        for (File f : configurations.runtimeLib.resolve()) {
+            try (JarInputStream inputStream = new JarInputStream(new FileInputStream(f))) {
+                JarEntry entry
+                while ((entry = inputStream.getNextJarEntry()) != null) {
+                    if (entry.isDirectory() || !entry.getName().endsWith(".class")) {
+                        continue
+                    }
+                    JPath d = libsDir.resolve(entry.getName())
+                    if (Files.exists(d)) {
+                        continue
+                    }
+                    Files.createDirectories(d.getParent())
+                    Files.copy(inputStream, d, StandardCopyOption.REPLACE_EXISTING)
+                    classes.add(entry.getName())
+                }
+            }
+        }
+        Files.write(list, classes)
     }
 }
 
-test {
-    dependsOn extractKoltinRuntime
-
-    doFirst {
-        List<String> names = new ArrayList<>()
-        names.addAll(rename("java", dest))
-        names.addAll(rename("kotlin", dest))
+task copyRuntime() {
+    dependsOn extractLibs, compileJava, compileKotlin
+    doLast {
+        JPath list = dest.resolve("runtime.list")
+        if (!Files.exists(list)) {
+            Files.createDirectories(dest)
+            Files.createFile(list)
+        }
+        Set<String> names = new HashSet<>(Files.readAllLines(list))
+        for (String s : rename("java", dest)) {
+            names.add("runtime/$s")
+        }
+        for (String s : rename("kotlin", dest)) {
+            names.add("runtime/$s")
+        }
         names.add("dictLong.txt")
         names.add("dictShort.txt")
         Files.write(dest.resolve("runtime.list"), names)
     }
+}
+
+test {
+    dependsOn copyRuntime
 }
 
 clean {
@@ -131,7 +159,11 @@ clean {
 shadowJar {
     dependsOn test
 
-    from(dest.toFile().path) {
+    from(dest.getParent().toFile().path) {
+        include "**/*.*"
+    }
+
+    from(new File(buildDir, "runtime-libs").path) {
         include "**/*.*"
     }
 

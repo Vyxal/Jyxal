@@ -57,7 +57,8 @@ object Main {
         println("Extracting runtime classes...")
         val resourceList: MutableSet<String> = HashSet()
         val buildDir: Path = Path.of(System.getProperty("user.dir"), runtimeClasses)
-        Scanner(if (isTest) Files.newInputStream(buildDir.resolve("runtime.list")) else Main::class.java.getResourceAsStream("/runtime.list")!!).use { scanner ->
+        Scanner(if (isTest) Files.newInputStream(buildDir.resolve("runtime.list")) else
+            Main::class.java.getResourceAsStream("/runtime/runtime.list")!!).use { scanner ->
             while (scanner.hasNextLine()) {
                 resourceList.add(scanner.nextLine())
             }
@@ -66,7 +67,7 @@ object Main {
         val fileName = args[0].substring(0, args[0].lastIndexOf('.'))
         JarOutputStream(FileOutputStream("$fileName.jar")).use { jar ->
             for (resource in resourceList) {
-                val entry = JarEntry("runtime/$resource")
+                val entry = JarEntry(resource)
                 entry.time = System.currentTimeMillis()
                 jar.putNextEntry(entry)
                 if (isTest) Files.newInputStream(buildDir.resolve(resource)) else Main::class.java.getResourceAsStream("/$resource").use { `in` ->

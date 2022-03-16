@@ -56,10 +56,10 @@ object Optimiser {
                     if (arguments != 0) {
                         // one argument
                         codeBlock.insertBefore(insn, InsnNode(SWAP))
-                    } else if (insn.desc.startsWith("(Lruntime/ProgramStack;)")) {
-                        // these all take the stack as input
-                        codeBlock.insertBefore(insn, VarInsnNode(ALOAD, jyxalMethod.stackVar))
                     }
+                } else if (insn.desc.startsWith("(Lruntime/ProgramStack;)")) {
+                    // these all take the stack as input
+                    codeBlock.insertBefore(insn, VarInsnNode(ALOAD, jyxalMethod.stackVar))
                 }
             }
         }

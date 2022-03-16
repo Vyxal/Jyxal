@@ -18,15 +18,15 @@ enum class Element {
      * Math
      */
     ADD("+"),
-    COMPLEMENT("\u2310", true),
+    COMPLEMENT("⌐", true),
     DIVIDE("/"),
     DOUBLE_REPEAT("d", true),
-    HALVE("\u00BD"),
+    HALVE("½"),
     INCREMENT(
-            "\u203A",
+            "›",
             true
     ),
-    INFINITE_PRIMES("\u00DEp", Consumer { mv: JyxalMethod ->
+    INFINITE_PRIMES("Þp", Consumer { mv: JyxalMethod ->
         mv.loadStack()
         mv.visitMethodInsn(
                 Opcodes.INVOKESTATIC,
@@ -37,13 +37,13 @@ enum class Element {
         )
         AsmHelper.push(mv)
     }),
-    IS_PRIME("\u00E6", true),
+    IS_PRIME("æ", true),
     MODULO_FORMAT("%"),
-    MULTI_COMMAND("\u2022"),
+    MULTI_COMMAND("•"),
     MULTIPLY("*"),
     SUBTRACT("-"),
     SUM(
-            "\u2211",
+            "∑",
             false
     ),
     TWO_POW("E", true),
@@ -52,7 +52,7 @@ enum class Element {
      * Boolean
      */
     ALL("A", false),
-    BOOLIFY("\u1E03", Consumer { mv: JyxalMethod ->
+    BOOLIFY("ḃ", Consumer { mv: JyxalMethod ->
         mv.loadStack()
         AsmHelper.pop(mv)
         mv.visitMethodInsn(
@@ -74,13 +74,13 @@ enum class Element {
     }),
     EQUAL("="),
     GREATER_THAN(">"),
-    GREATER_THAN_OR_EQUAL("\u2265"),
+    GREATER_THAN_OR_EQUAL("≥"),
     LESS_THAN("<"),
-    LESS_THAN_OR_EQUAL("\u2264"),
+    LESS_THAN_OR_EQUAL("≤"),
     LOGICAL_AND(
-            "\u2227"
+            "∧"
     ),
-    LOGICAL_NOT("\u00AC", Consumer { mv: JyxalMethod ->
+    LOGICAL_NOT("¬", Consumer { mv: JyxalMethod ->
         AsmHelper.pop(mv)
         mv.visitMethodInsn(
                 Opcodes.INVOKESTATIC,
@@ -108,47 +108,47 @@ enum class Element {
         mv.visitInsn(Opcodes.SWAP)
         AsmHelper.push(mv)
     }),
-    LOGICAL_OR("\u2228"),
+    LOGICAL_OR("∨"),
 
     /**
      * String
      */
     CHR_ORD("C", true),
-    INFINITE_REPLACE("\u00A2"),
-    ITEM_SPLIT("\u00F7"),
+    INFINITE_REPLACE("¢"),
+    ITEM_SPLIT("÷"),
     JOIN_BY_NEWLINES(
-            "\u204B",
+            "⁋",
             false
     ),
-    JOIN_BY_NOTHING("\u1E45", false),
-    JSON_PARSE("\u00F8J", true),
-    REVERSE("\u1E58", false),
-    SPLIT_ON("\u20AC"),
+    JOIN_BY_NOTHING("ṅ", false),
+    JSON_PARSE("øJ", true),
+    REVERSE("Ṙ", false),
+    SPLIT_ON("€"),
 
     /**
      * Literals
      */
-    ASTERISK("\u00D7", "*"),
-    SPACE("\u00F0", " "),
+    ASTERISK("×", "*"),
+    SPACE("ð", " "),
 
     /**
      * List
      */
     FLATTEN("f", false),
     HEAD("h", false),
-    HEAD_EXTRACT("\u1E23"),
-    IOR("\u027E", true), // inclusive one range
-    IZR("\u0280", true), // inclusive zero range
+    HEAD_EXTRACT("ḣ"),
+    IOR("ɾ", true), // inclusive one range
+    IZR("ʀ", true), // inclusive zero range
     LENGTH(
             "L",
             false
     ),
-    MAP_GET_SET("\u00DEd"),
+    MAP_GET_SET("Þd"),
     MERGE("J"),
     PREPEND("p"),
-    REMOVE_AT_INDEX("\u27C7"),
-    SLICE_UNTIL("\u1E8E"), SORT_BY_FUNCTION(
-            "\u1E61"
+    REMOVE_AT_INDEX("⟇"),
+    SLICE_UNTIL("Ẏ"), SORT_BY_FUNCTION(
+            "ṡ"
     ),
     STACK_SIZE("!", Consumer { mv: JyxalMethod ->
         mv.loadStack()
@@ -199,7 +199,7 @@ enum class Element {
         AsmHelper.pop(mv)
         mv.visitInsn(Opcodes.POP)
     }),
-    PUSH_REGISTER("\u00A5", Consumer { mv: JyxalMethod ->
+    PUSH_REGISTER("¥", Consumer { mv: JyxalMethod ->
         mv.loadStack()
         mv.visitFieldInsn(
                 Opcodes.GETSTATIC,
@@ -209,7 +209,7 @@ enum class Element {
         )
         AsmHelper.push(mv)
     }),
-    SET_REGISTER("\u00A3", Consumer { mv: JyxalMethod ->
+    SET_REGISTER("£", Consumer { mv: JyxalMethod ->
         AsmHelper.pop(mv)
         mv.visitFieldInsn(
                 Opcodes.PUTSTATIC,
@@ -240,8 +240,8 @@ enum class Element {
         mv.loadContextVar()
         AsmHelper.push(mv)
     }),
-    FUNCTION_CALL("\u2020"),
-    GET_REQUEST("\u00A8U", true),
+    FUNCTION_CALL("†"),
+    GET_REQUEST("¨U", true),
     INPUT("?", Consumer { mv: JyxalMethod ->
         mv.loadStack()
         mv.visitMethodInsn(
@@ -255,13 +255,13 @@ enum class Element {
         mv.visitInsn(Opcodes.SWAP)
         AsmHelper.push(mv)
     }),
-    PRINT("\u20B4", Consumer { mv: JyxalMethod ->
+    PRINT("₴", Consumer { mv: JyxalMethod ->
         AsmHelper.pop(mv)
         mv.visitFieldInsn(Opcodes.GETSTATIC, "java/lang/System", "out", "Ljava/io/PrintStream;")
         mv.visitInsn(Opcodes.SWAP)
         mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/io/PrintStream", "print", "(Ljava/lang/Object;)V", false)
     }),
-    PRINT_NO_POP("\u2026", Consumer { mv: JyxalMethod ->
+    PRINT_NO_POP("…", Consumer { mv: JyxalMethod ->
         mv.visitFieldInsn(Opcodes.GETSTATIC, "java/lang/System", "out", "Ljava/io/PrintStream;")
         mv.loadStack()
         mv.visitMethodInsn(
