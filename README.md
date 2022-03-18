@@ -22,3 +22,4 @@ Jyxal uses Gradle for building, but the wrapper is included in the repository, s
  | `o`  | This flag forces the compiler to not perform any optimizations on the compiled bytecode.                                                       |
  | `f`  | This flag pipes implicit output of the program into a file called `test.out`, useful as some terminals cannot display unicode chars correctly. |
 | `O`  | This flag disables post-compilation optimisation                                                                                               |
+| `v`  | This flag disables vectorisation of monads. Useful for improving performance                                                                   |
