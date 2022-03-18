@@ -72,8 +72,8 @@ generateGrammarSource {
 compileJava {
     dependsOn generateGrammarSource
 
-    sourceCompatibility = '17'
-    targetCompatibility = '17'
+    sourceCompatibility = '11'
+    targetCompatibility = '11'
 }
 
 sourceSets {
@@ -181,7 +181,7 @@ compileKotlin {
     dependsOn generateGrammarSource
 
     kotlinOptions {
-        jvmTarget = "17"
+        jvmTarget = "11"
         freeCompilerArgs += ["-Xno-param-assertions"]
     }
 }
@@ -191,6 +191,6 @@ compileTestKotlin {
     dependsOn generateTestGrammarSource
 
     kotlinOptions {
-        jvmTarget = "17"
+        jvmTarget = "11"
     }
 }

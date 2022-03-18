@@ -436,8 +436,7 @@ public class BigRational extends Number implements Comparable<BigRational>, Seri
     // private, because we want to hide that we use BigDecimal internally
     private BigRational multiply(BigDecimal value) {
         BigDecimal n = numerator.multiply(value);
-        BigDecimal d = denominator;
-        return of(n, d);
+        return of(n, denominator);
     }
 
     /**
@@ -736,9 +735,11 @@ public class BigRational extends Number implements Comparable<BigRational>, Seri
             return true;
         }
 
-        if (!(obj instanceof BigRational other)) {
+        if (!(obj instanceof BigRational)) {
             return false;
         }
+
+        BigRational other = (BigRational) obj;
 
         if (!numerator.equals(other.numerator)) {
             return false;

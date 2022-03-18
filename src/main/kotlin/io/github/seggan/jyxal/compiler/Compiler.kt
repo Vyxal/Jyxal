@@ -580,7 +580,7 @@ class Compiler private constructor(val classWriter: JyxalClassWriter, private va
 
         fun compile(parser: VyxalParser, fileName: String?): ByteArray {
             val cw = JyxalClassWriter(ClassWriter.COMPUTE_FRAMES)
-            cw.visit(Opcodes.V17, Opcodes.ACC_PUBLIC + Opcodes.ACC_FINAL, "jyxal/Main", null, "java/lang/Object", null)
+            cw.visit(Opcodes.V11, Opcodes.ACC_PUBLIC + Opcodes.ACC_FINAL, "jyxal/Main", null, "java/lang/Object", null)
 
             // plus the register
             cw.visitField(
