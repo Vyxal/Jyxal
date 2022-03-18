@@ -22,6 +22,7 @@ abstract class JyxalList : Collection<Any> {
             return FiniteList(collection)
         }
 
+        @JvmStatic
         @Suppress("UNNECESSARY_NOT_NULL_ASSERTION")
         fun create(stack: ProgramStack): JyxalList {
             val list = ArrayList<Any>(stack.size)

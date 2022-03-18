@@ -1,16 +1,9 @@
-import org.objectweb.asm.ClassReader
-import org.objectweb.asm.ClassWriter
-import org.objectweb.asm.commons.ClassRemapper
-import org.objectweb.asm.commons.Remapper
-
 import java.nio.file.Files
 import java.nio.file.Path as JPath
 import java.nio.file.StandardCopyOption
 import java.util.jar.JarEntry
 import java.util.jar.JarInputStream
 import java.util.regex.Pattern
-
-import java.util.stream.Collectors
 
 plugins {
     id 'java'
@@ -25,7 +18,7 @@ version '0.3.0'
 
 mainClassName = 'io.github.seggan.jyxal.Main'
 
-JPath dest = JPath.of("$buildDir/runtime-classes/runtime/")
+JPath dest = JPath.of("$buildDir/runtime-classes/")
 
 repositories {
     mavenCentral()
@@ -39,8 +32,12 @@ dependencies {
     implementation 'org.ow2.asm:asm:9.2'
     implementation 'org.ow2.asm:asm-commons:9.2'
     implementation 'org.ow2.asm:asm-util:9.2'
-    implementation 'org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.6.10'
+    implementation 'org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.6.20-RC'
+    implementation 'com.guardsquare:proguard-base:7.2.1'
     runtimeLib('org.jetbrains.kotlin:kotlin-stdlib:1.6.20-RC') {
+        transitive = false
+    }
+    runtimeLib('org.jetbrains:annotations:23.0.0') {
         transitive = false
     }
     antlr 'org.antlr:antlr4:4.9.3'
@@ -102,8 +99,6 @@ task extractLibs() {
             Files.createDirectories(dest)
             Files.createFile(list)
         }
-        JPath libsDir = buildDir.toPath().resolve("runtime-libs")
-        Files.createDirectories(libsDir)
         Set<String> classes = new HashSet<>(Files.readAllLines(list))
         for (File f : configurations.runtimeLib.resolve()) {
             try (JarInputStream inputStream = new JarInputStream(new FileInputStream(f))) {
@@ -112,7 +107,7 @@ task extractLibs() {
                     if (entry.isDirectory() || !entry.getName().endsWith(".class")) {
                         continue
                     }
-                    JPath d = libsDir.resolve(entry.getName())
+                    JPath d = dest.resolve(entry.getName())
                     if (Files.exists(d)) {
                         continue
                     }
@@ -135,12 +130,19 @@ task copyRuntime() {
             Files.createFile(list)
         }
         Set<String> names = new HashSet<>(Files.readAllLines(list))
-        for (String s : rename("java", dest)) {
-            names.add("runtime/$s")
-        }
-        for (String s : rename("kotlin", dest)) {
-            names.add("runtime/$s")
-        }
+        String dir = "$buildDir/classes/"
+        Pattern regex = Pattern.compile("${buildDir.toString().replace('\\', '/')}/classes/(java|kotlin)/main/")
+        Files.walk(JPath.of(dir))
+                .filter(Files::isRegularFile)
+                .filter(f -> f.toString().contains("runtime"))
+                .filter(f -> f.toString().contains("main"))
+                .forEach(f -> {
+                    String rel = regex.matcher(f.toString().replace('\\', '/')).replaceAll("")
+                    JPath d = dest.resolve(rel)
+                    Files.createDirectories(d.getParent())
+                    Files.copy(f, d, StandardCopyOption.REPLACE_EXISTING)
+                    names.add(rel)
+                })
         names.add("dictLong.txt")
         names.add("dictShort.txt")
         Files.write(dest.resolve("runtime.list"), names)
@@ -159,11 +161,7 @@ clean {
 shadowJar {
     dependsOn test
 
-    from(dest.getParent().toFile().path) {
-        include "**/*.*"
-    }
-
-    from(new File(buildDir, "runtime-libs").path) {
+    from(dest.toFile().path) {
         include "**/*.*"
     }
 
@@ -195,36 +193,4 @@ compileTestKotlin {
     kotlinOptions {
         jvmTarget = "17"
     }
-}
-
-List<String> rename(String lang, JPath dest) {
-    List<String> names = new ArrayList<>()
-    String dir = "$buildDir/classes/$lang/main/io/github/seggan/jyxal/runtime"
-    Pattern oldPackage = Pattern.compile("io/github/seggan/jyxal/runtime/")
-    Pattern backslash = Pattern.compile("\\\\")
-    Pattern dirPattern = Pattern.compile("^.*classes[/\\\\]$lang[/\\\\]main[/\\\\]io[/\\\\]github[/\\\\]seggan[/\\\\]jyxal[/\\\\]runtime[/\\\\]")
-    Files.walk(JPath.of(dir)).forEach({
-        if (Files.isRegularFile(it)) {
-            String fname = dirPattern.matcher(it.toString()).replaceFirst("")
-            names.add(backslash.matcher(fname).replaceAll("/"))
-
-            ClassReader cr = new ClassReader(Files.readAllBytes(it))
-            ClassWriter cw = new ClassWriter(cr, 0)
-            ClassRemapper remapper = new ClassRemapper(cw, new Remapper() {
-                @Override
-                String map(String internalName) {
-                    return oldPackage.matcher(internalName).replaceFirst("runtime/")
-                }
-            })
-            cr.accept(remapper, ClassReader.EXPAND_FRAMES)
-
-            JPath out = dest.resolve(fname)
-            JPath parent = out.getParent()
-            if (!Files.exists(parent)) {
-                Files.createDirectories(parent)
-            }
-            Files.write(out, cw.toByteArray())
-        }
-    })
-    return names
 }

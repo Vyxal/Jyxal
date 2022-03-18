@@ -7,6 +7,7 @@ import org.objectweb.asm.Opcodes
 import org.objectweb.asm.tree.InsnList
 import org.objectweb.asm.tree.LabelNode
 import org.objectweb.asm.tree.MethodNode
+import java.util.regex.Pattern
 
 abstract class JyxalMethod internal constructor(cw: ClassWriter, access: Int, name: String, desc: String) : MethodNode(Opcodes.ASM7, access, name, desc, null, null), Opcodes {
 
@@ -14,6 +15,8 @@ abstract class JyxalMethod internal constructor(cw: ClassWriter, access: Int, na
         protected set
     var ctxVar = 0
         protected set
+
+    private val runtime = Pattern.compile("runtime/")
 
     private val reservedVars: MutableSet<ContextualVariable> = HashSet()
     private var optimise = !CompilerOptions.OPTIONS.contains(CompilerOptions.DONT_OPTIMISE)
@@ -75,6 +78,22 @@ abstract class JyxalMethod internal constructor(cw: ClassWriter, access: Int, na
             }
         }
         accept(mv)
+    }
+
+    override fun visitMethodInsn(opcodeAndSource: Int, owner: String, name: String, descriptor: String, isInterface: Boolean) {
+        super.visitMethodInsn(opcodeAndSource, remap(owner), name, remap(descriptor), isInterface)
+    }
+
+    override fun visitFieldInsn(opcodeAndSource: Int, owner: String, name: String, descriptor: String) {
+        super.visitFieldInsn(opcodeAndSource, remap(owner), name, remap(descriptor))
+    }
+
+    override fun visitTypeInsn(opcode: Int, type: String) {
+        super.visitTypeInsn(opcode, remap(type))
+    }
+
+    private fun remap(owner: String): String {
+        return runtime.matcher(owner).replaceAll("io/github/seggan/jyxal/runtime/")
     }
 
     init {

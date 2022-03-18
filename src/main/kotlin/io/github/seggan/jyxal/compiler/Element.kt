@@ -8,8 +8,6 @@ import org.objectweb.asm.Handle
 import org.objectweb.asm.Label
 import org.objectweb.asm.Opcodes
 import org.objectweb.asm.Type
-import java.util.function.BiConsumer
-import java.util.function.Consumer
 import kotlin.reflect.KClass
 
 @Suppress("unused")
@@ -26,7 +24,7 @@ enum class Element {
             "›",
             true
     ),
-    INFINITE_PRIMES("Þp", Consumer { mv: JyxalMethod ->
+    INFINITE_PRIMES("Þp", { mv ->
         mv.loadStack()
         mv.visitMethodInsn(
                 Opcodes.INVOKESTATIC,
@@ -42,17 +40,14 @@ enum class Element {
     MULTI_COMMAND("•"),
     MULTIPLY("*"),
     SUBTRACT("-"),
-    SUM(
-            "∑",
-            false
-    ),
+    SUM("∑", false),
     TWO_POW("E", true),
 
     /**
      * Boolean
      */
     ALL("A", false),
-    BOOLIFY("ḃ", Consumer { mv: JyxalMethod ->
+    BOOLIFY("ḃ", { mv ->
         mv.loadStack()
         AsmHelper.pop(mv)
         mv.visitMethodInsn(
@@ -77,10 +72,8 @@ enum class Element {
     GREATER_THAN_OR_EQUAL("≥"),
     LESS_THAN("<"),
     LESS_THAN_OR_EQUAL("≤"),
-    LOGICAL_AND(
-            "∧"
-    ),
-    LOGICAL_NOT("¬", Consumer { mv: JyxalMethod ->
+    LOGICAL_AND("∧"),
+    LOGICAL_NOT("¬", { mv ->
         AsmHelper.pop(mv)
         mv.visitMethodInsn(
                 Opcodes.INVOKESTATIC,
@@ -116,10 +109,7 @@ enum class Element {
     CHR_ORD("C", true),
     INFINITE_REPLACE("¢"),
     ITEM_SPLIT("÷"),
-    JOIN_BY_NEWLINES(
-            "⁋",
-            false
-    ),
+    JOIN_BY_NEWLINES("⁋", false),
     JOIN_BY_NOTHING("ṅ", false),
     JSON_PARSE("øJ", true),
     REVERSE("Ṙ", false),
@@ -139,18 +129,14 @@ enum class Element {
     HEAD_EXTRACT("ḣ"),
     IOR("ɾ", true), // inclusive one range
     IZR("ʀ", true), // inclusive zero range
-    LENGTH(
-            "L",
-            false
-    ),
+    LENGTH("L", false),
     MAP_GET_SET("Þd"),
     MERGE("J"),
     PREPEND("p"),
     REMOVE_AT_INDEX("⟇"),
-    SLICE_UNTIL("Ẏ"), SORT_BY_FUNCTION(
-            "ṡ"
-    ),
-    STACK_SIZE("!", Consumer { mv: JyxalMethod ->
+    SLICE_UNTIL("Ẏ"),
+    SORT_BY_FUNCTION("ṡ"),
+    STACK_SIZE("!", { mv ->
         mv.loadStack()
         mv.visitMethodInsn(
                 Opcodes.INVOKEVIRTUAL,
@@ -176,30 +162,21 @@ enum class Element {
      * Stack
      */
     TRIPLICATE("D"),
-    DUPLICATE(":", Consumer { mv: JyxalMethod ->
+    DUPLICATE(":", { mv ->
         AsmHelper.pop(mv)
-        mv.reserveVar().use { obj ->
-            obj.store()
-            mv.loadStack()
-            obj.load()
-            mv.visitMethodInsn(
-                    Opcodes.INVOKESTATIC,
-                    "runtime/RuntimeHelpers",
-                    "copy",
-                    "(Ljava/lang/Object;)Ljava/lang/Object;",
-                    false
-            )
-            AsmHelper.push(mv)
-            mv.loadStack()
-            obj.load()
-            AsmHelper.push(mv)
-        }
+        mv.visitInsn(Opcodes.DUP)
+        mv.loadStack()
+        mv.visitInsn(Opcodes.SWAP)
+        AsmHelper.push(mv)
+        mv.loadStack()
+        mv.visitInsn(Opcodes.SWAP)
+        AsmHelper.push(mv)
     }),
-    POP("_", Consumer { mv: JyxalMethod ->
+    POP("_", { mv ->
         AsmHelper.pop(mv)
         mv.visitInsn(Opcodes.POP)
     }),
-    PUSH_REGISTER("¥", Consumer { mv: JyxalMethod ->
+    PUSH_REGISTER("¥", { mv ->
         mv.loadStack()
         mv.visitFieldInsn(
                 Opcodes.GETSTATIC,
@@ -209,7 +186,7 @@ enum class Element {
         )
         AsmHelper.push(mv)
     }),
-    SET_REGISTER("£", Consumer { mv: JyxalMethod ->
+    SET_REGISTER("£", { mv ->
         AsmHelper.pop(mv)
         mv.visitFieldInsn(
                 Opcodes.PUTSTATIC,
@@ -218,7 +195,7 @@ enum class Element {
                 "Ljava/lang/Object;"
         )
     }),
-    WRAP("W", Consumer { mv: JyxalMethod ->
+    WRAP("W", { mv ->
         mv.loadStack()
         mv.visitMethodInsn(
                 Opcodes.INVOKESTATIC,
@@ -235,14 +212,14 @@ enum class Element {
     /**
      * Misc
      */
-    CONTEXT_VAR("n", Consumer { mv: JyxalMethod ->
+    CONTEXT_VAR("n", { mv ->
         mv.loadStack()
         mv.loadContextVar()
         AsmHelper.push(mv)
     }),
     FUNCTION_CALL("†"),
     GET_REQUEST("¨U", true),
-    INPUT("?", Consumer { mv: JyxalMethod ->
+    INPUT("?", { mv ->
         mv.loadStack()
         mv.visitMethodInsn(
                 Opcodes.INVOKEVIRTUAL,
@@ -255,13 +232,13 @@ enum class Element {
         mv.visitInsn(Opcodes.SWAP)
         AsmHelper.push(mv)
     }),
-    PRINT("₴", Consumer { mv: JyxalMethod ->
+    PRINT("₴", { mv ->
         AsmHelper.pop(mv)
         mv.visitFieldInsn(Opcodes.GETSTATIC, "java/lang/System", "out", "Ljava/io/PrintStream;")
         mv.visitInsn(Opcodes.SWAP)
         mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/io/PrintStream", "print", "(Ljava/lang/Object;)V", false)
     }),
-    PRINT_NO_POP("…", Consumer { mv: JyxalMethod ->
+    PRINT_NO_POP("…", { mv ->
         mv.visitFieldInsn(Opcodes.GETSTATIC, "java/lang/System", "out", "Ljava/io/PrintStream;")
         mv.loadStack()
         mv.visitMethodInsn(
@@ -273,7 +250,7 @@ enum class Element {
         )
         mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/io/PrintStream", "print", "(Ljava/lang/Object;)V", false)
     }),
-    PRINTLN(",", Consumer { mv: JyxalMethod ->
+    PRINTLN(",", { mv ->
         AsmHelper.pop(mv)
         mv.visitFieldInsn(Opcodes.GETSTATIC, "java/lang/System", "out", "Ljava/io/PrintStream;")
         mv.visitInsn(Opcodes.SWAP)
@@ -283,14 +260,14 @@ enum class Element {
     @JvmField
     val type: LinkedMethodType?
     val text: String
-    private val compileMethod: BiConsumer<ClassWriter, JyxalMethod>
+    private val compileMethod: (ClassWriter, JyxalMethod) -> Unit
 
-    constructor(text: String, compileMethod: Consumer<JyxalMethod>) : this(
+    constructor(text: String, compileMethod: (JyxalMethod) -> Unit) : this(
             text,
-            BiConsumer<ClassWriter, JyxalMethod> { _: ClassWriter, mv: JyxalMethod -> compileMethod.accept(mv) }
+            { _, mv -> compileMethod(mv) }
     )
 
-    constructor(text: String, compileMethod: BiConsumer<ClassWriter, JyxalMethod>) {
+    constructor(text: String, compileMethod: (ClassWriter, JyxalMethod) -> Unit) {
         this.text = text
         this.compileMethod = compileMethod
         this.type = null
@@ -298,7 +275,7 @@ enum class Element {
 
     constructor(text: String, type: LinkedMethodType = LinkedMethodType.STACK_OBJECT) {
         this.text = text
-        compileMethod = BiConsumer { _: ClassWriter, mv: JyxalMethod ->
+        compileMethod = { _, mv ->
             mv.loadStack()
             if (type.returnType != Void.TYPE) {
                 mv.loadStack()
@@ -320,7 +297,7 @@ enum class Element {
         this.type = type
     }
 
-    constructor(text: String, literal: String) : this(text, Consumer<JyxalMethod> { mv: JyxalMethod ->
+    constructor(text: String, literal: String) : this(text, { mv ->
         mv.loadStack()
         mv.visitLdcInsn(literal)
         AsmHelper.push(mv)
@@ -329,14 +306,14 @@ enum class Element {
     constructor(text: String, vectorise: Boolean) {
         this.text = text
         val methodName = screamingSnakeToCamel(name)
-        compileMethod = BiConsumer { _: ClassWriter?, mv: JyxalMethod ->
+        compileMethod = { _, mv ->
             if (vectorise && !CompilerOptions.OPTIONS.contains(CompilerOptions.DONT_VECTORISE_MONADS)) {
                 mv.loadStack()
                 AsmHelper.pop(mv)
                 mv.visitLdcInsn(
                         Handle(
                                 Opcodes.H_INVOKESTATIC,
-                                "runtime/RuntimeMethods",
+                                "io/github/seggan/jyxal/runtime/RuntimeMethods",
                                 methodName,
                                 "(Ljava/lang/Object;)Ljava/lang/Object;",
                                 false
@@ -345,7 +322,7 @@ enum class Element {
                 mv.visitMethodInsn(
                         Opcodes.INVOKESTATIC,
                         "runtime/RuntimeMethods",
-                        "vectorise",
+                        "monadVectorise",
                         "(Ljava/lang/Object;Ljava/lang/invoke/MethodHandle;)Ljava/lang/Object;",
                         false
                 )
@@ -367,7 +344,7 @@ enum class Element {
     }
 
     fun compile(cw: ClassWriter, mv: JyxalMethod) {
-        compileMethod.accept(cw, mv)
+        compileMethod(cw, mv)
     }
 
     enum class LinkedMethodType(val argType: KClass<*>, val returnType: KClass<*>) {

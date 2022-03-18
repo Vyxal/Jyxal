@@ -172,7 +172,7 @@ class Compiler private constructor(val classWriter: JyxalClassWriter, private va
                 )
                 clinit.visitFieldInsn(
                         Opcodes.GETSTATIC,
-                        "runtime/math/BigComplex",
+                        "io/github/seggan/jyxal/runtime/math/BigComplex",
                         "ZERO",
                         "Lruntime/math/BigComplex;"
                 )
@@ -278,7 +278,7 @@ class Compiler private constructor(val classWriter: JyxalClassWriter, private va
             mv.visitMethodInsn(
                     Opcodes.INVOKEVIRTUAL,
                     "runtime/math/BigComplex",
-                    "plus",
+                    "add",
                     "(Lruntime/math/BigComplex;)Lruntime/math/BigComplex;",
                     false
             )
@@ -601,9 +601,9 @@ class Compiler private constructor(val classWriter: JyxalClassWriter, private va
             clinit.visitCode()
             clinit.visitFieldInsn(
                     Opcodes.GETSTATIC,
-                    "runtime/math/BigComplex",
+                    "io/github/seggan/jyxal/runtime/math/BigComplex",
                     "ZERO",
-                    "Lruntime/math/BigComplex;"
+                    "Lio/github/seggan/jyxal/runtime/math/BigComplex;"
             )
             clinit.visitFieldInsn(Opcodes.PUTSTATIC, "jyxal/Main", "register", "Ljava/lang/Object;")
             val compiler = Compiler(cw, clinit)

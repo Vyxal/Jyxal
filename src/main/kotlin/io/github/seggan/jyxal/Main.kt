@@ -8,6 +8,13 @@ import org.antlr.v4.runtime.CharStreams
 import org.antlr.v4.runtime.CommonTokenStream
 import org.objectweb.asm.ClassReader
 import org.objectweb.asm.util.TraceClassVisitor
+import proguard.ClassPath
+import proguard.ClassPathEntry
+import proguard.Configuration
+import proguard.ConfigurationParser
+import proguard.ProGuard
+import java.io.File
+import java.io.FileInputStream
 import java.io.FileOutputStream
 import java.io.PrintWriter
 import java.nio.charset.StandardCharsets
@@ -58,21 +65,23 @@ object Main {
         val resourceList: MutableSet<String> = HashSet()
         val buildDir: Path = Path.of(System.getProperty("user.dir"), runtimeClasses)
         Scanner(if (isTest) Files.newInputStream(buildDir.resolve("runtime.list")) else
-            Main::class.java.getResourceAsStream("/runtime/runtime.list")!!).use { scanner ->
+            Main::class.java.getResourceAsStream("/runtime.list")!!).use { scanner ->
             while (scanner.hasNextLine()) {
                 resourceList.add(scanner.nextLine())
             }
         }
         println("Writing to jar...")
         val fileName = args[0].substring(0, args[0].lastIndexOf('.'))
-        JarOutputStream(FileOutputStream("$fileName.jar")).use { jar ->
+        val file = File("$fileName-temp.jar")
+        val final = File("$fileName.jar")
+        JarOutputStream(FileOutputStream(file)).use { jar ->
             for (resource in resourceList) {
                 val entry = JarEntry(resource)
                 entry.time = System.currentTimeMillis()
                 jar.putNextEntry(entry)
-                if (isTest) Files.newInputStream(buildDir.resolve(resource)) else Main::class.java.getResourceAsStream("/$resource").use { `in` ->
-                    if (`in` == null) throw NullPointerException("Resource not found: $resource")
-                    `in`.transferTo(jar)
+                if (isTest) Files.newInputStream(buildDir.resolve(resource)) else Main::class.java.getResourceAsStream("/$resource").use { inp ->
+                    if (inp == null) throw NullPointerException("Resource not found: $resource")
+                    inp.transferTo(jar)
                 }
             }
             val manifest = Manifest()
@@ -85,6 +94,33 @@ object Main {
             jar.putNextEntry(entry)
             jar.write(main)
         }
+        if (!CompilerOptions.OPTIONS.contains(CompilerOptions.DONT_OPTIMISE_AFTER_COMPILE)) {
+            println("Performing post-compilation optimisations...")
+            val config = Configuration()
+            ConfigurationParser(Main::class.java.getResource("/rules.pro")!!, System.getProperties())
+                    .parse(config)
+            config.obfuscate = false
+            config.optimizationPasses = 2
+            config.programJars = ClassPath()
+            config.programJars.add(ClassPathEntry(file, false))
+            config.programJars.add(ClassPathEntry(final, true))
+            config.libraryJars = ClassPath()
+            config.libraryJars.add(ClassPathEntry(File(
+                    "${System.getProperty("java.home")}/jmods/java.base.jmod"
+            ), false))
+            config.libraryJars.add(ClassPathEntry(File(
+                    "${System.getProperty("java.home")}/jmods/jdk.jshell.jmod"
+            ), false))
+            config.warn = mutableListOf("!java.lang.invoke.MethodHandle")
+            ProGuard(config).execute()
+        } else {
+            FileInputStream(file).use { fis ->
+                FileOutputStream(final).use { fos ->
+                    fis.copyTo(fos)
+                }
+            }
+        }
+        file.delete()
         println("Done!")
     }
 

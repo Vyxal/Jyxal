@@ -33,13 +33,13 @@ object Optimiser {
                     && insn is MethodInsnNode
                     && insn.name == "push"
                     && insn.desc == "(Ljava/lang/Object;)V"
-                    && insn.owner == "runtime/ProgramStack") {
+                    && insn.owner == "io/github/seggan/jyxal/runtime/ProgramStack") {
                 val next = insn.getNext()
                 if (next.opcode == INVOKEVIRTUAL
                         && next is MethodInsnNode
                         && next.name == "pop"
                         && next.desc == "()Ljava/lang/Object;"
-                        && next.owner == "runtime/ProgramStack") {
+                        && next.owner == "io/github/seggan/jyxal/runtime/ProgramStack") {
                     toRemove.add(insn)
                     toRemove.add(next)
                 }
@@ -50,14 +50,14 @@ object Optimiser {
         }
         for (insn in codeBlock) {
             if (insn is MethodInsnNode) {
-                if (insn.owner == "runtime/ProgramStack" && insn.name != "<init>") {
+                if (insn.owner == "io/github/seggan/jyxal/runtime/ProgramStack" && insn.name != "<init>") {
                     val arguments = (Type.getArgumentsAndReturnSizes(insn.desc) shr 2) - 1
                     codeBlock.insertBefore(insn, VarInsnNode(ALOAD, jyxalMethod.stackVar))
                     if (arguments != 0) {
                         // one argument
                         codeBlock.insertBefore(insn, InsnNode(SWAP))
                     }
-                } else if (insn.desc.startsWith("(Lruntime/ProgramStack;)")) {
+                } else if (insn.desc.startsWith("(Lio/github/seggan/jyxal/runtime/ProgramStack;)")) {
                     // these all take the stack as input
                     codeBlock.insertBefore(insn, VarInsnNode(ALOAD, jyxalMethod.stackVar))
                 }

@@ -6,6 +6,7 @@ enum class CompilerOptions(private val c: Char) {
     VYXAL_CODEPAGE('V'),
     PRINT_DEBUG_TREE('D'),
     DONT_OPTIMISE('o'),
+    DONT_OPTIMISE_AFTER_COMPILE('O'),
     DONT_VECTORISE_MONADS('v'),
     PRINT_TO_FILE('f');
 

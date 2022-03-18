@@ -22,7 +22,7 @@ class MainMethod internal constructor(cw: ClassWriter, access: Int, name: String
         visitVarInsn(Opcodes.ALOAD, 0)
         visitMethodInsn(Opcodes.INVOKESPECIAL, "runtime/ProgramStack", "<init>", "([Ljava/lang/String;)V", false)
         visitVarInsn(Opcodes.ASTORE, stackVar)
-        mv.visitFieldInsn(
+        visitFieldInsn(
             Opcodes.GETSTATIC,
             "runtime/math/BigComplex",
             "ZERO",
@@ -30,7 +30,7 @@ class MainMethod internal constructor(cw: ClassWriter, access: Int, name: String
         )
         visitVarInsn(Opcodes.ASTORE, ctxVar)
         visitLabel(start)
-        visitLocalVariable("stack", "Lruntime/ProgramStack;", null, start, end, stackVar)
+        visitLocalVariable("stack", "Lio/github/seggan/jyxal/runtime/ProgramStack;", null, start, end, stackVar)
         visitLocalVariable("ctx", "Ljava/lang/Object;", null, start, end, ctxVar)
     }
 }

@@ -18,7 +18,6 @@ import java.net.HttpURLConnection
 import java.net.URL
 import java.nio.charset.StandardCharsets
 import java.util.function.IntPredicate
-import java.util.function.Supplier
 import java.util.regex.Pattern
 import java.util.zip.GZIPInputStream
 import kotlin.math.sqrt
@@ -326,16 +325,52 @@ fun increment(obj: Any): Any {
     }
 }
 
-fun infinitePrimes(): Any {
-    return JyxalList.createInf(object : Supplier<Any> {
-        var i = BigComplex.ONE
+fun infinitePrimes(): JyxalList {
+    return JyxalList.create(object : Iterator<Any> {
+        private var n = 2L
+        private var isOverflowed = false
+        private val max = Long.MAX_VALUE - 1
+        private var big = Long.MAX_VALUE.toBigComplex()
 
-        override fun get(): Any {
-            i += 1
-            while (isPrime(i) === BigComplex.ZERO) {
-                i += 1
+        override fun hasNext(): Boolean {
+            return true
+        }
+
+        override fun next(): Any {
+            if (n == 2L) {
+                n++
+                return BigComplex.ONE
             }
-            return i
+            if (!isOverflowed) {
+                if (n and 1L == 0L)  {
+                    n++
+                }
+                while (!isPrime(n)) {
+                    n += 2
+                    if (n >= max) {
+                        isOverflowed = true
+                        break
+                    }
+                }
+                val res = n.toBigComplex()
+                n += 2
+                if (isOverflowed) {
+                    while (!truthValue(isPrime(big))) {
+                        big += 2
+                    }
+                    val result = big
+                    big += 2
+                    return result
+                }
+                return res
+            } else {
+                while (!truthValue(isPrime(big))) {
+                    big += 2
+                }
+                val result = big
+                big += 2
+                return result
+            }
         }
     })
 }
@@ -385,20 +420,7 @@ fun isPrime(obj: Any): Any {
     return if (obj is BigComplex) {
         val n = obj.re.toBigInteger()
         if (n < BigInteger.valueOf(Long.MAX_VALUE) && n > BigInteger.valueOf(Long.MIN_VALUE)) {
-            val l = n.toLong()
-            if (l < 2) return BigComplex.ZERO
-            if (l == 2L || l == 3L) return BigComplex.ONE
-            if (l and 1 == 0L || l % 3 == 0L) return BigComplex.ZERO
-            val sqrt = sqrt(n.toDouble()).toLong() + 1
-            var step = 4L
-            var i = 6L
-            while (i <= sqrt) {
-                if (l % i == 0L) {
-                    return BigComplex.ZERO
-                }
-                step = 6 - step
-                i += step
-            }
+            return BigComplex.valueOf(isPrime(n.toLong()))
         } else {
             // we don't need to check if n is a small prime, because the other branch will do it
             if (!n.testBit(0)) return BigComplex.ZERO
@@ -423,6 +445,23 @@ fun isPrime(obj: Any): Any {
         }
         BigComplex.valueOf(isUppercase)
     }
+}
+
+private fun isPrime(l: Long): Boolean {
+    if (l < 2) return false
+    if (l == 2L || l == 3L || l == 5L) return true
+    if (l and 1 == 0L || l % 3 == 0L || l % 5 == 0L) return false
+    val sqrt = sqrt(l.toDouble()).toLong() + 1
+    var step = 4L
+    var i = 6L
+    while (i <= sqrt) {
+        if (l % i == 0L) {
+            return false
+        }
+        step = 6 - step
+        i += step
+    }
+    return true
 }
 
 fun itemSplit(stack: ProgramStack): Any {
@@ -890,14 +929,14 @@ fun sum(obj: Any): Any {
             for (c in chars) {
                 sum += (c.code - 48).toLong()
             }
-            BigComplex.valueOf(sum)
+            sum.toBigComplex()
         }
         else -> {
             var sum: Long = 0
             for (c in obj.toString().toCharArray()) {
                 sum += c.code.toLong()
             }
-            BigComplex.valueOf(sum)
+            sum.toBigComplex()
         }
     }
 }
@@ -969,3 +1008,6 @@ infix fun BigComplex.loga(a: BigComplex): BigComplex {
 }
 
 infix fun BigComplex.loga(a: Long): BigComplex = this.loga(BigComplex.valueOf(a))
+
+fun Int.toBigComplex(): BigComplex = BigComplex.valueOf(this.toLong())!!
+fun Long.toBigComplex(): BigComplex = BigComplex.valueOf(this)
