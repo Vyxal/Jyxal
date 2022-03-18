@@ -373,7 +373,7 @@ class Compiler private constructor(val classWriter: JyxalClassWriter, private va
     private fun visitModifier(modifier: String): Consumer<JyxalMethod>? {
         val mv = callStack.peek()
         // ß
-        if ("\u00DF" == modifier) {
+        if ("ß" == modifier) {
             val end = Label()
             AsmHelper.pop(mv)
             mv.visitMethodInsn(
@@ -444,7 +444,7 @@ class Compiler private constructor(val classWriter: JyxalClassWriter, private va
 
         // normal lambda
         when (ctx.LAMBDA_TYPE().text) {
-            "\u03BB" -> {
+            "λ" -> {
                 mv.visitTypeInsn(Opcodes.NEW, "runtime/Lambda")
                 mv.visitInsn(Opcodes.DUP)
                 AsmHelper.selectNumberInsn(mv, if (ctx.integer() == null) 1 else ctx.integer().text.toInt())
@@ -468,7 +468,7 @@ class Compiler private constructor(val classWriter: JyxalClassWriter, private va
                 mv.visitInsn(Opcodes.SWAP)
                 AsmHelper.push(mv)
             }
-            "\u019B" -> {
+            "ƛ" -> {
                 AsmHelper.pop(mv)
                 mv.visitMethodInsn(
                         Opcodes.INVOKESTATIC,
@@ -494,7 +494,7 @@ class Compiler private constructor(val classWriter: JyxalClassWriter, private va
                 mv.visitInsn(Opcodes.SWAP)
                 AsmHelper.push(mv)
             }
-            "\u27D1" -> {
+            "⟑" -> {
                 AsmHelper.pop(mv)
                 mv.visitMethodInsn(
                         Opcodes.INVOKESTATIC,
@@ -575,8 +575,7 @@ class Compiler private constructor(val classWriter: JyxalClassWriter, private va
     private data class Loop(val start: Label, val end: Label)
 
     companion object {
-        private val COMPLEX_SEPARATOR = Pattern.compile("\u00B0")
-        private val RUNTIME = Pattern.compile("^runtime\\.")
+        private val COMPLEX_SEPARATOR = Pattern.compile("°")
 
         fun compile(parser: VyxalParser, fileName: String?): ByteArray {
             val cw = JyxalClassWriter(ClassWriter.COMPUTE_FRAMES)
