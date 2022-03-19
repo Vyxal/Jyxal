@@ -15,9 +15,11 @@ To compile some Jyxal code, all you have to do is run the command `java -jar Jyx
 Jyxal uses Gradle for building, but the wrapper is included in the repository, so you do not have to build it yourself. To build Jyxal, run `./gradlew shadowJar`. Your IDE's "build" command will not work, as `shadowJar` also copied the runtime environment into the resulting JAR, while the command does not do that. The resulting JAR will be located under `/build/libs/`.
 
 ## Compiler Flags
-Flag | What It Does
------|-------------
-`V`  | This flag makes the compiler read files in the Vyxal encoding
-`D`  | This flag makes the compiler print the parse tree, useful for debugging.
-`o`  | This flag forces the compiler to not perform any optimizations on the compiled bytecode.
-`f`  | This flag pipes implicit output of the program into a file called `test.out`, useful as some terminals cannot display unicode chars correctly. 
+| Flag | What It Does                                                                                                                                   |
+|------|------------------------------------------------------------------------------------------------------------------------------------------------|
+| `V`  | This flag makes the compiler read files in the Vyxal encoding                                                                                  |
+ | `D`  | This flag makes the compiler print the parse tree, useful for debugging.                                                                       |
+ | `o`  | This flag forces the compiler to not perform any optimizations on the compiled bytecode.                                                       |
+ | `f`  | This flag pipes implicit output of the program into a file called `test.out`, useful as some terminals cannot display unicode chars correctly. |
+| `O`  | This flag disables post-compilation optimisation                                                                                               |
+| `v`  | This flag disables vectorisation of monads. Useful for improving performance                                                                   |

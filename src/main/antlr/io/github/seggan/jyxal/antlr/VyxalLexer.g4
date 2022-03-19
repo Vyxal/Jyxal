@@ -4,10 +4,6 @@ lexer grammar VyxalLexer;
 package io.github.seggan.jyxal.antlr;
 }
 
-ALPHA
-    : [A-Za-z]
-    ;
-
 NON_ALPHA_ELEMENT
     : '<' | ':' | '×' | 'Ṁ' | 'ṫ' | '₇' | '¾' | '₄' | '↵' | '¹' | 'Π' | 'æ' | 'ṡ' | '∑' | 'Ẏ' | 'Ṅ'
     | '√' | 'ḋ' | '§' | '²' | '…' | 'ṅ' | 'Ż' | 'Ǎ' | '-' | '∵' | '↔' | '≠' | 'ɾ' | '¤' | '₴' | 'Ǐ'
@@ -35,6 +31,10 @@ MODIFIER
 
 DIGIT
     : [0-9]
+    ;
+
+ALPHA
+    : [A-Za-z]
     ;
 
 WHITESPACE

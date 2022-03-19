@@ -832,7 +832,9 @@ public class BigDecimalMath {
         checkMathContext(mathContext);
 
         switch (n.signum()) {
-            case -1, 0 -> throw new ArithmeticException("Illegal root(x, n) for n <= 0: n = " + n);
+            case 0:
+            case -1:
+                throw new ArithmeticException("Illegal root(x, n) for n <= 0: n = " + n);
         }
 
         switch (x.signum()) {
@@ -904,11 +906,18 @@ public class BigDecimalMath {
             return ZERO;
         }
 
-        BigDecimal result = switch (x.compareTo(TEN)) {
-            case 0 -> logTen(mathContext);
-            case 1 -> logUsingExponent(x, mathContext);
-            default -> logUsingTwoThree(x, mathContext);
-        };
+        BigDecimal result;
+        switch (x.compareTo(TEN)) {
+            case 0:
+                result = logTen(mathContext);
+                break;
+            case 1:
+                result = logUsingExponent(x, mathContext);
+                break;
+            default:
+                result = logUsingTwoThree(x, mathContext);
+                break;
+        }
 
         return round(result, mathContext);
     }
@@ -1142,7 +1151,7 @@ public class BigDecimalMath {
         long iterationCount = (mc.getPrecision() + 13) / 14;
         for (long k = 1; k <= iterationCount; k++) {
             BigDecimal valueK = BigDecimal.valueOf(k);
-            dividendTerm1 += -6;
+            dividendTerm1 -= 6;
             dividendTerm2 += 2;
             dividendTerm3 += 6;
             BigDecimal dividend = BigDecimal.valueOf(dividendTerm1).multiply(BigDecimal.valueOf(dividendTerm2)).multiply(BigDecimal.valueOf(dividendTerm3));

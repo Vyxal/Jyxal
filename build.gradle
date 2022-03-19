@@ -1,10 +1,8 @@
-import org.objectweb.asm.ClassReader
-import org.objectweb.asm.ClassWriter
-import org.objectweb.asm.commons.ClassRemapper
-import org.objectweb.asm.commons.Remapper
-
 import java.nio.file.Files
 import java.nio.file.Path as JPath
+import java.nio.file.StandardCopyOption
+import java.util.jar.JarEntry
+import java.util.jar.JarInputStream
 import java.util.regex.Pattern
 
 plugins {
@@ -12,10 +10,11 @@ plugins {
     id 'application'
     id 'com.github.johnrengelman.shadow' version '7.1.2'
     id 'antlr'
+    id 'org.jetbrains.kotlin.jvm' version '1.6.20-RC'
 }
 
 group 'io.github.seggan.jyxal'
-version '0.3.0'
+version '0.4.0'
 
 mainClassName = 'io.github.seggan.jyxal.Main'
 
@@ -25,13 +24,26 @@ repositories {
     mavenCentral()
 }
 
+configurations {
+    runtimeLib
+}
+
 dependencies {
     implementation 'org.ow2.asm:asm:9.2'
     implementation 'org.ow2.asm:asm-commons:9.2'
     implementation 'org.ow2.asm:asm-util:9.2'
+    implementation 'org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.6.20-RC'
+    implementation 'com.guardsquare:proguard-base:7.2.1'
+    runtimeLib('org.jetbrains.kotlin:kotlin-stdlib:1.6.20-RC') {
+        transitive = false
+    }
+    runtimeLib('org.jetbrains:annotations:23.0.0') {
+        transitive = false
+    }
     antlr 'org.antlr:antlr4:4.9.3'
 
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.2'
+    testImplementation "org.jetbrains.kotlin:kotlin-reflect:1.6.10"
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.2'
 }
 
@@ -48,11 +60,10 @@ generateGrammarSource {
     Files.createDirectories(fullPath)
     doFirst {
         // gotta do this because antlr doesn't like the package name
-        Files.walk(path).forEach {
-            if (Files.isRegularFile(it) && !it.fileName.toString().endsWith(".tokens")) {
-                Files.deleteIfExists(it)
-            }
-        }
+        Files.walk(path)
+                .filter(Files::isRegularFile)
+                .filter(f -> !f.toString().endsWith(".tokens"))
+                .forEach(Files::delete)
         Files.createDirectories(fullPath)
     }
     arguments += ["-lib", fullPath.toAbsolutePath().toString(), '-visitor', '-no-listener', "-encoding", "UTF-8"]
@@ -61,70 +72,85 @@ generateGrammarSource {
 compileJava {
     dependsOn generateGrammarSource
 
-    sourceCompatibility = '17'
-    targetCompatibility = '17'
+    sourceCompatibility = '11'
+    targetCompatibility = '11'
+}
 
+sourceSets {
+    main {
+        java {
+            srcDir 'src/main/antlr'
+        }
+        kotlin {
+            srcDir 'src/main/kotlin'
+        }
+    }
+    generated {
+        java {
+            srcDir "build/generated-src/antlr/main/"
+        }
+    }
+}
+
+task extractLibs() {
     doLast {
-        List<String> names = new ArrayList<>()
-        String dir = "$buildDir/classes/java/main/io/github/seggan/jyxal/runtime"
-        Pattern oldPackage = Pattern.compile("io/github/seggan/jyxal/runtime/")
-        Pattern backslash = Pattern.compile("\\\\")
-        Pattern dirPattern = Pattern.compile("^.*classes[/\\\\]java[/\\\\]main[/\\\\]io[/\\\\]github[/\\\\]seggan[/\\\\]jyxal[/\\\\]runtime[/\\\\]")
-        Files.walk(JPath.of(dir)).forEach({
-            if (Files.isRegularFile(it)) {
-                String fname = dirPattern.matcher(it.toString()).replaceFirst("")
-                names.add(backslash.matcher(fname).replaceAll("/"))
-
-                ClassReader cr = new ClassReader(Files.readAllBytes(it))
-                ClassWriter cw = new ClassWriter(cr, 0)
-                ClassRemapper remapper = new ClassRemapper(cw, new Remapper() {
-                    @Override
-                    String map(String internalName) {
-                        return oldPackage.matcher(internalName).replaceFirst("runtime/")
+        JPath list = dest.resolve("runtime.list")
+        if (!Files.exists(list)) {
+            Files.createDirectories(dest)
+            Files.createFile(list)
+        }
+        Set<String> classes = new HashSet<>(Files.readAllLines(list))
+        for (File f : configurations.runtimeLib.resolve()) {
+            try (JarInputStream inputStream = new JarInputStream(new FileInputStream(f))) {
+                JarEntry entry
+                while ((entry = inputStream.getNextJarEntry()) != null) {
+                    if (entry.isDirectory() || !entry.getName().endsWith(".class")) {
+                        continue
                     }
-                })
-                cr.accept(remapper, ClassReader.EXPAND_FRAMES)
-
-                JPath out = dest.resolve(fname)
-                JPath parent = out.getParent()
-                if (!Files.exists(parent)) {
-                    Files.createDirectories(parent)
+                    JPath d = dest.resolve(entry.getName())
+                    if (Files.exists(d)) {
+                        continue
+                    }
+                    Files.createDirectories(d.getParent())
+                    Files.copy(inputStream, d, StandardCopyOption.REPLACE_EXISTING)
+                    classes.add(entry.getName())
                 }
-                Files.write(out, cw.toByteArray())
             }
-        })
+        }
+        Files.write(list, classes)
+    }
+}
 
+task copyRuntime() {
+    dependsOn extractLibs, compileJava, compileKotlin
+    doLast {
+        JPath list = dest.resolve("runtime.list")
+        if (!Files.exists(list)) {
+            Files.createDirectories(dest)
+            Files.createFile(list)
+        }
+        Set<String> names = new HashSet<>(Files.readAllLines(list))
+        String dir = "$buildDir/classes/"
+        Pattern regex = Pattern.compile("${buildDir.toString().replace('\\', '/')}/classes/(java|kotlin)/main/")
+        Files.walk(JPath.of(dir))
+                .filter(Files::isRegularFile)
+                .filter(f -> f.toString().contains("runtime"))
+                .filter(f -> f.toString().contains("main"))
+                .forEach(f -> {
+                    String rel = regex.matcher(f.toString().replace('\\', '/')).replaceAll("")
+                    JPath d = dest.resolve(rel)
+                    Files.createDirectories(d.getParent())
+                    Files.copy(f, d, StandardCopyOption.REPLACE_EXISTING)
+                    names.add(rel)
+                })
         names.add("dictLong.txt")
         names.add("dictShort.txt")
-
         Files.write(dest.resolve("runtime.list"), names)
     }
 }
 
-sourceSets {
-    main {
-        java {
-            srcDir 'src/main/antlr'
-        }
-    }
-    generated {
-        java {
-            srcDir "build/generated-src/antlr/main/"
-        }
-    }
-}
-
-sourceSets {
-    main {
-        java {
-            srcDir 'src/main/antlr'
-        }
-    }
-    generated {
-        java {
-            srcDir "build/generated-src/antlr/main/"
-        }
-    }
+test {
+    dependsOn copyRuntime
 }
 
 clean {
@@ -150,4 +176,21 @@ shadowJar {
     }
 
     archiveFileName = "Jyxal v${project.version}.jar"
+}
+compileKotlin {
+    dependsOn generateGrammarSource
+
+    kotlinOptions {
+        jvmTarget = "11"
+        freeCompilerArgs += ["-Xno-param-assertions"]
+    }
+}
+
+compileTestKotlin {
+    dependsOn compileKotlin
+    dependsOn generateTestGrammarSource
+
+    kotlinOptions {
+        jvmTarget = "11"
+    }
 }
