@@ -4,7 +4,6 @@ import io.github.seggan.jyxal.runtime.ProgramStack
 import io.github.seggan.jyxal.runtime.math.BigComplex
 import io.github.seggan.jyxal.runtime.plus
 import java.math.BigInteger
-import java.util.function.Supplier
 
 abstract class JyxalList : Collection<Any> {
 
@@ -67,10 +66,6 @@ abstract class JyxalList : Collection<Any> {
             })
         }
 
-        fun createInf(supplier: Supplier<Any>): Any {
-            return createInf { supplier.get() }
-        }
-
         fun fromIterableLazy(iterable: Iterable<Any>): JyxalList {
             return InfiniteList(iterable.iterator())
         }
@@ -78,14 +73,14 @@ abstract class JyxalList : Collection<Any> {
 
     protected fun vyxalListFormat(list: List<Any>): String {
         val sb = StringBuilder()
-        sb.append("\u27E8")
+        sb.append("⟨")
         val it = list.iterator()
         while (true) {
             if (!it.hasNext()) {
                 if (sb.length > 1) {
                     sb.delete(sb.length - 3, sb.length)
                 }
-                return sb.append("\u27E9").toString()
+                return sb.append("⟩").toString()
             }
             sb.append(it.next())
             sb.append(" | ")
