@@ -6,6 +6,8 @@
 
 -assumenosideeffects class kotlin.jvm.internal.Intrinsics {
     public static void checkNotNullExpressionValue(java.lang.Object, java.lang.String);
+    public static void checkNotNull(java.lang.Object, java.lang.String);
+    public static void checkNotNull(java.lang.Object);
 }
 
 -assumenosideeffects class io.github.seggan.jyxal.runtime.math.BigComplex {

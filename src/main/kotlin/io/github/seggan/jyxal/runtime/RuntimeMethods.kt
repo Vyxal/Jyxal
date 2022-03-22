@@ -59,7 +59,7 @@ fun all(obj: Any): Any {
         }
         return BigComplex.valueOf(true)
     } else if (obj is String) {
-        for (c in obj.toCharArray()) {
+        for (c in obj) {
             if (!VOWELS.contains(c)) {
                 return BigComplex.valueOf(false)
             }
@@ -78,7 +78,7 @@ fun chrOrd(obj: Any): Any {
             BigComplex.valueOf(str[0].code.toLong())
         } else {
             val list = JyxalList.create()
-            for (c in str.toCharArray()) {
+            for (c in str) {
                 list.add(c.code)
             }
             list
@@ -117,7 +117,7 @@ fun divide(stack: ProgramStack): Any {
         var sb = StringBuilder()
         var count = BigInteger.ZERO
         val max = a.re.toBigInteger()
-        for (c in a.toString().toCharArray()) {
+        for (c in a.toString()) {
             if (count == max) {
                 list.add(sb.toString())
                 sb = StringBuilder()
@@ -134,7 +134,7 @@ fun divide(stack: ProgramStack): Any {
         var sb = StringBuilder()
         var count = BigInteger.ZERO
         val max = b.re.toBigInteger()
-        for (c in a.toString().toCharArray()) {
+        for (c in a.toString()) {
             if (count == max) {
                 list.add(sb.toString())
                 sb = StringBuilder()
@@ -198,7 +198,7 @@ fun flatten(obj: Any): Any {
         flattenImpl(obj)
     } else {
         val list = JyxalList.create()
-        for (c in obj.toString().toCharArray()) {
+        for (c in obj.toString()) {
             list.add(c.toString())
         }
         list
@@ -330,7 +330,7 @@ fun infinitePrimes(): JyxalList {
         private var n = 2L
         private var isOverflowed = false
         private val max = Long.MAX_VALUE - 1
-        private var big = Long.MAX_VALUE.toBigComplex()
+        private var big = BigComplex.valueOf(Long.MAX_VALUE)
 
         override fun hasNext(): Boolean {
             return true
@@ -352,7 +352,7 @@ fun infinitePrimes(): JyxalList {
                         break
                     }
                 }
-                val res = n.toBigComplex()
+                val res = BigComplex.valueOf(n)
                 n += 2
                 if (isOverflowed) {
                     while (!truthValue(isPrime(big))) {
@@ -438,7 +438,7 @@ fun isPrime(obj: Any): Any {
     } else {
         val str = obj.toString()
         val isUppercase = Character.isUpperCase(str[0])
-        for (c in str.toCharArray()) {
+        for (c in str) {
             if (Character.isUpperCase(c) != isUppercase) {
                 return BigComplex.valueOf(-1)
             }
@@ -494,7 +494,7 @@ fun izr(obj: Any): Any {
         JyxalList.range(BigComplex.ZERO, obj + 1)
     } else {
         val list = JyxalList.create()
-        for (c in obj.toString().toCharArray()) {
+        for (c in obj.toString()) {
             list.add(BigComplex.valueOf(Character.isAlphabetic(c.code)))
         }
         list
@@ -725,7 +725,7 @@ fun multiply(stack: ProgramStack): Any {
         }
         val bString = b.toString()
         val sb = StringBuilder()
-        for (c in bString.toCharArray()) {
+        for (c in bString) {
             val index = aString.indexOf(c)
             if (index >= 0) {
                 sb.append(aString[(index + 1) % aString.length])
@@ -929,14 +929,14 @@ fun sum(obj: Any): Any {
             for (c in chars) {
                 sum += (c.code - 48).toLong()
             }
-            sum.toBigComplex()
+            sum.jyxal()
         }
         else -> {
             var sum: Long = 0
-            for (c in obj.toString().toCharArray()) {
+            for (c in obj.toString()) {
                 sum += c.code.toLong()
             }
-            sum.toBigComplex()
+            sum.jyxal()
         }
     }
 }
@@ -989,8 +989,6 @@ fun monadVectorise(obj: Any, handle: MethodHandle): Any {
     return handle.invoke(obj)
 }
 
-fun List<Any>.jyxal() = JyxalList.fromIterableLazy(this)
-
 operator fun BigComplex.plus(other: BigComplex): BigComplex = this.add(other)
 operator fun BigComplex.plus(other: Long): BigComplex = this.add(BigComplex.valueOf(other))
 operator fun BigComplex.minus(other: BigComplex): BigComplex = this.subtract(other)
@@ -1008,6 +1006,3 @@ infix fun BigComplex.loga(a: BigComplex): BigComplex {
 }
 
 infix fun BigComplex.loga(a: Long): BigComplex = this.loga(BigComplex.valueOf(a))
-
-fun Int.toBigComplex(): BigComplex = BigComplex.valueOf(this.toLong())!!
-fun Long.toBigComplex(): BigComplex = BigComplex.valueOf(this)

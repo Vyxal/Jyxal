@@ -112,6 +112,7 @@ object Main {
                     "${System.getProperty("java.home")}/jmods/jdk.jshell.jmod"
             ), false))
             config.warn = mutableListOf("!java.lang.invoke.MethodHandle")
+            config.optimizations = mutableListOf("!class/unboxing/enum")
             ProGuard(config).execute()
         } else {
             FileInputStream(file).use { fis ->

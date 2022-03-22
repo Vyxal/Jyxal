@@ -381,11 +381,3 @@ fun vectorise(arity: Int, function: (ProgramStack) -> Any, stack: ProgramStack):
     }
     return null
 }
-
-private fun List<Any?>.jyxal(): Any {
-    val result = ArrayList<Any>()
-    for (item in this) {
-        result.add(item!!)
-    }
-    return JyxalList.fromIterableLazy(result)
-}

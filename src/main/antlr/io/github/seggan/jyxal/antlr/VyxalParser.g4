@@ -1,9 +1,5 @@
 parser grammar VyxalParser;
 
-@header {
-package io.github.seggan.jyxal.antlr;
-}
-
 options {
     tokenVocab=VyxalLexer;
 }
@@ -21,7 +17,7 @@ program
     ;
 
 program_node
-    : literal | statement | element
+    : statement | literal | element
     ;
 
 literal
@@ -78,6 +74,7 @@ constant
 
 statement
     : if_statement
+    | fori_loop
     | for_loop
     | while_loop
     | lambda
@@ -90,6 +87,10 @@ statement
 
 if_statement
     : IF_OPEN program (PIPE program)? IF_CLOSE?
+    ;
+
+fori_loop
+    : DIGIT DIGIT? DIGIT? DIGIT? DIGIT? DIGIT? DIGIT? DIGIT? DIGIT? FOR_OPEN program FOR_CLOSE?
     ;
 
 for_loop
@@ -129,7 +130,7 @@ variable_assn
     ;
 
 variable
-    : (ALPHA | DIGIT)+
+    : (ALPHA | DIGIT | CONSTANT_PREFIX | CONTEXT_VAR)+
     ;
 
 element
@@ -137,6 +138,6 @@ element
     ;
 
 element_type
-    : ALPHA | NON_ALPHA_ELEMENT
+    : ALPHA | NON_ALPHA_ELEMENT | CONTEXT_VAR
     ;
 

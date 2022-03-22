@@ -1,9 +1,5 @@
 lexer grammar VyxalLexer;
 
-@header {
-package io.github.seggan.jyxal.antlr;
-}
-
 NON_ALPHA_ELEMENT
     : '<' | ':' | '×' | 'Ṁ' | 'ṫ' | '₇' | '¾' | '₄' | '↵' | '¹' | 'Π' | 'æ' | 'ṡ' | '∑' | 'Ẏ' | 'Ṅ'
     | '√' | 'ḋ' | '§' | '²' | '…' | 'ṅ' | 'Ż' | 'Ǎ' | '-' | '∵' | '↔' | '≠' | 'ɾ' | '¤' | '₴' | 'Ǐ'
@@ -23,6 +19,10 @@ PREFIX
 
 CONSTANT_PREFIX
     : 'k'
+    ;
+
+CONTEXT_VAR
+    : 'n'
     ;
 
 MODIFIER

@@ -25,6 +25,7 @@ SOFTWARE.
  */
 
 import io.github.seggan.jyxal.runtime.math.internal.BigDecimalMath;
+import org.jetbrains.annotations.NotNull;
 
 import java.math.BigDecimal;
 import java.math.MathContext;
@@ -623,7 +624,7 @@ public final class BigComplex implements Comparable<BigComplex> {
      * @throws IllegalArgumentException if either number is non-real
      */
     @Override
-    public int compareTo(BigComplex o) {
+    public int compareTo(@NotNull BigComplex o) {
         if (im.signum() != 0 || o.im.signum() != 0) {
             throw new IllegalArgumentException("Cannot compare complex number " + this + " to complex number " + o);
         }

@@ -15,15 +15,25 @@ data class ContextualVariable(internal val index: Int, private val mv: JyxalMeth
         isClosed = true
     }
 
-    fun load() {
+    fun load(opcode: Int) {
         checkClosed()
-        mv.visitVarInsn(Opcodes.ALOAD, index)
+        if (opcode != Opcodes.ALOAD && opcode != Opcodes.ILOAD && opcode != Opcodes.FLOAD && opcode != Opcodes.DLOAD && opcode != Opcodes.LLOAD) {
+            throw IllegalArgumentException("Opcode must be a load opcode, but was $opcode")
+        }
+        mv.visitVarInsn(opcode, index)
     }
 
-    fun store() {
+    fun load() = load(Opcodes.ALOAD)
+
+    fun store(opcode: Int) {
         checkClosed()
-        mv.visitVarInsn(Opcodes.ASTORE, index)
+        if (opcode != Opcodes.ASTORE && opcode != Opcodes.ISTORE && opcode != Opcodes.FSTORE && opcode != Opcodes.DSTORE && opcode != Opcodes.LSTORE) {
+            throw IllegalArgumentException("Opcode must be a store opcode, but was $opcode")
+        }
+        mv.visitVarInsn(opcode, index)
     }
+
+    fun store() = store(Opcodes.ASTORE)
 
     private fun checkClosed() {
         check(!isClosed) { "Already closed" }

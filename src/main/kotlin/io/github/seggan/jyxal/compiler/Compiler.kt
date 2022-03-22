@@ -22,7 +22,7 @@ import java.util.Deque
 import java.util.function.Consumer
 import java.util.regex.Pattern
 
-class Compiler private constructor(val classWriter: JyxalClassWriter, private val clinit: MethodVisitor) : VyxalParserBaseVisitor<Void?>(), Opcodes {
+class Compiler private constructor(private val classWriter: JyxalClassWriter, private val clinit: MethodVisitor) : VyxalParserBaseVisitor<Void?>(), Opcodes {
 
     private val variables: MutableSet<String> = HashSet()
     private val contextVariables: MutableSet<String> = HashSet()
@@ -298,8 +298,42 @@ class Compiler private constructor(val classWriter: JyxalClassWriter, private va
         }
         val start = Label()
         val end = Label()
+        loopStack.push(Loop(start, end))
+        generateFor(start, end, ctx.program())
+        loopStack.pop()
+        return null
+    }
+
+    override fun visitFori_loop(ctx: Fori_loopContext): Void? {
+        val start = Label()
+        val end = Label()
         val mv = callStack.peek()
         loopStack.push(Loop(start, end))
+
+        val num = ctx.DIGIT().joinToString("")
+
+        if (ctx.program().getTokens(CONTEXT_VAR).isEmpty()) {
+            // not freeing because this var is an int
+            val counter = mv.reserveVar()
+            AsmHelper.selectNumberInsn(mv, num.toInt())
+            counter.store(Opcodes.ISTORE)
+            mv.visitLabel(start)
+            counter.load(Opcodes.ILOAD)
+            mv.visitJumpInsn(Opcodes.IFEQ, end)
+            visit(ctx.program())
+            mv.visitIincInsn(counter.index, -1)
+            mv.visitJumpInsn(Opcodes.GOTO, start)
+            mv.visitLabel(end)
+        } else {
+            AsmHelper.addBigComplex(num, mv)
+            generateFor(start, end, ctx.program())
+        }
+        loopStack.pop()
+        return null
+    }
+
+    private fun generateFor(start: Label, end: Label, program: ProgramContext) {
+        val mv = callStack.peek()
         AsmHelper.pop(mv)
         mv.visitMethodInsn(
                 Opcodes.INVOKESTATIC,
@@ -332,15 +366,13 @@ class Compiler private constructor(val classWriter: JyxalClassWriter, private va
                         true
                 )
                 mv.visitVarInsn(Opcodes.ASTORE, mv.ctxVar)
-                visit(ctx.program())
+                visit(program)
                 mv.visitJumpInsn(Opcodes.GOTO, start)
                 mv.visitLabel(end)
                 ctxStore.load()
                 mv.visitVarInsn(Opcodes.ASTORE, mv.ctxVar)
             }
         }
-        loopStack.pop()
-        return null
     }
 
     override fun visitIf_statement(ctx: If_statementContext): Void? {
