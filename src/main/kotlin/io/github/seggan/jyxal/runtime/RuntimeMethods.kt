@@ -17,7 +17,6 @@ import java.math.MathContext
 import java.net.HttpURLConnection
 import java.net.URL
 import java.nio.charset.StandardCharsets
-import java.util.function.IntPredicate
 import java.util.regex.Pattern
 import java.util.zip.GZIPInputStream
 import kotlin.math.sqrt
@@ -54,19 +53,19 @@ fun all(obj: Any): Any {
     if (obj is JyxalList) {
         for (item in obj) {
             if (!truthValue(item)) {
-                return BigComplex.valueOf(false)
+                return false.jyxal()
             }
         }
-        return BigComplex.valueOf(true)
+        return true.jyxal()
     } else if (obj is String) {
         for (c in obj) {
             if (!VOWELS.contains(c)) {
-                return BigComplex.valueOf(false)
+                return false.jyxal()
             }
         }
-        return BigComplex.valueOf(true)
+        return true.jyxal()
     }
-    return BigComplex.valueOf(true)
+    return true.jyxal()
 }
 
 fun chrOrd(obj: Any): Any {
@@ -75,7 +74,7 @@ fun chrOrd(obj: Any): Any {
     } else {
         val str = obj.toString()
         if (str.length == 1) {
-            BigComplex.valueOf(str[0].code.toLong())
+            str[0].code.jyxal()
         } else {
             val list = JyxalList.create()
             for (c in str) {
@@ -86,13 +85,13 @@ fun chrOrd(obj: Any): Any {
     }
 }
 
-private fun compare(stack: ProgramStack, predicate: IntPredicate): Any {
+private fun compare(stack: ProgramStack, predicate: (Int) -> Boolean): Any {
     val b = stack.pop()
     val a = stack.pop()
     return if (a is BigComplex && b is BigComplex) {
-        BigComplex.valueOf(predicate.test(a.compareTo(b)))
+        predicate(a.compareTo(b)).jyxal()
     } else {
-        BigComplex.valueOf(predicate.test(a.toString().compareTo(b.toString())))
+        predicate(a.toString().compareTo(b.toString())).jyxal()
     }
 }
 
@@ -187,9 +186,9 @@ fun equal(stack: ProgramStack): Any {
     val b = stack.pop()
     val a = stack.pop()
     return if (a is BigComplex && b is BigComplex) {
-        BigComplex.valueOf(a == b)
+        (a == b).jyxal()
     } else {
-        BigComplex.valueOf(a.toString() == b.toString())
+        (a.toString() == b.toString()).jyxal()
     }
 }
 
@@ -219,18 +218,10 @@ private fun flattenImpl(list: JyxalList): JyxalList {
 
 fun functionCall(stack: ProgramStack): Any {
     return when (val obj = stack.pop()) {
-        is Lambda -> {
-            obj.call(stack)
-        }
-        is JyxalList -> {
-            obj.map { o: Any -> BigComplex.valueOf(!truthValue(o)) }
-        }
-        is BigComplex -> {
-            primeFactors(obj) { HashSet() }.size
-        }
-        else -> {
-            exec(obj.toString())
-        }
+        is Lambda -> obj.call(stack)
+        is JyxalList -> obj.map { o: Any -> (!truthValue(o)).jyxal() }
+        is BigComplex -> primeFactors(obj) { HashSet() }.size
+        else -> exec(obj.toString())
     }
 }
 
@@ -254,7 +245,7 @@ fun getRequest(obj: Any): Any {
             throw IOException("Redirect without location")
         }
     } else if (code / 100 != 2) {
-        return BigComplex.valueOf(code.toLong())
+        return code.jyxal()
     }
     var response: ByteArray
     connection.inputStream.use { inputStream -> response = inputStream.readAllBytes() }
@@ -330,7 +321,7 @@ fun infinitePrimes(): JyxalList {
         private var n = 2L
         private var isOverflowed = false
         private val max = Long.MAX_VALUE - 1
-        private var big = BigComplex.valueOf(Long.MAX_VALUE)
+        private var big = Long.MAX_VALUE.jyxal()
 
         override fun hasNext(): Boolean {
             return true
@@ -339,7 +330,7 @@ fun infinitePrimes(): JyxalList {
         override fun next(): Any {
             if (n == 2L) {
                 n++
-                return BigComplex.ONE
+                return 1.jyxal()
             }
             if (!isOverflowed) {
                 if (n and 1L == 0L)  {
@@ -420,30 +411,30 @@ fun isPrime(obj: Any): Any {
     return if (obj is BigComplex) {
         val n = obj.re.toBigInteger()
         if (n < BigInteger.valueOf(Long.MAX_VALUE) && n > BigInteger.valueOf(Long.MIN_VALUE)) {
-            return BigComplex.valueOf(isPrime(n.toLong()))
+            return isPrime(n.toLong()).jyxal()
         } else {
             // we don't need to check if n is a small prime, because the other branch will do it
-            if (!n.testBit(0)) return BigComplex.ZERO
+            if (!n.testBit(0)) return false.jyxal()
             val sqrt = n.sqrt().add(BigInteger.ONE)
             val six = BigInteger.valueOf(6)
             var i = six
             while (i <= sqrt) {
                 if (n % (i - BigInteger.ONE) == BigInteger.ZERO || n % (i + BigInteger.ONE) == BigInteger.ZERO) {
-                    return BigComplex.ZERO
+                    return false.jyxal()
                 }
                 i += six
             }
         }
-        BigComplex.ONE
+        true.jyxal()
     } else {
         val str = obj.toString()
         val isUppercase = Character.isUpperCase(str[0])
         for (c in str) {
             if (Character.isUpperCase(c) != isUppercase) {
-                return BigComplex.valueOf(-1)
+                return (-1).jyxal()
             }
         }
-        BigComplex.valueOf(isUppercase)
+        isUppercase.jyxal()
     }
 }
 
@@ -495,7 +486,7 @@ fun izr(obj: Any): Any {
     } else {
         val list = JyxalList.create()
         for (c in obj.toString()) {
-            list.add(BigComplex.valueOf(Character.isAlphabetic(c.code)))
+            list.add(Character.isAlphabetic(c.code).jyxal())
         }
         list
     }
@@ -510,9 +501,7 @@ fun joinByNothing(obj: Any): Any {
             }
             sb.toString()
         }
-        is BigComplex -> {
-            BigComplex.valueOf(obj.abs(MathContext.DECIMAL128) <= BigDecimal.ONE)
-        }
+        is BigComplex -> (obj.abs(MathContext.DECIMAL128) <= BigDecimal.ONE).jyxal()
         is Lambda -> {
             var result = BigComplex.ZERO
             while (!truthValue(obj.call(result))) {
@@ -520,9 +509,7 @@ fun joinByNothing(obj: Any): Any {
             }
             result
         }
-        else -> {
-            obj.toString()
-        }
+        else -> obj.toString()
     }
 }
 
@@ -547,12 +534,12 @@ fun length(obj: Any): Any {
             for (ignored in obj) {
                 length++
             }
-            BigInteger.valueOf(length)
+            length.jyxal()
         } else {
-            BigComplex.valueOf(obj.size.toLong())
+            obj.size.jyxal()
         }
     } else {
-        BigComplex.valueOf(obj.toString().length.toLong())
+        obj.toString().length.jyxal()
     }
 }
 
@@ -743,7 +730,7 @@ fun prepend(stack: ProgramStack): Any {
     return if (a is JyxalList) {
         a.addNew(BigInteger.ZERO, b)
     } else if (a is BigComplex && b is BigComplex) {
-        BigComplex.valueOf(BigDecimal(b.toString() + a.toString()))
+        BigDecimal(b.toString() + a.toString()).jyxal()
     } else {
         a.toString() + b.toString()
     }
@@ -865,15 +852,9 @@ fun sortByFunction(stack: ProgramStack): Any {
 
 private fun sortByFunctionHelper(obj: Any): BigComplex {
     return when (obj) {
-        is BigComplex -> {
-            obj
-        }
-        is JyxalList -> {
-            BigComplex.valueOf(obj.size.toLong())
-        }
-        else -> {
-            BigComplex.valueOf(obj.toString().length.toLong())
-        }
+        is BigComplex -> obj
+        is JyxalList -> obj.size.jyxal()
+        else -> obj.toString().length.jyxal()
     }
 }
 

@@ -6,13 +6,15 @@ import java.math.BigDecimal
 import java.math.BigInteger
 
 fun List<Any>.jyxal(): JyxalList = JyxalList.fromIterableLazy(this)
-fun List<Any?>.jyxal(): Any {
+@JvmName("nullableJyxal")
+fun List<Any?>.jyxal(): JyxalList {
     val result = ArrayList<Any>()
     for (item in this) {
         result.add(item!!)
     }
     return JyxalList.fromIterableLazy(result)
 }
+fun Boolean.jyxal(): BigComplex = if (this) BigComplex.ONE else BigComplex.ZERO
 fun Int.jyxal(): BigComplex = BigComplex.valueOf(this.toLong())
 fun Long.jyxal(): BigComplex = BigComplex.valueOf(this)
 fun BigInteger.jyxal(): BigComplex = BigComplex.valueOf(this.toBigDecimal())
