@@ -11,7 +11,6 @@ plugins {
     id "com.github.johnrengelman.shadow" version "7.1.2"
     id "antlr"
     id "org.jetbrains.kotlin.jvm" version "1.6.20-RC"
-    id "org.beryx.runtime" version "1.12.7"
 }
 
 group "io.github.seggan.jyxal"
@@ -168,7 +167,7 @@ shadowJar {
         include "LICENSE.txt"
     }
 
-    //archiveFileName = "Jyxal v${project.version}.jar"
+    archiveFileName = "Jyxal v${project.version}.jar"
 }
 compileKotlin {
     dependsOn generateGrammarSource
@@ -186,9 +185,4 @@ compileTestKotlin {
     kotlinOptions {
         jvmTarget = "11"
     }
-}
-
-runtime {
-    options = ['--strip-debug', '--compress', '2', '--no-header-files', '--no-man-pages']
-    imageZip.fileValue(file("$buildDir/libs/Jyxal v${project.version}.zip"))
 }
