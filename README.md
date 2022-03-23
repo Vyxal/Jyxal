@@ -4,7 +4,7 @@ Jyxal is a coffee-flavored version of [Vyxal](https://github.com/Vyxal/Vyxal) co
 
 ## Running
 
-Note: Jyxal and all JARs produced by Jyxal require Java 17 or higher to run.
+Note: Jyxal and all JARs produced by Jyxal require Java 11 or higher to run.
 
 You can grab the latest release from the [releases tab](https://github.com/Vyxal/Jyxal/releases). You can also download the latest auto-built release by going to the [actions tab](https://github.com/Vyxal/Jyxal/actions), clicking on the latest action run on `master`, and scrolling all the way down to show the artifact. A third way is by [building it yourself](https://github.com/Vyxal/Jyxal#building-it-yourself).
 
