@@ -5,15 +5,18 @@ import io.github.seggan.jyxal.runtime.math.BigComplex
 import java.math.BigDecimal
 import java.math.BigInteger
 
-fun List<Any>.jyxal(): JyxalList = JyxalList.fromIterableLazy(this)
+fun List<Any>.jyxal(): JyxalList = JyxalList.create(this)
+
 @JvmName("nullableJyxal")
 fun List<Any?>.jyxal(): JyxalList {
     val result = ArrayList<Any>()
     for (item in this) {
         result.add(item!!)
     }
-    return JyxalList.fromIterableLazy(result)
+    return JyxalList.create(this)
 }
+
+fun Iterable<Any>.jyxal(): JyxalList = JyxalList.fromIterableLazy(this)
 fun Boolean.jyxal(): BigComplex = if (this) BigComplex.ONE else BigComplex.ZERO
 fun Int.jyxal(): BigComplex = BigComplex.valueOf(this.toLong())
 fun Long.jyxal(): BigComplex = BigComplex.valueOf(this)

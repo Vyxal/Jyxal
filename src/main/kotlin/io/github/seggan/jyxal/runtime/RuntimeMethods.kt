@@ -19,6 +19,7 @@ import java.nio.charset.StandardCharsets
 import java.util.regex.Pattern
 import java.util.zip.GZIPInputStream
 import kotlin.math.sqrt
+import kotlin.streams.toList
 
 private val COMMA_PATTERN: Pattern by lazy(LazyThreadSafetyMode.NONE) { Pattern.compile(",") }
 private val SPACE_PATTERN: Pattern by lazy(LazyThreadSafetyMode.NONE) { Pattern.compile(" ") }
@@ -75,11 +76,7 @@ fun chrOrd(obj: Any): Any {
         if (str.length == 1) {
             str[0].code.jyxal()
         } else {
-            val list = JyxalList.create()
-            for (c in str) {
-                list.add(c.code)
-            }
-            list
+            str.codePoints().toList().jyxal()
         }
     }
 }
@@ -111,7 +108,7 @@ fun divide(stack: ProgramStack): Any {
         if (b is BigComplex) {
             return a.divide(b, MathContext.DECIMAL128)
         }
-        val list = JyxalList.create()
+        val list = ArrayList<Any>()
         var sb = StringBuilder()
         var count = BigInteger.ZERO
         val max = a.re.toBigInteger()
@@ -126,7 +123,7 @@ fun divide(stack: ProgramStack): Any {
         if (sb.isNotEmpty()) {
             list.add(sb.toString())
         }
-        list
+        list.jyxal()
     } else if (b is BigComplex) {
         val list = ArrayList<Any>()
         var sb = StringBuilder()
@@ -611,9 +608,7 @@ fun mapGetSet(stack: ProgramStack): Any {
                 }
             }
         }
-        val newList = JyxalList.create(list)
-        newList.add(JyxalList.create(key, map))
-        return newList
+        return list.add(JyxalList.create(key, map))
     }
     for (o in map as JyxalList) {
         if (o is JyxalList) {
@@ -651,12 +646,12 @@ fun merge(stack: ProgramStack): Any {
     val a = stack.pop()
     return if (a is JyxalList) {
         if (b is JyxalList) {
-            a.addAllNew(b)
+            a.addAll(b)
         } else {
-            a.append(b)
+            a.add(b)
         }
     } else if (b is JyxalList) {
-        b.addNew(BigInteger.ZERO, a)
+        b.add(BigInteger.ZERO, a)
     } else {
         a.toString() + b.toString()
     }
@@ -755,7 +750,7 @@ fun prepend(stack: ProgramStack): Any {
     val b = stack.pop()
     val a = stack.pop()
     return if (a is JyxalList) {
-        a.addNew(BigInteger.ZERO, b)
+        a.add(BigInteger.ZERO, b)
     } else if (a is BigComplex && b is BigComplex) {
         BigDecimal(b.toString() + a.toString()).jyxal()
     } else {
@@ -833,11 +828,11 @@ fun sliceUntil(stack: ProgramStack): Any {
         sliceUntilImpl(a, b.re.toBigInteger())
     } else {
         val matcher = regexCache.computeIfAbsent(a.toString(), Pattern::compile).matcher(b.toString())
-        val list = JyxalList.create()
+        val list = ArrayList<Any>()
         while (matcher.find()) {
             list.add(matcher.group())
         }
-        list
+        list.jyxal()
     }
 }
 
@@ -889,18 +884,18 @@ fun splitOn(stack: ProgramStack): Any {
     val b = stack.pop()
     val a = stack.pop()
     return if (a is JyxalList) {
-        val superList = JyxalList.create()
-        var newList = JyxalList.create()
+        val superList = ArrayList<Any>()
+        var newList = ArrayList<Any>()
         for (item in a) {
             if (item == b) {
-                superList.add(newList)
-                newList = JyxalList.create()
+                superList.add(newList.jyxal())
+                newList = ArrayList()
             } else {
                 newList.add(item)
             }
         }
-        superList.add(newList)
-        superList
+        superList.add(newList.jyxal())
+        superList.jyxal()
     } else {
         JyxalList.create(a.toString().split(b.toString()))
     }
@@ -1010,11 +1005,11 @@ fun twoPow(obj: Any): Any {
 
 fun monadVectorise(obj: Any, handle: MethodHandle): Any {
     if (obj is JyxalList) {
-        val result = JyxalList.create()
+        val result = ArrayList<Any>()
         for (item in obj) {
             result.add(monadVectorise(item, handle))
         }
-        return result
+        return result.jyxal()
     }
     return handle.invoke(obj)
 }

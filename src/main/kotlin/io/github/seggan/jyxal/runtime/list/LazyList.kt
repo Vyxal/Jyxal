@@ -4,7 +4,7 @@ import io.github.seggan.jyxal.runtime.math.BigComplex
 
 internal class LazyList(private val generator: Iterator<Any>) : JyxalList() {
 
-    private var backing: MutableList<Any> = ArrayList()
+    private val backing: MutableList<Any> = ArrayList()
 
     override val size: Int = -1
 
@@ -34,10 +34,6 @@ internal class LazyList(private val generator: Iterator<Any>) : JyxalList() {
     override fun hasInd(ind: Int): Boolean {
         fill(ind)
         return backing.size > ind
-    }
-
-    override fun add(element: Any) {
-        throw UnsupportedOperationException("Cannot plus to the end of an infinite list")
     }
 
     override fun isLazy(): Boolean {

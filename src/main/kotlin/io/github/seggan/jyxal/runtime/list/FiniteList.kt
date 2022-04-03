@@ -3,9 +3,7 @@ package io.github.seggan.jyxal.runtime.list
 import io.github.seggan.jyxal.runtime.math.BigComplex
 import java.math.BigInteger
 
-internal class FiniteList : JyxalList {
-
-    private var backing: MutableList<Any>
+internal class FiniteList(private val backing: List<Any>) : JyxalList() {
 
     override val size: Int
         get() = backing.size
@@ -14,13 +12,7 @@ internal class FiniteList : JyxalList {
         return backing.contains(element)
     }
 
-    constructor(elements: Collection<Any>) : super() {
-        backing = elements.toMutableList()
-    }
-
-    constructor() : super() {
-        backing = ArrayList()
-    }
+    constructor() : this(emptyList<Any>())
 
     override fun get(ind: Int): Any {
         return if (backing.size > ind) {
@@ -30,23 +22,19 @@ internal class FiniteList : JyxalList {
         }
     }
 
-    override fun add(element: Any) {
-        backing.add(element)
-    }
-
     override fun toNonLazy(): JyxalList {
         return this
     }
 
-    override fun addNew(ind: BigInteger, value: Any): JyxalList {
-        val newBacking = mutableListOf<Any>()
+    override fun add(ind: BigInteger, value: Any): JyxalList {
+        val newBacking = ArrayList<Any>(backing)
         newBacking.add(ind.toInt(), value)
         return FiniteList(newBacking)
     }
 
-    override fun addAllNew(list: JyxalList): JyxalList {
-        val newBacking: MutableList<Any> = ArrayList(backing)
-        newBacking.addAll(list)
+    override fun addAll(iterable: Iterable<Any>): JyxalList {
+        val newBacking = ArrayList(backing)
+        newBacking.addAll(iterable)
         return FiniteList(newBacking)
     }
 
@@ -54,8 +42,8 @@ internal class FiniteList : JyxalList {
         return backing.hashCode()
     }
 
-    override fun append(value: Any): JyxalList {
-        val newBacking: MutableList<Any> = ArrayList(backing)
+    override fun add(value: Any): JyxalList {
+        val newBacking = ArrayList(backing)
         newBacking.add(value)
         return FiniteList(newBacking)
     }
@@ -77,7 +65,7 @@ internal class FiniteList : JyxalList {
     }
 
     override fun map(f: (Any) -> Any): JyxalList {
-        val newBacking = mutableListOf<Any>()
+        val newBacking = ArrayList<Any>()
         for (o in backing) {
             newBacking.add(f(o))
         }
@@ -85,7 +73,7 @@ internal class FiniteList : JyxalList {
     }
 
     override fun filter(pred: (Any) -> Boolean): JyxalList {
-        val newBacking = mutableListOf<Any>()
+        val newBacking = ArrayList<Any>()
         for (o in backing) {
             if (pred(o)) {
                 newBacking.add(o)

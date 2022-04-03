@@ -18,7 +18,11 @@ abstract class JyxalList : Collection<Any> {
         }
 
         fun create(collection: Collection<Any>): JyxalList {
-            return FiniteList(collection)
+            return FiniteList(collection.toList())
+        }
+
+        fun create(list: List<Any>): JyxalList {
+            return FiniteList(list)
         }
 
         @JvmStatic
@@ -94,8 +98,6 @@ abstract class JyxalList : Collection<Any> {
 
     abstract fun isLazy(): Boolean
 
-    abstract fun add(element: Any)
-
     abstract fun toNonLazy(): JyxalList
 
     abstract operator fun get(ind: Int): Any
@@ -153,7 +155,7 @@ abstract class JyxalList : Collection<Any> {
         })
     }
 
-    open fun addNew(ind: BigInteger, value: Any): JyxalList {
+    open fun add(ind: BigInteger, value: Any): JyxalList {
         val it = this.iterator()
         return LazyList(object : Iterator<Any> {
             var current = BigInteger.ZERO
@@ -173,7 +175,7 @@ abstract class JyxalList : Collection<Any> {
         })
     }
 
-    open fun append(value: Any): JyxalList {
+    open fun add(value: Any): JyxalList {
         val it = this.iterator()
         return LazyList(object : Iterator<Any> {
 
@@ -194,11 +196,11 @@ abstract class JyxalList : Collection<Any> {
         })
     }
 
-    open fun addAllNew(list: JyxalList): JyxalList {
+    open fun addAll(iterable: Iterable<Any>): JyxalList {
         val it = this.iterator()
         return LazyList(object : Iterator<Any> {
 
-            private val listIt = list.iterator()
+            private val listIt = iterable.iterator()
 
             override fun hasNext(): Boolean {
                 return it.hasNext() || listIt.hasNext()
