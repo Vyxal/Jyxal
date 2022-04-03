@@ -2,7 +2,7 @@ package io.github.seggan.jyxal.runtime.list
 
 import io.github.seggan.jyxal.runtime.math.BigComplex
 
-internal class InfiniteList(private val generator: Iterator<Any>) : JyxalList() {
+internal class LazyList(private val generator: Iterator<Any>) : JyxalList() {
 
     private var backing: MutableList<Any> = ArrayList()
 
@@ -44,6 +44,14 @@ internal class InfiniteList(private val generator: Iterator<Any>) : JyxalList() 
         return true
     }
 
+    override fun toNonLazy(): JyxalList {
+        val newList = ArrayList<Any>()
+        for (elm in this) {
+            newList.add(elm)
+        }
+        return FiniteList(newList)
+    }
+
     override fun iterator(): Iterator<Any> {
         return object : Iterator<Any> {
             private var ind = 0
@@ -52,7 +60,7 @@ internal class InfiniteList(private val generator: Iterator<Any>) : JyxalList() 
             }
 
             override fun next(): Any {
-                val elem = this@InfiniteList[ind]
+                val elem = this@LazyList[ind]
                 ind++
                 return elem
             }

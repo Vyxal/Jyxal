@@ -22,7 +22,7 @@ import java.util.Deque
 import java.util.function.Consumer
 import java.util.regex.Pattern
 
-class Compiler private constructor(private val classWriter: JyxalClassWriter, private val clinit: MethodVisitor) : VyxalParserBaseVisitor<Void?>(), Opcodes {
+class Compiler private constructor(private val classWriter: JyxalClassWriter, private val clinit: MethodVisitor) : VyxalParserBaseVisitor<Unit>(), Opcodes {
 
     private val variables: MutableSet<String> = HashSet()
     private val contextVariables: MutableSet<String> = HashSet()
@@ -35,15 +35,14 @@ class Compiler private constructor(private val classWriter: JyxalClassWriter, pr
     private var listCounter = 0
     private var lambdaCounter = 0
 
-    override fun visitInteger(ctx: IntegerContext): Void? {
+    override fun visitInteger(ctx: IntegerContext) {
         val mv = callStack.peek()
         mv.loadStack()
         AsmHelper.addBigComplex(ctx.text, mv)
         AsmHelper.push(mv)
-        return null
     }
 
-    override fun visitComplex_number(ctx: Complex_numberContext): Void? {
+    override fun visitComplex_number(ctx: Complex_numberContext) {
         val mv = callStack.peek()
         val parts = COMPLEX_SEPARATOR.split(ctx.text)
         mv.loadStack()
@@ -57,35 +56,31 @@ class Compiler private constructor(private val classWriter: JyxalClassWriter, pr
                 false
         )
         AsmHelper.push(mv)
-        return null
     }
 
-    override fun visitNormal_string(ctx: Normal_stringContext): Void? {
+    override fun visitNormal_string(ctx: Normal_stringContext) {
         val mv = callStack.peek()
         val text = ctx.text
         mv.loadStack()
         mv.visitLdcInsn(decompress(unescapeString(text.substring(1, text.length - 1))))
         AsmHelper.push(mv)
-        return null
     }
 
-    override fun visitSingle_char_string(ctx: Single_char_stringContext): Void? {
+    override fun visitSingle_char_string(ctx: Single_char_stringContext) {
         val mv = callStack.peek()
         mv.loadStack()
         mv.visitLdcInsn(decompress(unescapeString(ctx.text.substring(1))))
         AsmHelper.push(mv)
-        return null
     }
 
-    override fun visitDouble_char_string(ctx: Double_char_stringContext): Void? {
+    override fun visitDouble_char_string(ctx: Double_char_stringContext) {
         val mv = callStack.peek()
         mv.loadStack()
         mv.visitLdcInsn(decompress(unescapeString(ctx.text.substring(1))))
         AsmHelper.push(mv)
-        return null
     }
 
-    override fun visitList(ctx: ListContext): Void? {
+    override fun visitList(ctx: ListContext) {
         val method = callStack.peek()
         method.loadStack()
         AsmHelper.selectNumberInsn(method, ctx.program().size)
@@ -135,18 +130,16 @@ class Compiler private constructor(private val classWriter: JyxalClassWriter, pr
                 false
         )
         AsmHelper.push(method)
-        return null
     }
 
-    override fun visitConstant(ctx: ConstantContext): Void? {
+    override fun visitConstant(ctx: ConstantContext) {
         val mv = callStack.peek()
         mv.loadStack()
         Constants.compile(ctx.text, classWriter, mv)
         AsmHelper.push(mv)
-        return null
     }
 
-    override fun visitVariable_assn(ctx: Variable_assnContext): Void? {
+    override fun visitVariable_assn(ctx: Variable_assnContext) {
         val name = ctx.variable().text
         if (contextVariables.contains(name)) {
             val mv = callStack.peek()
@@ -206,15 +199,13 @@ class Compiler private constructor(private val classWriter: JyxalClassWriter, pr
                 AsmHelper.push(mv)
             }
         }
-        return null
     }
 
-    override fun visitAlias(ctx: AliasContext): Void? {
+    override fun visitAlias(ctx: AliasContext) {
         aliases[ctx.element_type(1).text] = ctx.PREFIX().text + ctx.element_type(0).text
-        return null
     }
 
-    override fun visitElement(ctx: ElementContext): Void? {
+    override fun visitElement(ctx: ElementContext) {
         var element = ctx.element_type().text
         element = if (ctx.PREFIX() != null) {
             ctx.PREFIX().text + element
@@ -232,10 +223,9 @@ class Compiler private constructor(private val classWriter: JyxalClassWriter, pr
             Constants.compile(element, classWriter, mv)
         }
         consumer?.accept(mv)
-        return null
     }
 
-    override fun visitWhile_loop(ctx: While_loopContext): Void? {
+    override fun visitWhile_loop(ctx: While_loopContext) {
         val start = Label()
         val end = Label()
         var childIndex = 0
@@ -289,10 +279,9 @@ class Compiler private constructor(private val classWriter: JyxalClassWriter, pr
             mv.visitVarInsn(Opcodes.ASTORE, mv.ctxVar)
         }
         loopStack.pop()
-        return null
     }
 
-    override fun visitFor_loop(ctx: For_loopContext): Void? {
+    override fun visitFor_loop(ctx: For_loopContext) {
         if (ctx.variable() != null) {
             contextVariables.add(ctx.variable().text)
         }
@@ -301,10 +290,9 @@ class Compiler private constructor(private val classWriter: JyxalClassWriter, pr
         loopStack.push(Loop(start, end))
         generateFor(start, end, ctx.program())
         loopStack.pop()
-        return null
     }
 
-    override fun visitFori_loop(ctx: Fori_loopContext): Void? {
+    override fun visitFori_loop(ctx: Fori_loopContext) {
         val start = Label()
         val end = Label()
         val mv = callStack.peek()
@@ -329,7 +317,6 @@ class Compiler private constructor(private val classWriter: JyxalClassWriter, pr
             generateFor(start, end, ctx.program())
         }
         loopStack.pop()
-        return null
     }
 
     private fun generateFor(start: Label, end: Label, program: ProgramContext) {
@@ -375,7 +362,7 @@ class Compiler private constructor(private val classWriter: JyxalClassWriter, pr
         }
     }
 
-    override fun visitIf_statement(ctx: If_statementContext): Void? {
+    override fun visitIf_statement(ctx: If_statementContext) {
         val mv = callStack.peek()
         val end = Label()
         loopStack.push(Loop(end, end))
@@ -399,7 +386,6 @@ class Compiler private constructor(private val classWriter: JyxalClassWriter, pr
             mv.visitLabel(end)
         }
         loopStack.pop()
-        return null
     }
 
     private fun visitModifier(modifier: String): Consumer<JyxalMethod>? {
@@ -439,7 +425,7 @@ class Compiler private constructor(private val classWriter: JyxalClassWriter, pr
         return null
     }
 
-    override fun visitLambda(ctx: LambdaContext): Void? {
+    override fun visitLambda(ctx: LambdaContext) {
         val lambdaName = "lambda$$lambdaCounter"
         var mv = classWriter.visitMethod(
                 Opcodes.ACC_PRIVATE or Opcodes.ACC_STATIC,
@@ -541,22 +527,18 @@ class Compiler private constructor(private val classWriter: JyxalClassWriter, pr
             }
         }
         lambdaCounter++
-        return null
     }
 
-    override fun visitOne_element_lambda(ctx: One_element_lambdaContext): Void? {
+    override fun visitOne_element_lambda(ctx: One_element_lambdaContext) {
         visitLimitedLambda(listOf(ctx.program_node()))
-        return null
     }
 
-    override fun visitTwo_element_lambda(ctx: Two_element_lambdaContext): Void? {
+    override fun visitTwo_element_lambda(ctx: Two_element_lambdaContext) {
         visitLimitedLambda(ctx.program_node())
-        return null
     }
 
-    override fun visitThree_element_lambda(ctx: Three_element_lambdaContext): Void? {
+    override fun visitThree_element_lambda(ctx: Three_element_lambdaContext) {
         visitLimitedLambda(ctx.program_node())
-        return null
     }
 
     private fun visitLimitedLambda(nodes: List<Program_nodeContext>) {
@@ -600,7 +582,7 @@ class Compiler private constructor(private val classWriter: JyxalClassWriter, pr
         AsmHelper.push(mv)
     }
 
-    override fun visitFunction(ctx: FunctionContext): Void? {
+    override fun visitFunction(ctx: FunctionContext) {
         throw JyxalCompileException("Functions not yet supported")
     }
 

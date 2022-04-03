@@ -34,6 +34,10 @@ internal class FiniteList : JyxalList {
         backing.add(element)
     }
 
+    override fun toNonLazy(): JyxalList {
+        return this
+    }
+
     override fun addNew(ind: BigInteger, value: Any): JyxalList {
         val newBacking = mutableListOf<Any>()
         newBacking.add(ind.toInt(), value)

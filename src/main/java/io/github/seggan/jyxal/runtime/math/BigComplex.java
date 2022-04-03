@@ -631,4 +631,8 @@ public final class BigComplex implements Comparable<BigComplex> {
 
         return re.compareTo(o.re);
     }
+
+    public int toInt() {
+        return re.intValue();
+    }
 }

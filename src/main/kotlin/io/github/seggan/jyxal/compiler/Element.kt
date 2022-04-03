@@ -12,6 +12,7 @@ import kotlin.reflect.KClass
 
 @Suppress("unused")
 enum class Element {
+
     /**
      * Math
      */
@@ -20,10 +21,8 @@ enum class Element {
     DIVIDE("/"),
     DOUBLE_REPEAT("d", true),
     HALVE("½"),
-    INCREMENT(
-            "›",
-            true
-    ),
+    HEX_TO_DECIMAL("H", true),
+    INCREMENT("›", true),
     INFINITE_PRIMES("Þp", { mv ->
         mv.loadStack()
         mv.visitMethodInsn(
@@ -113,6 +112,7 @@ enum class Element {
     JOIN_BY_NOTHING("ṅ", false),
     JSON_PARSE("øJ", true),
     REVERSE("Ṙ", false),
+    SPACES("I", false),
     SPLIT_ON("€"),
 
     /**
@@ -124,6 +124,7 @@ enum class Element {
     /**
      * List
      */
+    FILTER("F"),
     FLATTEN("f", false),
     HEAD("h", false),
     HEAD_EXTRACT("ḣ"),
@@ -131,31 +132,12 @@ enum class Element {
     IZR("ʀ", true), // inclusive zero range
     LENGTH("L", false),
     MAP_GET_SET("Þd"),
+    MAX("G", false),
     MERGE("J"),
     PREPEND("p"),
     REMOVE_AT_INDEX("⟇"),
     SLICE_UNTIL("Ẏ"),
     SORT_BY_FUNCTION("ṡ"),
-    STACK_SIZE("!", { mv ->
-        mv.loadStack()
-        mv.visitMethodInsn(
-                Opcodes.INVOKEVIRTUAL,
-                "runtime/ProgramStack",
-                "size",
-                "()I",
-                false
-        )
-        mv.visitInsn(Opcodes.I2L)
-        mv.visitMethodInsn(
-                Opcodes.INVOKESTATIC,
-                "runtime/math/BigComplex",
-                "valueOf",
-                "(J)Lruntime/math/BigComplex;",
-                false
-        )
-        mv.loadStack()
-        AsmHelper.push(mv)
-    }),
     TAIL("t", false),
 
     /**
@@ -194,6 +176,26 @@ enum class Element {
                 "register",
                 "Ljava/lang/Object;"
         )
+    }),
+    STACK_SIZE("!", { mv ->
+        mv.loadStack()
+        mv.visitMethodInsn(
+                Opcodes.INVOKEVIRTUAL,
+                "runtime/ProgramStack",
+                "size",
+                "()I",
+                false
+        )
+        mv.visitInsn(Opcodes.I2L)
+        mv.visitMethodInsn(
+                Opcodes.INVOKESTATIC,
+                "runtime/math/BigComplex",
+                "valueOf",
+                "(J)Lruntime/math/BigComplex;",
+                false
+        )
+        mv.loadStack()
+        AsmHelper.push(mv)
     }),
     WRAP("W", { mv ->
         mv.loadStack()

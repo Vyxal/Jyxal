@@ -69,6 +69,23 @@ fun exec(expr: String): Any {
     return stack.pop()
 }
 
+fun escapeString(str: String): String {
+    val sb = StringBuilder()
+    for (c in str) {
+        when (c) {
+            '\n' -> sb.append("\\n")
+            '\r' -> sb.append("\\r")
+            '\t' -> sb.append("\\t")
+            '\b' -> sb.append("\\b")
+            '\$' -> sb.append("\\$")
+            '\\' -> sb.append("\\\\")
+            '"' -> sb.append("\\\"")
+            else -> sb.append(c)
+        }
+    }
+    return sb.toString()
+}
+
 fun eval(expr: String): Any {
     return if (NUMBER_PATTERN.matcher(expr).matches()) {
         BigComplex.valueOf(BigDecimal(expr))
@@ -238,28 +255,27 @@ fun replacementIterator(iterator: Iterator<Any>, index: Int, replacement: Any): 
 }
 
 fun toBaseDigits(integer: BigInteger, base: BigInteger): List<BigInteger> {
-    val result = mutableListOf<BigInteger>()
-    var remainder = integer
-    while (remainder >= base) {
-        val (digit, rem) = remainder.divideAndRemainder(base)
-        result.add(digit)
-        remainder = rem
+    val ret = mutableListOf<BigInteger>()
+    var n = integer
+    while (n >= base) {
+        val (newN, digit) = n.divideAndRemainder(base)
+        ret.add(digit)
+        n = newN
     }
-    result.add(remainder)
-    result.reverse()
-    return result
+    ret.add(n)
+    return ret.reversed()
 }
 
 fun toBaseDigitsAlphabet(integer: Long, alphabet: String): String {
     val sb = StringBuilder()
-    var remainder = integer
+    var n = integer
     val base = alphabet.length
-    while (remainder >= base) {
-        val div = remainder / base
-        sb.append(alphabet[(remainder % base).toInt()])
-        remainder = div
+    while (n >= base) {
+        val div = n / base
+        sb.append(alphabet[(n % base).toInt()])
+        n = div
     }
-    sb.append(alphabet[remainder.toInt()])
+    sb.append(alphabet[n.toInt()])
     return sb.reverse().toString()
 }
 

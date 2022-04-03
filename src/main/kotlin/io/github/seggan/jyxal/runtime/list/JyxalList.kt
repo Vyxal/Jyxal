@@ -10,7 +10,7 @@ abstract class JyxalList : Collection<Any> {
     companion object {
 
         fun create(generator: Iterator<Any>): JyxalList {
-            return InfiniteList(generator)
+            return LazyList(generator)
         }
 
         fun create(vararg array: Any): JyxalList {
@@ -39,7 +39,7 @@ abstract class JyxalList : Collection<Any> {
          * Create an infinite list
          */
         fun createInf(generator: () -> Any): JyxalList {
-            return InfiniteList(object : Iterator<Any> {
+            return LazyList(object : Iterator<Any> {
                 override fun hasNext(): Boolean {
                     return true
                 }
@@ -51,7 +51,7 @@ abstract class JyxalList : Collection<Any> {
         }
 
         fun range(start: BigComplex, end: BigComplex): JyxalList {
-            return InfiniteList(object : Iterator<BigComplex> {
+            return LazyList(object : Iterator<BigComplex> {
                 var current = start
 
                 override fun hasNext(): Boolean {
@@ -67,7 +67,7 @@ abstract class JyxalList : Collection<Any> {
         }
 
         fun fromIterableLazy(iterable: Iterable<Any>): JyxalList {
-            return InfiniteList(iterable.iterator())
+            return LazyList(iterable.iterator())
         }
     }
 
@@ -96,11 +96,13 @@ abstract class JyxalList : Collection<Any> {
 
     abstract fun add(element: Any)
 
+    abstract fun toNonLazy(): JyxalList
+
     abstract operator fun get(ind: Int): Any
 
     open fun removeAtIndex(ind: BigInteger): JyxalList {
         val it = this.iterator()
-        return InfiniteList(object : Iterator<Any> {
+        return LazyList(object : Iterator<Any> {
             var current = BigInteger.ZERO
 
             override fun hasNext(): Boolean {
@@ -120,7 +122,7 @@ abstract class JyxalList : Collection<Any> {
 
     open fun map(f: (Any) -> Any): JyxalList {
         val it = this.iterator()
-        return InfiniteList(object : Iterator<Any> {
+        return LazyList(object : Iterator<Any> {
             override fun hasNext(): Boolean {
                 return it.hasNext()
             }
@@ -133,7 +135,7 @@ abstract class JyxalList : Collection<Any> {
 
     open fun filter(pred: (Any) -> Boolean): JyxalList {
         val it = this.iterator()
-        return InfiniteList(object : Iterator<Any> {
+        return LazyList(object : Iterator<Any> {
             override fun hasNext(): Boolean {
                 return it.hasNext()
             }
@@ -153,7 +155,7 @@ abstract class JyxalList : Collection<Any> {
 
     open fun addNew(ind: BigInteger, value: Any): JyxalList {
         val it = this.iterator()
-        return InfiniteList(object : Iterator<Any> {
+        return LazyList(object : Iterator<Any> {
             var current = BigInteger.ZERO
 
             override fun hasNext(): Boolean {
@@ -173,7 +175,7 @@ abstract class JyxalList : Collection<Any> {
 
     open fun append(value: Any): JyxalList {
         val it = this.iterator()
-        return InfiniteList(object : Iterator<Any> {
+        return LazyList(object : Iterator<Any> {
 
             private var last = false
 
@@ -194,7 +196,7 @@ abstract class JyxalList : Collection<Any> {
 
     open fun addAllNew(list: JyxalList): JyxalList {
         val it = this.iterator()
-        return InfiniteList(object : Iterator<Any> {
+        return LazyList(object : Iterator<Any> {
 
             private val listIt = list.iterator()
 

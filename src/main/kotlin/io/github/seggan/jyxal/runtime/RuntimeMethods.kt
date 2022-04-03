@@ -1,5 +1,4 @@
-@file:Suppress("unused", "MemberVisibilityCanBePrivate")
-@file:JvmName("RuntimeMethods")
+@file:Suppress("unused", "MemberVisibilityCanBePrivate") @file:JvmName("RuntimeMethods")
 
 package io.github.seggan.jyxal.runtime
 
@@ -129,7 +128,7 @@ fun divide(stack: ProgramStack): Any {
         }
         list
     } else if (b is BigComplex) {
-        val list = JyxalList.create()
+        val list = ArrayList<Any>()
         var sb = StringBuilder()
         var count = BigInteger.ZERO
         val max = b.re.toBigInteger()
@@ -139,14 +138,14 @@ fun divide(stack: ProgramStack): Any {
                 sb = StringBuilder()
             }
             sb.append(c)
-            count = count.add(BigInteger.ONE)
+            count += BigInteger.ONE
         }
         if (sb.isNotEmpty()) {
             list.add(sb.toString())
         }
-        list
+        list.jyxal()
     } else {
-        val list = JyxalList.create()
+        val list = ArrayList<Any>()
         val str = a.toString()
         val delimiter = b.toString()
         var start = 0
@@ -159,7 +158,7 @@ fun divide(stack: ProgramStack): Any {
         if (start < str.length) {
             list.add(str.substring(start))
         }
-        list
+        list.jyxal()
     }
 }
 
@@ -175,7 +174,7 @@ fun doubleRepeat(obj: Any): Any {
             Lambda(2, obj.handle)
         }
         else -> {
-            obj.toString().repeat(2)
+            obj.toString() * 2
         }
     }
 }
@@ -192,15 +191,27 @@ fun equal(stack: ProgramStack): Any {
     }
 }
 
+fun filter(stack: ProgramStack): Any {
+    val b = stack.pop()
+    val a = stack.pop()
+    return if (b is Lambda) {
+        JyxalList.create(iterator(a)).filter { truthValue(b.call(it)) }
+    } else {
+        val list = mutableListOf<Any>()
+        iterator(a).forEach(list::add)
+        JyxalList.create(iterator(a)).filter(list::contains)
+    }
+}
+
 fun flatten(obj: Any): Any {
     return if (obj is JyxalList) {
         flattenImpl(obj)
     } else {
-        val list = JyxalList.create()
+        val list = ArrayList<Any>()
         for (c in obj.toString()) {
             list.add(c.toString())
         }
-        list
+        list.jyxal()
     }
 }
 
@@ -308,6 +319,10 @@ fun headExtract(stack: ProgramStack): Any {
     }
 }
 
+fun hexToDecimal(obj: Any): Any {
+    return BigInteger(obj.toString(), 16).jyxal()
+}
+
 fun increment(obj: Any): Any {
     return if (obj is BigComplex) {
         obj + 1
@@ -333,7 +348,7 @@ fun infinitePrimes(): JyxalList {
                 return 1.jyxal()
             }
             if (!isOverflowed) {
-                if (n and 1L == 0L)  {
+                if (n and 1L == 0L) {
                     n++
                 }
                 while (!isPrime(n)) {
@@ -484,11 +499,12 @@ fun izr(obj: Any): Any {
     return if (obj is BigComplex) {
         JyxalList.range(BigComplex.ZERO, obj + 1)
     } else {
-        val list = JyxalList.create()
-        for (c in obj.toString()) {
+        val str = obj.toString()
+        val list = ArrayList<Any>(str.length)
+        for (c in str) {
             list.add(Character.isAlphabetic(c.code).jyxal())
         }
-        list
+        list.jyxal()
     }
 }
 
@@ -591,11 +607,7 @@ fun mapGetSet(stack: ProgramStack): Any {
         for ((i, o) in list.withIndex()) {
             if (o is JyxalList) {
                 if (o.size >= 2 && o[0] == key) {
-                    return JyxalList.create(replacementIterator(
-                            list.iterator(),
-                            i,
-                            JyxalList.create(o[0], map)
-                    ))
+                    return JyxalList.create(replacementIterator(list.iterator(), i, JyxalList.create(o[0], map)))
                 }
             }
         }
@@ -617,6 +629,21 @@ fun mapGetSet(stack: ProgramStack): Any {
         }
     }
     return BigComplex.ZERO
+}
+
+fun max(obj: Any): Any {
+    val iterator = iterator(obj)
+    if (!iterator.hasNext()) {
+        return 0.jyxal()
+    }
+    var max = iterator.next()
+    while (iterator.hasNext()) {
+        val next = iterator.next()
+        if (sortByFunctionHelper(next) > sortByFunctionHelper(max)) {
+            max = next
+        }
+    }
+    return max
 }
 
 fun merge(stack: ProgramStack): Any {
@@ -665,10 +692,10 @@ fun multiCommand(stack: ProgramStack): Any {
         if (b is BigComplex) {
             b loga a
         } else {
-            repeatCharacters(b.toString(), a.re.toInt())
+            repeatCharacters(b.toString(), a.toInt())
         }
     } else if (b is BigComplex) {
-        repeatCharacters(a.toString(), b.re.toInt())
+        repeatCharacters(a.toString(), b.toInt())
     } else {
         val sb = StringBuilder()
         val aString = a.toString()
@@ -700,15 +727,15 @@ fun multiply(stack: ProgramStack): Any {
         if (b is BigComplex) {
             return a * b
         } else if (b is Lambda) {
-            return Lambda(a.re.toInt(), b.handle)
+            return Lambda(a.toInt(), b.handle)
         }
-        b.toString().repeat(a.re.toInt())
+        b.toString() * a.toInt()
     } else if (a is Lambda && b is BigComplex) {
-        Lambda(b.re.toInt(), a.handle)
+        Lambda(b.toInt(), a.handle)
     } else {
         val aString = a.toString()
         if (b is BigComplex) {
-            return aString.repeat(b.re.toInt())
+            return aString * b.toInt()
         }
         val bString = b.toString()
         val sb = StringBuilder()
@@ -752,7 +779,7 @@ fun removeAtIndex(stack: ProgramStack): Any {
             return b.removeAtIndex(a.re.toBigInteger())
         }
         val str = b.toString()
-        val index = a.re.toInt()
+        val index = a.toInt()
         val sb = StringBuilder()
         for (i in str.indices) {
             if (i != index) {
@@ -765,7 +792,7 @@ fun removeAtIndex(stack: ProgramStack): Any {
             return a.removeAtIndex(b.re.toBigInteger())
         }
         val str = a.toString()
-        val index = b.re.toInt()
+        val index = b.toInt()
         val sb = StringBuilder()
         for (i in str.indices) {
             if (i != index) {
@@ -887,9 +914,9 @@ fun subtract(stack: ProgramStack): Any {
     return if (a is BigComplex) {
         if (b is BigComplex) {
             a.subtract(b)
-        } else "-".repeat(a.re.toInt()) + b
+        } else "-" * a.toInt() + b
     } else if (b is BigComplex) {
-        a.toString() + "-".repeat(b.re.toInt())
+        a.toString() + "-" * b.toInt()
     } else {
         a.toString().replace(b.toString(), "")
     }
@@ -918,6 +945,28 @@ fun sum(obj: Any): Any {
                 sum += c.code.toLong()
             }
             sum.jyxal()
+        }
+    }
+}
+
+fun spaces(obj: Any): Any {
+    return when (obj) {
+        is BigComplex -> " " * obj.toInt()
+        is JyxalList -> {
+            val half = obj.size / 2
+            val list = ArrayList<Any>()
+            val iterator = obj.iterator()
+            for (i in 0 until half) {
+                list.add(iterator.next())
+            }
+            while (iterator.hasNext()) {
+                list.add(iterator.next())
+            }
+            list.jyxal()
+        }
+        else -> {
+            val string = obj.toString()
+            "`${unescapeString(string)}`$string"
         }
     }
 }
