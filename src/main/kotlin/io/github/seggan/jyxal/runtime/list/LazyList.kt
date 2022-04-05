@@ -6,7 +6,21 @@ internal class LazyList(private val generator: Iterator<Any>) : JyxalList() {
 
     private val backing: MutableList<Any> = ArrayList()
 
-    override val size: Int = -1
+    private var resolved: Boolean = false
+
+    override val size: Int
+        get() {
+            return if (resolved) {
+                backing.size
+            } else {
+                var size = 0
+                for (i in this) {
+                    size++
+                }
+                resolved = true
+                size
+            }
+        }
 
     override fun contains(element: Any): Boolean {
         if (backing.contains(element)) {
@@ -19,6 +33,7 @@ internal class LazyList(private val generator: Iterator<Any>) : JyxalList() {
                 return true
             }
         }
+        resolved = true
         return false
     }
 
@@ -48,18 +63,22 @@ internal class LazyList(private val generator: Iterator<Any>) : JyxalList() {
         return FiniteList(newList)
     }
 
-    override fun iterator(): Iterator<Any> {
-        return object : Iterator<Any> {
-            private var ind = 0
-            override fun hasNext(): Boolean {
-                return hasInd(ind)
-            }
+    override fun listIterator(): ListIterator<Any> {
+        return object : ListIterator<Any> {
 
-            override fun next(): Any {
-                val elem = this@LazyList[ind]
-                ind++
-                return elem
-            }
+            private var ind = 0
+
+            override fun hasNext(): Boolean = hasInd(ind)
+
+            override fun hasPrevious(): Boolean = hasInd(ind - 1)
+
+            override fun next(): Any = get(ind++)
+
+            override fun previous(): Any = get(--ind)
+
+            override fun nextIndex(): Int = ind
+
+            override fun previousIndex(): Int = ind - 1
         }
     }
 
@@ -68,8 +87,14 @@ internal class LazyList(private val generator: Iterator<Any>) : JyxalList() {
     }
 
     private fun fill(index: Int) {
-        while (backing.size <= index && generator.hasNext()) {
-            backing.add(generator.next())
+        if (!resolved) {
+            while (backing.size <= index) {
+                if (!generator.hasNext()) {
+                    resolved = true
+                    break
+                }
+                backing.add(generator.next())
+            }
         }
     }
 

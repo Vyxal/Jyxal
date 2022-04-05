@@ -17,6 +17,8 @@ fun List<Any?>.jyxal(): JyxalList {
 }
 
 fun Iterable<Any>.jyxal(): JyxalList = JyxalList.fromIterableLazy(this)
+fun Sequence<Any>.jyxal(): JyxalList = JyxalList.create(this.iterator())
+
 fun Boolean.jyxal(): BigComplex = if (this) BigComplex.ONE else BigComplex.ZERO
 fun Int.jyxal(): BigComplex = BigComplex.valueOf(this.toLong())
 fun Long.jyxal(): BigComplex = BigComplex.valueOf(this)

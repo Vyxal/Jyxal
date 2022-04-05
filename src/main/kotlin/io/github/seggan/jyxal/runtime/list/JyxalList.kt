@@ -1,6 +1,7 @@
 package io.github.seggan.jyxal.runtime.list
 
 import io.github.seggan.jyxal.runtime.ProgramStack
+import io.github.seggan.jyxal.runtime.jyxal
 import io.github.seggan.jyxal.runtime.math.BigComplex
 import io.github.seggan.jyxal.runtime.plus
 import java.math.BigInteger
@@ -59,13 +60,28 @@ abstract class JyxalList : Collection<Any> {
                 var current = start
 
                 override fun hasNext(): Boolean {
-                    return current <= end
+                    return current < end
                 }
 
                 override fun next(): BigComplex {
                     val result = current
                     current += 1
                     return result
+                }
+            })
+        }
+
+        fun range(start: Int, end: Int): JyxalList {
+            return LazyList(object : Iterator<BigComplex> {
+                var current = start
+
+                override fun hasNext(): Boolean {
+                    return current < end
+                }
+
+                override fun next(): BigComplex {
+                    val result = current++
+                    return result.jyxal()
                 }
             })
         }
@@ -102,10 +118,16 @@ abstract class JyxalList : Collection<Any> {
 
     abstract operator fun get(ind: Int): Any
 
-    open fun removeAtIndex(ind: BigInteger): JyxalList {
+    abstract fun listIterator(): ListIterator<Any>
+
+    override fun iterator(): Iterator<Any> {
+        return listIterator()
+    }
+
+    open fun remove(ind: Int): JyxalList {
         val it = this.iterator()
         return LazyList(object : Iterator<Any> {
-            var current = BigInteger.ZERO
+            var current = 0
 
             override fun hasNext(): Boolean {
                 return it.hasNext()
@@ -113,10 +135,10 @@ abstract class JyxalList : Collection<Any> {
 
             override fun next(): Any {
                 if (current == ind) {
-                    current = current.add(BigInteger.ONE)
+                    current++
                     return it.next()
                 }
-                current = current.add(BigInteger.ONE)
+                current++
                 return it.next()
             }
         })

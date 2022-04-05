@@ -38,6 +38,16 @@ internal class FiniteList(private val backing: List<Any>) : JyxalList() {
         return FiniteList(newBacking)
     }
 
+    override fun remove(ind: Int): JyxalList {
+        val newBacking = ArrayList(backing)
+        newBacking.removeAt(ind)
+        return FiniteList(newBacking)
+    }
+
+    override fun containsAll(elements: Collection<Any>): Boolean {
+        return backing.containsAll(elements)
+    }
+
     override fun hashCode(): Int {
         return backing.hashCode()
     }
@@ -48,8 +58,8 @@ internal class FiniteList(private val backing: List<Any>) : JyxalList() {
         return FiniteList(newBacking)
     }
 
-    override fun iterator(): Iterator<Any> {
-        return backing.iterator()
+    override fun listIterator(): ListIterator<Any> {
+        return backing.listIterator()
     }
 
     override fun isLazy(): Boolean {

@@ -18,14 +18,18 @@ import java.net.URL
 import java.nio.charset.StandardCharsets
 import java.util.regex.Pattern
 import java.util.zip.GZIPInputStream
+import kotlin.math.min
 import kotlin.math.sqrt
 import kotlin.streams.toList
 
-private val COMMA_PATTERN: Pattern by lazy(LazyThreadSafetyMode.NONE) { Pattern.compile(",") }
-private val SPACE_PATTERN: Pattern by lazy(LazyThreadSafetyMode.NONE) { Pattern.compile(" ") }
-private val PLUS_SPACE_I_PATTERN: Pattern by lazy(LazyThreadSafetyMode.NONE) { Pattern.compile("[+\\si]") }
+private val COMMA_PATTERN: Regex by lazy(LazyThreadSafetyMode.NONE) { ",".toRegex() }
+private val SPACE_PATTERN: Regex by lazy(LazyThreadSafetyMode.NONE) { " ".toRegex() }
+private val PLUS_SPACE_I_PATTERN: Regex by lazy(LazyThreadSafetyMode.NONE) { "[+\\si]".toRegex() }
 
-private val regexCache = mutableMapOf<String, Pattern>()
+private val LONG_MAX_VALUE_AS_BIG: BigInteger by lazy(LazyThreadSafetyMode.NONE) { BigInteger.valueOf(Long.MAX_VALUE) }
+private val LONG_MIN_VALUE_AS_BIG: BigInteger by lazy(LazyThreadSafetyMode.NONE) { BigInteger.valueOf(Long.MIN_VALUE) }
+
+private val regexCache = mutableMapOf<String, Regex>()
 
 fun add(stack: ProgramStack): Any {
     val b = stack.pop()
@@ -81,7 +85,7 @@ fun chrOrd(obj: Any): Any {
     }
 }
 
-private fun compare(stack: ProgramStack, predicate: (Int) -> Boolean): Any {
+private inline fun compare(stack: ProgramStack, predicate: (Int) -> Boolean): Any {
     val b = stack.pop()
     val a = stack.pop()
     return if (a is BigComplex && b is BigComplex) {
@@ -96,6 +100,22 @@ fun complement(obj: Any): Any {
         BigComplex.ONE - obj
     } else {
         JyxalList.create(COMMA_PATTERN.split(obj.toString()))
+    }
+}
+
+fun count(stack: ProgramStack): Any {
+    val b = stack.pop()
+    val a = stack.pop()
+    return if (a is JyxalList) {
+        a.count { it == b }
+    } else {
+        val pattern = Pattern.compile(Pattern.quote(b.toString()))
+        var count = 0
+        val matcher = pattern.matcher(a.toString())
+        while (matcher.find()) {
+            count++
+        }
+        count.jyxal()
     }
 }
 
@@ -185,6 +205,59 @@ fun equal(stack: ProgramStack): Any {
         (a == b).jyxal()
     } else {
         (a.toString() == b.toString()).jyxal()
+    }
+}
+
+fun factors(obj: Any): Any {
+    return when (obj) {
+        is BigComplex -> {
+            val value = obj.re.toBigInteger()
+            val factors = LinkedHashSet<BigComplex>()
+            if (LONG_MIN_VALUE_AS_BIG <= value && value <= LONG_MAX_VALUE_AS_BIG) {
+                val num = value.toLong()
+                val sqrt = sqrt(num.toDouble())
+                val incrementer = if (num and 1 == 0L) 1 else 2
+                var i = 1L
+                while (i <= sqrt) {
+                    if (num % i == 0L) {
+                        factors.add(i.jyxal())
+                    }
+                    i += incrementer
+                }
+            } else {
+                val sqrt = value.sqrt()
+                val incrementer = if (value and BigInteger.ONE == BigInteger.ZERO) BigInteger.ONE else BigInteger.TWO
+                var i = BigInteger.ONE
+                while (i <= sqrt) {
+                    if (value % i == BigInteger.ZERO) {
+                        factors.add(i.jyxal())
+                    }
+                    i += incrementer
+                }
+            }
+            factors.add(obj)
+            factors.jyxal()
+        }
+        is JyxalList -> {
+            val prefixes = ArrayList<JyxalList>()
+            var prefix = JyxalList.create()
+            for (i in obj) {
+                prefix = prefix.add(i)
+                prefixes.add(prefix)
+            }
+            prefixes.jyxal()
+        }
+        else -> {
+            val str = obj.toString()
+            val frequencies = LinkedHashMap<String, Int>()
+            for (i in str.indices) {
+                for (j in (i + 1)..str.length) {
+                    val sub = str.substring(i, j)
+                    frequencies.compute(sub) { _, value -> value?.plus(1) ?: 1 }
+                }
+            }
+            frequencies.filterValues { it > 1 }.keys.jyxal()
+        }
     }
 }
 
@@ -324,7 +397,7 @@ fun increment(obj: Any): Any {
     return if (obj is BigComplex) {
         obj + 1
     } else {
-        SPACE_PATTERN.matcher(obj.toString()).replaceAll("0")
+        SPACE_PATTERN.replace(obj.toString(), "0")
     }
 }
 
@@ -405,6 +478,39 @@ fun infiniteReplace(stack: ProgramStack): Any {
     }
 }
 
+fun interleave(stack: ProgramStack): Any {
+    val b = stack.pop()
+    val a = stack.pop()
+    if (a is String && b is String) {
+        return buildString {
+            for (i in 0 until min(a.length, b.length)) {
+                append(a[i])
+                append(b[i])
+            }
+        }
+    } else {
+        val aIt = iterator(a)
+        val bIt = iterator(b)
+        return JyxalList.create(object : Iterator<Any> {
+            private var isA = true
+
+            override fun hasNext(): Boolean {
+                return aIt.hasNext() || bIt.hasNext()
+            }
+
+            override fun next(): Any {
+                return if (isA) {
+                    isA = false
+                    aIt.next()
+                } else {
+                    isA = true
+                    bIt.next()
+                }
+            }
+        })
+    }
+}
+
 fun ior(obj: Any): Any {
     return when (obj) {
         is JyxalList -> {
@@ -422,7 +528,7 @@ fun ior(obj: Any): Any {
 fun isPrime(obj: Any): Any {
     return if (obj is BigComplex) {
         val n = obj.re.toBigInteger()
-        if (n < BigInteger.valueOf(Long.MAX_VALUE) && n > BigInteger.valueOf(Long.MIN_VALUE)) {
+        if (LONG_MIN_VALUE_AS_BIG <= n && n <= LONG_MAX_VALUE_AS_BIG) {
             return isPrime(n.toLong()).jyxal()
         } else {
             // we don't need to check if n is a small prime, because the other branch will do it
@@ -541,19 +647,7 @@ fun jsonParse(obj: Any): Any {
 }
 
 fun length(obj: Any): Any {
-    return if (obj is JyxalList) {
-        if (obj.isLazy()) {
-            var length: Long = 0
-            for (ignored in obj) {
-                length++
-            }
-            length.jyxal()
-        } else {
-            obj.size.jyxal()
-        }
-    } else {
-        obj.toString().length.jyxal()
-    }
+    return if (obj is JyxalList) obj.size.jyxal() else obj.toString().length.jyxal()
 }
 
 fun lessThan(stack: ProgramStack): Any {
@@ -591,6 +685,20 @@ fun logicalOr(stack: ProgramStack): Any {
         } else {
             a
         }
+    }
+}
+
+fun map(stack: ProgramStack): Any {
+    val b = stack.pop()
+    val a = stack.pop()
+    return if (b is Lambda) {
+        if (a is JyxalList) a.map(b::call) else JyxalList.create(iterator(a)).map(b::call)
+    } else {
+        val list = ArrayList<JyxalList>()
+        for (item in iterator(b)) {
+            list.add(JyxalList.create(a, item))
+        }
+        list.jyxal()
     }
 }
 
@@ -746,6 +854,11 @@ fun multiply(stack: ProgramStack): Any {
     }
 }
 
+fun negate(obj: Any): Any {
+    return if (obj is BigComplex) obj.negate()
+    else obj.toString().map { if (it.isUpperCase()) it.lowercaseChar() else it.uppercaseChar() }.joinToString("")
+}
+
 fun prepend(stack: ProgramStack): Any {
     val b = stack.pop()
     val a = stack.pop()
@@ -766,12 +879,42 @@ fun printToFile(stack: ProgramStack) {
     }
 }
 
+fun reduce(stack: ProgramStack): Any {
+    val o = vectorise(2, ::reduce, stack)
+    if (o != null) return o
+    val b = stack.pop()
+    if (b is Lambda) {
+        val a = iterator(stack.pop())
+        if (!a.hasNext()) {
+            return BigInteger.ZERO
+        }
+        var result = a.next()
+        while (a.hasNext()) {
+            result = b.call(result, a.next())
+        }
+        return result
+    }
+
+    return when (b) {
+        is BigComplex -> BigComplex.valueOf(BigDecimal(b.re.toString().reversed()), BigDecimal(b.im.toString().reversed()))
+        is JyxalList -> {
+            val result = ArrayList<Any>()
+            for (i in b.size - 1 downTo 0) {
+                result.add(b[i])
+            }
+            result.jyxal()
+        }
+        else -> b.toString().reversed()
+    }
+
+}
+
 fun removeAtIndex(stack: ProgramStack): Any {
     val a = stack.pop()
     val b = stack.pop()
     return if (a is BigComplex) {
         if (b is JyxalList) {
-            return b.removeAtIndex(a.re.toBigInteger())
+            return b.remove(a.re.toInt())
         }
         val str = b.toString()
         val index = a.toInt()
@@ -784,7 +927,7 @@ fun removeAtIndex(stack: ProgramStack): Any {
         sb.toString()
     } else if (b is BigComplex) {
         if (a is JyxalList) {
-            return a.removeAtIndex(b.re.toBigInteger())
+            return a.remove(b.re.toInt())
         }
         val str = a.toString()
         val index = b.toInt()
@@ -797,6 +940,17 @@ fun removeAtIndex(stack: ProgramStack): Any {
         sb.toString()
     } else {
         throw IllegalArgumentException("$a, $b")
+    }
+}
+
+fun replace(stack: ProgramStack): Any {
+    val c = stack.pop()
+    val b = stack.pop()
+    val a = stack.pop()
+    return if (a is JyxalList) {
+        a.map { if (it == b) c else it }
+    } else {
+        a.toString().replace(b.toString(), c.toString())
     }
 }
 
@@ -827,12 +981,7 @@ fun sliceUntil(stack: ProgramStack): Any {
     } else if (b is BigComplex) {
         sliceUntilImpl(a, b.re.toBigInteger())
     } else {
-        val matcher = regexCache.computeIfAbsent(a.toString(), Pattern::compile).matcher(b.toString())
-        val list = ArrayList<Any>()
-        while (matcher.find()) {
-            list.add(matcher.group())
-        }
-        list.jyxal()
+        regexCache.computeIfAbsent(a.toString(), String::toRegex).findAll(b.toString()).map(MatchResult::value).jyxal()
     }
 }
 
@@ -867,8 +1016,7 @@ fun sortByFunction(stack: ProgramStack): Any {
     } else if (a is BigComplex && b is BigComplex) {
         JyxalList.range(a, b)
     } else {
-        val split = regexCache.computeIfAbsent(b.toString(), Pattern::compile).split(a.toString())
-        JyxalList.create(split)
+        regexCache.computeIfAbsent(b.toString(), String::toRegex).split(a.toString()).jyxal()
     }
 }
 
@@ -927,19 +1075,10 @@ fun sum(obj: Any): Any {
             sum
         }
         is BigComplex -> {
-            val chars = PLUS_SPACE_I_PATTERN.matcher(obj.toString()).replaceAll("").toCharArray()
-            var sum: Long = 0
-            for (c in chars) {
-                sum += (c.code - 48).toLong()
-            }
-            sum.jyxal()
+            obj.toString().filter { it.isDigit() }.map { it.code - 48 }.sum().jyxal()
         }
         else -> {
-            var sum: Long = 0
-            for (c in obj.toString()) {
-                sum += c.code.toLong()
-            }
-            sum.jyxal()
+            obj.toString().sumOf(Char::code).jyxal()
         }
     }
 }
@@ -963,6 +1102,32 @@ fun spaces(obj: Any): Any {
             val string = obj.toString()
             "`${unescapeString(string)}`$string"
         }
+    }
+}
+
+fun strip(stack: ProgramStack): Any {
+    val b = stack.pop()
+    val a = stack.pop()
+    return if (a is JyxalList) {
+        val iterator = a.listIterator()
+        while (iterator.hasNext()) {
+            val next = iterator.next()
+            if (next != b) {
+                iterator.previous()
+                break
+            }
+        }
+        if (!iterator.hasNext()) {
+            return JyxalList.create()
+        }
+        var list = JyxalList.create(iterator)
+        while (list[list.size - 1] == b) {
+            list = list.remove(list.size - 1)
+        }
+        list
+    } else {
+        val patternString = b.toString()
+        "(^$patternString)|($patternString\$)".toRegex().replace(a.toString(), "")
     }
 }
 
@@ -995,12 +1160,55 @@ fun triplicate(stack: ProgramStack): Any {
     return obj
 }
 
+fun truthyIndexes(obj: Any): Any {
+    return when (obj) {
+        is JyxalList -> {
+            val list = ArrayList<Any>()
+            for ((index, item) in obj.withIndex()) {
+                if (truthValue(item)) {
+                    list.add(index.jyxal())
+                }
+            }
+            list.jyxal()
+        }
+        is BigComplex -> obj * 3
+        is Lambda -> Lambda(3, obj.handle)
+        else -> {
+            if (obj.toString().isEmpty()) {
+                JyxalList.create()
+            } else {
+                JyxalList.range(0, obj.toString().length)
+            }
+        }
+    }
+}
+
 fun twoPow(obj: Any): Any {
     return if (obj is BigComplex) {
         BigComplexMath.pow(BigComplex.TWO, obj, MathContext.DECIMAL128)
     } else {
         exec(obj.toString())
     }
+}
+
+fun uniquify(obj: Any): Any {
+    return if (obj is JyxalList) {
+        obj.distinct().jyxal()
+    } else {
+        obj.toString().toCharArray().distinct().joinToString("")
+    }
+}
+
+fun zip(stack: ProgramStack): Any {
+    val b = stack.pop()
+    val a = stack.pop()
+    val toZip: JyxalList
+    if (b is Lambda) {
+        toZip = JyxalList.create(iterator(a)).map(b::call)
+    } else {
+        toZip = JyxalList.create(iterator(a))
+    }
+    
 }
 
 fun monadVectorise(obj: Any, handle: MethodHandle): Any {

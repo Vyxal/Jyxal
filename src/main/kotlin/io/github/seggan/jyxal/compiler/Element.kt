@@ -20,6 +20,7 @@ enum class Element {
     COMPLEMENT("⌐", true),
     DIVIDE("/"),
     DOUBLE_REPEAT("d", true),
+    FACTORS("K", false),
     HALVE("½"),
     HEX_TO_DECIMAL("H", true),
     INCREMENT("›", true),
@@ -38,6 +39,7 @@ enum class Element {
     MODULO_FORMAT("%"),
     MULTI_COMMAND("•"),
     MULTIPLY("*"),
+    NEGATE("N", true),
     SUBTRACT("-"),
     SUM("∑", false),
     TWO_POW("E", true),
@@ -114,6 +116,20 @@ enum class Element {
     REVERSE("Ṙ", false),
     SPACES("I", false),
     SPLIT_ON("€"),
+    STRINGIFY("S", { mv ->
+        AsmHelper.pop(mv)
+        mv.visitMethodInsn(
+                Opcodes.INVOKEVIRTUAL,
+                "java/lang/Object",
+                "toString",
+                "()Ljava/lang/String;",
+                false
+        )
+        mv.loadStack()
+        mv.visitInsn(Opcodes.SWAP)
+        AsmHelper.push(mv)
+    }),
+    STRIP("P"),
 
     /**
      * Literals
@@ -124,21 +140,29 @@ enum class Element {
     /**
      * List
      */
+    COUNT("O"),
     FILTER("F"),
     FLATTEN("f", false),
     HEAD("h", false),
     HEAD_EXTRACT("ḣ"),
+    INTERLEAVE("Y"),
     IOR("ɾ", true), // inclusive one range
     IZR("ʀ", true), // inclusive zero range
     LENGTH("L", false),
+    MAP("M"),
     MAP_GET_SET("Þd"),
     MAX("G", false),
     MERGE("J"),
     PREPEND("p"),
+    REDUCE("R"),
     REMOVE_AT_INDEX("⟇"),
+    REPLACE("V"),
     SLICE_UNTIL("Ẏ"),
     SORT_BY_FUNCTION("ṡ"),
     TAIL("t", false),
+    TRUTHY_INDEXES("T", false),
+    UNIQUIFY("U", false),
+    ZIP("Z"),
 
     /**
      * Stack
@@ -257,6 +281,16 @@ enum class Element {
         mv.visitFieldInsn(Opcodes.GETSTATIC, "java/lang/System", "out", "Ljava/io/PrintStream;")
         mv.visitInsn(Opcodes.SWAP)
         mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/io/PrintStream", "println", "(Ljava/lang/Object;)V", false)
+    }),
+    QUIT("Q", { mv ->
+        mv.visitInsn(Opcodes.ICONST_0)
+        mv.visitMethodInsn(
+                Opcodes.INVOKESTATIC,
+                "java/lang/System",
+                "exit",
+                "(I)V",
+                false
+        )
     });
 
     @JvmField

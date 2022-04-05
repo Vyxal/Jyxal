@@ -18,4 +18,11 @@ data class Lambda(val arity: Int, val handle: MethodHandle) {
         }
         return handle.invoke(ProgramStack(arg))
     }
+
+    fun call(vararg args: Any): Any {
+        if (arity != args.size) {
+            throw RuntimeException("Invalid arity")
+        }
+        return handle.invoke(ProgramStack(args))
+    }
 }
