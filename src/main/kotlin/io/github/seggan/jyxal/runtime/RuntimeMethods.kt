@@ -265,11 +265,11 @@ fun filter(stack: ProgramStack): Any {
     val b = stack.pop()
     val a = stack.pop()
     return if (b is Lambda) {
-        JyxalList.create(iterator(a)).filter { truthValue(b.call(it)) }
+        listify(a).filter { truthValue(b.call(it)) }
     } else {
         val list = mutableListOf<Any>()
         iterator(a).forEach(list::add)
-        JyxalList.create(iterator(a)).filter(list::contains)
+        listify(a).filter(list::contains)
     }
 }
 
@@ -692,7 +692,7 @@ fun map(stack: ProgramStack): Any {
     val b = stack.pop()
     val a = stack.pop()
     return if (b is Lambda) {
-        if (a is JyxalList) a.map(b::call) else JyxalList.create(iterator(a)).map(b::call)
+        if (a is JyxalList) a.map(b::call) else listify(a).map(b::call)
     } else {
         val list = ArrayList<JyxalList>()
         for (item in iterator(b)) {
@@ -1202,13 +1202,12 @@ fun uniquify(obj: Any): Any {
 fun zip(stack: ProgramStack): Any {
     val b = stack.pop()
     val a = stack.pop()
-    val toZip: JyxalList
-    if (b is Lambda) {
-        toZip = JyxalList.create(iterator(a)).map(b::call)
+    val toZip = if (b is Lambda) {
+        listify(a).map(b::call)
     } else {
-        toZip = JyxalList.create(iterator(a))
+        listify(b)
     }
-    
+    return listify(a).zip(toZip)
 }
 
 fun monadVectorise(obj: Any, handle: MethodHandle): Any {

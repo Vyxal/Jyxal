@@ -177,6 +177,14 @@ fun iterator(obj: Any): Iterator<Any> {
     }
 }
 
+fun listify(obj: Any): JyxalList {
+    return if (obj is JyxalList) {
+        obj
+    } else {
+        JyxalList.create(iterator(obj))
+    }
+}
+
 fun mapLambda(lambda: Lambda, obj: Any): Any {
     return when (obj) {
         is JyxalList -> {
@@ -358,7 +366,7 @@ fun vectorise(arity: Int, function: (ProgramStack) -> Any, stack: ProgramStack):
             val left = stack.pop()
             if (left is JyxalList) {
                 if (right is JyxalList) {
-                    return left.zip(right) { a, b -> function(ProgramStack(a, b)) }.jyxal()
+                    return left.zip(right) { a, b -> function(ProgramStack(a, b)) }
                 }
                 return left.map { function(ProgramStack(it, right)) }
             } else if (right is JyxalList) {
@@ -374,7 +382,10 @@ fun vectorise(arity: Int, function: (ProgramStack) -> Any, stack: ProgramStack):
             if (left is JyxalList) {
                 if (middle is JyxalList) {
                     if (right is JyxalList) {
-                        return left.zip(middle).zip(right) { a, b -> function(ProgramStack(a.first, a.second, b)) }.jyxal()
+                        return left.zip(middle).zip(right) { a, b ->
+                            a as JyxalList
+                            function(ProgramStack(a[0], a[1], b))
+                        }
                     }
                     return left.zip(middle) { a, b -> function(ProgramStack(a, b, right)) }
                 } else if (right is JyxalList) {
