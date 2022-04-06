@@ -232,7 +232,6 @@ class Compiler private constructor(private val classWriter: JyxalClassWriter, pr
     override fun visitWhile_loop(ctx: While_loopContext) {
         val start = Label()
         val end = Label()
-        var childIndex = 0
         loopStack.push(Loop(start, end))
         val mv = callStack.peek()
         mv.reserveVar().use { ctxStore ->
@@ -241,15 +240,14 @@ class Compiler private constructor(private val classWriter: JyxalClassWriter, pr
             mv.visitFieldInsn(
                     Opcodes.GETSTATIC,
                     "runtime/math/BigComplex",
-                    "ZERO",
+                    "ONE",
                     "Lruntime/math/BigComplex;"
             )
             mv.visitVarInsn(Opcodes.ASTORE, mv.ctxVar)
             mv.visitLabel(start)
-            if (ctx.program().size > 1) {
+            if (ctx.cond != null) {
                 // we have a finite loop
-                visit(ctx.program(0))
-                childIndex = 1
+                visit(ctx.cond)
                 AsmHelper.pop(mv)
                 mv.visitMethodInsn(
                         Opcodes.INVOKESTATIC,
@@ -260,7 +258,7 @@ class Compiler private constructor(private val classWriter: JyxalClassWriter, pr
                 )
                 mv.visitJumpInsn(Opcodes.IFEQ, end)
             }
-            visit(ctx.program(childIndex))
+            visit(ctx.body)
             mv.visitVarInsn(Opcodes.ALOAD, mv.ctxVar)
             mv.visitTypeInsn(Opcodes.CHECKCAST, "runtime/math/BigComplex")
             mv.visitFieldInsn(

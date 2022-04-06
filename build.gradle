@@ -147,6 +147,7 @@ test {
 
 clean {
     delete "generated-src"
+    delete "runtime-classes"
 }
 
 // copy and relocate the runtime into the resources

@@ -9,7 +9,7 @@ file
     ;
 
 alias
-    : program PIPE theAlias=element_type WHITESPACE*
+    : program SEMICOLON theAlias=element_type WHITESPACE*
     ;
 
 program
@@ -98,7 +98,7 @@ for_loop
     ;
 
 while_loop
-    : WHILE_OPEN (program PIPE)? program WHILE_CLOSE?
+    : WHILE_OPEN (cond=program PIPE)? body=program WHILE_CLOSE?
     ;
 
 lambda
