@@ -1,5 +1,6 @@
 package io.github.seggan.jyxal.runtime.text
 
+import io.github.seggan.jyxal.runtime.jyxal
 import io.github.seggan.jyxal.runtime.list.JyxalList
 import io.github.seggan.jyxal.runtime.math.BigComplex
 import io.github.seggan.jyxal.runtime.unescapeString
@@ -30,22 +31,22 @@ class JsonParser(private val json: String) {
         }
     }
 
-    private fun parseTrue(): Any {
+    private fun parseTrue(): BigComplex {
         index += 4
-        return BigComplex.valueOf(true)
+        return true.jyxal()
     }
 
-    private fun parseFalse(): Any {
+    private fun parseFalse(): BigComplex {
         index += 5
-        return BigComplex.valueOf(false)
+        return false.jyxal()
     }
 
-    private fun parseNull(): Any {
+    private fun parseNull(): BigComplex {
         index += 4
-        return BigComplex.valueOf(false)
+        return false.jyxal()
     }
 
-    private fun parseNumber(): Any {
+    private fun parseNumber(): BigComplex {
         val sb = StringBuilder()
         if (json[index] == '-') {
             sb.append(json[index])
@@ -55,16 +56,16 @@ class JsonParser(private val json: String) {
             sb.append(json[index])
             index++
         }
-        return BigComplex.valueOf(BigDecimal(sb.toString()))
+        return BigDecimal(sb.toString()).jyxal()
     }
 
-    private fun parseArray(): Any {
+    private fun parseArray(): JyxalList {
         index++
         skipWhitespace()
-        val result = JyxalList.create()
+        val result = ArrayList<Any>()
         if (json[index] == ']') {
             index++
-            return result
+            return result.jyxal()
         }
         while (true) {
             checkEnd()
@@ -81,16 +82,16 @@ class JsonParser(private val json: String) {
             index++
             skipWhitespace()
         }
-        return result
+        return result.jyxal()
     }
 
     private fun parseObject(): JyxalList {
         index++
         skipWhitespace()
-        val result = JyxalList.create()
+        val result = ArrayList<Any>()
         if (json[index] == '}') {
             index++
-            return result
+            return result.jyxal()
         }
         while (true) {
             checkEnd()
@@ -116,7 +117,7 @@ class JsonParser(private val json: String) {
             index++
             skipWhitespace()
         }
-        return result
+        return result.jyxal()
     }
 
     private fun parseString(): String {

@@ -9,7 +9,7 @@ file
     ;
 
 alias
-    : PREFIX element_type PIPE element_type WHITESPACE*
+    : program PIPE theAlias=element_type WHITESPACE*
     ;
 
 program

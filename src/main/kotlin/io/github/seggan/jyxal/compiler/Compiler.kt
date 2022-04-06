@@ -30,7 +30,7 @@ class Compiler private constructor(private val classWriter: JyxalClassWriter, pr
     private val callStack: Deque<JyxalMethod> = ArrayDeque()
     private val loopStack: Deque<Loop> = ArrayDeque()
 
-    private val aliases: MutableMap<String, String> = HashMap()
+    private val aliases: MutableMap<String, ProgramContext> = HashMap()
 
     private var listCounter = 0
     private var lambdaCounter = 0
@@ -202,15 +202,19 @@ class Compiler private constructor(private val classWriter: JyxalClassWriter, pr
     }
 
     override fun visitAlias(ctx: AliasContext) {
-        aliases[ctx.element_type(1).text] = ctx.PREFIX().text + ctx.element_type(0).text
+        aliases[ctx.theAlias.text] = ctx.program()
     }
 
     override fun visitElement(ctx: ElementContext) {
         var element = ctx.element_type().text
-        element = if (ctx.PREFIX() != null) {
-            ctx.PREFIX().text + element
+        if (ctx.PREFIX() != null) {
+            element = ctx.PREFIX().text + element
         } else {
-            aliases.getOrDefault(element, element)
+            val alias = aliases[element]
+            if (alias != null) {
+                visit(alias)
+                return
+            }
         }
 
         val consumer = if (ctx.MODIFIER() == null) null else visitModifier(ctx.MODIFIER().text)

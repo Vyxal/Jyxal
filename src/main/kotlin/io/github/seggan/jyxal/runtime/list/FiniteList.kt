@@ -101,4 +101,14 @@ internal class FiniteList(private val backing: List<Any>) : JyxalList() {
         }
         return FiniteList(newBacking)
     }
+
+    override fun zip(iterable: Iterable<Any>, f: (Any, Any) -> Any): JyxalList {
+        val newBacking = ArrayList<Any>()
+        val iter = this.iterator()
+        val iter2 = iterable.iterator()
+        while (iter.hasNext() && iter2.hasNext()) {
+            newBacking.add(f(iter.next(), iter2.next()))
+        }
+        return FiniteList(newBacking)
+    }
 }
