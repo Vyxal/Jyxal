@@ -41,4 +41,4 @@ Gets a value from a dictionary/map (if not present, 0) or sets a value in the di
 Node aliases are a very powerful new feature in Jyxal. They allow you to reference any "program nodes" in a single byte.
 A program node is any expression that can be captured by the one element lambda. So `[aabbcc|c]` is a program node, and
 so is `Y`, and likewise `kA` is a program node. Node aliases are placed at the start of a file, and have the
-syntax `program_node+ '|' alias`, where "alias" is a single character.
+syntax `program_node+ ';' alias`, where "alias" is a single character.
