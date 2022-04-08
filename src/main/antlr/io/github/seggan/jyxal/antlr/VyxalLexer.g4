@@ -29,6 +29,10 @@ MODIFIER
     : [ßvƒɖ⁺₌₍~&]
     ;
 
+COMMENT
+    : '#' (~'\n' .)* -> skip
+    ;
+
 DIGIT
     : [0-9]
     ;
