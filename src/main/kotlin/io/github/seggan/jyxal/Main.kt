@@ -39,7 +39,7 @@ object Main {
 
         println("Parsing program...")
         val bytes: ByteArray = Files.readAllBytes(Path.of(args[0]))
-        val s: String = if (CompilerOptions.OPTIONS.contains(CompilerOptions.VYXAL_CODEPAGE)) {
+        val s: String = if (CompilerOptions.contains(CompilerOptions.VYXAL_CODEPAGE)) {
             val sb = StringBuilder()
             for (b in bytes) {
                 sb.append(Compression.CODEPAGE[b.toInt()])
@@ -50,7 +50,7 @@ object Main {
         }
         val lexer = VyxalLexer(CharStreams.fromString(s))
         val parser = VyxalParser(CommonTokenStream(lexer))
-        if (CompilerOptions.OPTIONS.contains(CompilerOptions.PRINT_DEBUG_TREE)) {
+        if (CompilerOptions.contains(CompilerOptions.PRINT_DEBUG_TREE)) {
             println(parser.file().toStringTree(parser))
             parser.reset()
         }
@@ -94,7 +94,7 @@ object Main {
             jar.putNextEntry(entry)
             jar.write(main)
         }
-        if (!CompilerOptions.OPTIONS.contains(CompilerOptions.DONT_OPTIMISE_AFTER_COMPILE)) {
+        if (!CompilerOptions.contains(CompilerOptions.DONT_OPTIMISE_AFTER_COMPILE)) {
             println("Performing post-compilation optimisations...")
             val config = Configuration()
             ConfigurationParser(Main::class.java.getResource("/rules.pro")!!, System.getProperties())

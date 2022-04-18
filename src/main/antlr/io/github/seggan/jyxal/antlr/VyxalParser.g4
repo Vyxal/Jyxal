@@ -13,7 +13,7 @@ alias
     ;
 
 program
-    : (program_node | WHITESPACE)+
+    : (program_node | WHITESPACE)*
     ;
 
 program_node

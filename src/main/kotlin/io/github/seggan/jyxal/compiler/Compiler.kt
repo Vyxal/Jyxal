@@ -649,16 +649,6 @@ class Compiler private constructor(private val classWriter: JyxalClassWriter, pr
                         false
                 )
             } else {
-                val end = Label()
-                main.loadStack()
-                main.visitMethodInsn(
-                        Opcodes.INVOKEVIRTUAL,
-                        "runtime/ProgramStack",
-                        "size",
-                        "()I",
-                        false
-                )
-                main.visitJumpInsn(Opcodes.IFEQ, end)
                 main.loadStack()
                 main.visitMethodInsn(
                         Opcodes.INVOKEVIRTUAL,
@@ -676,7 +666,6 @@ class Compiler private constructor(private val classWriter: JyxalClassWriter, pr
                         "(Ljava/lang/Object;)V",
                         false
                 )
-                main.visitLabel(end)
             }
             main.visitInsn(Opcodes.RETURN)
             try {
