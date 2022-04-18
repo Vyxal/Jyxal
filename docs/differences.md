@@ -16,6 +16,12 @@ The "eval Python" part of `E` evals Java, not Python. It loads the snippet into 
 ### `` ∑ `` 
 `∑` operating on strings will sum the character codes of the chars in the string instead of returning the string
 
+### `` \ ``
+Single character strings are capable of decompression
+
+### `` ` ``
+You may use any Java escape codes in strings
+
 ## Added Elements
 
 ### `` øJ `` (JSON Parse)
