@@ -639,7 +639,7 @@ class Compiler private constructor(private val classWriter: JyxalClassWriter, pr
             // TODO: reverse the signs for the variable assns
 
             // finish up main
-            if (CompilerOptions.OPTIONS.contains(CompilerOptions.PRINT_TO_FILE)) {
+            if (CompilerOptions.contains(CompilerOptions.PRINT_TO_FILE)) {
                 main.loadStack()
                 main.visitMethodInsn(
                         Opcodes.INVOKESTATIC,

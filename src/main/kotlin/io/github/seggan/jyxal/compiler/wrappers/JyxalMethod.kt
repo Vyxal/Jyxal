@@ -1,6 +1,7 @@
 package io.github.seggan.jyxal.compiler.wrappers
 
 import io.github.seggan.jyxal.CompilerOptions
+import io.github.seggan.jyxal.compiler.optimise
 import org.objectweb.asm.ClassWriter
 import org.objectweb.asm.Label
 import org.objectweb.asm.Opcodes
@@ -16,11 +17,11 @@ abstract class JyxalMethod internal constructor(cw: ClassWriter, access: Int, na
     var ctxVar = 0
         protected set
 
+    var optimise = CompilerOptions.doesNotContain(CompilerOptions.DONT_OPTIMISE)
+
     private val runtime = Pattern.compile("runtime/")
 
     private val reservedVars: MutableSet<ContextualVariable> = HashSet()
-    private var optimise = !CompilerOptions.OPTIONS.contains(CompilerOptions.DONT_OPTIMISE)
-
     fun loadStack() {
         visitVarInsn(Opcodes.ALOAD, stackVar)
     }
@@ -52,10 +53,6 @@ abstract class JyxalMethod internal constructor(cw: ClassWriter, access: Int, na
         visitLabel(variable.end)
     }
 
-    fun setOptimise(optimise: Boolean) {
-        this.optimise = optimise
-    }
-
     override fun visitEnd() {
         if (optimise) {
             val codeBlocks: MutableList<InsnList> = ArrayList()
@@ -71,7 +68,7 @@ abstract class JyxalMethod internal constructor(cw: ClassWriter, access: Int, na
                 }
             }
             for (block in codeBlocks) {
-                Optimiser.optimise(block, this)
+                optimise(block, this)
             }
             for (block in codeBlocks) {
                 instructions.add(block)

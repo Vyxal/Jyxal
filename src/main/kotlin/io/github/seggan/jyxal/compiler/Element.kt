@@ -343,7 +343,7 @@ enum class Element {
         this.text = text
         val methodName = screamingSnakeToCamel(name)
         compileMethod = { _, mv ->
-            if (vectorise && !CompilerOptions.OPTIONS.contains(CompilerOptions.DONT_VECTORISE_MONADS)) {
+            if (vectorise && CompilerOptions.doesNotContain(CompilerOptions.DONT_VECTORISE_MONADS)) {
                 mv.loadStack()
                 AsmHelper.pop(mv)
                 mv.visitLdcInsn(

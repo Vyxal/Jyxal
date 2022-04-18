@@ -83,10 +83,6 @@ class ProgramStack : ArrayDeque<Any?>, Deque<Any?> {
         push(BigComplex.valueOf(i))
     }
 
-    override fun push(o: Any?) {
-        super.push(o!!)
-    }
-
     fun getInput(): Any {
         return if (input == null || input!!.isEmpty()) {
             BigComplex.ZERO

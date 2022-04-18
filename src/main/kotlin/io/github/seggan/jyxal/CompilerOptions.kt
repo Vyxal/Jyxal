@@ -11,8 +11,7 @@ enum class CompilerOptions(private val c: Char) {
     PRINT_TO_FILE('f');
 
     companion object {
-        @JvmField
-        var OPTIONS: MutableSet<CompilerOptions> = EnumSet.noneOf(CompilerOptions::class.java)
+        private var OPTIONS: MutableSet<CompilerOptions> = EnumSet.noneOf(CompilerOptions::class.java)
         fun fromString(s: String) {
             for (c in s.toCharArray()) {
                 for (option in values()) {
@@ -21,6 +20,14 @@ enum class CompilerOptions(private val c: Char) {
                     }
                 }
             }
+        }
+
+        fun contains(option: CompilerOptions): Boolean {
+            return OPTIONS.contains(option)
+        }
+
+        fun doesNotContain(option: CompilerOptions): Boolean {
+            return !OPTIONS.contains(option)
         }
     }
 }
