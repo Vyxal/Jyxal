@@ -21,10 +21,7 @@ program_node
     ;
 
 literal
-    : normal_string
-    | compressed_string
-    | single_char_string
-    | double_char_string
+    : string
     | number
     | compressed_number
     | complex_number
@@ -32,20 +29,11 @@ literal
     | constant
     ;
 
-normal_string
-    : BACKTICK .*? BACKTICK
-    ;
-
-compressed_string
-    : COMPRESSED_STRING .*? COMPRESSED_STRING
-    ;
-
-single_char_string
-    : SINGLE_CHAR_STRING .
-    ;
-
-double_char_string
-    : DOUBLE_CHAR_STRING . .
+string
+    : NORMAL_STRING
+    | COMPRESSED_STRING
+    | SINGLE_CHAR_STRING
+    | DOUBLE_CHAR_STRING
     ;
 
 number

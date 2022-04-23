@@ -53,6 +53,22 @@ LAMBDA_TYPE
     : [λƛ'µ]
     ;
 
+NORMAL_STRING
+    : '"' .*? '"'?
+    ;
+
+COMPRESSED_STRING
+    : '«' .*? '«'?
+    ;
+
+SINGLE_CHAR_STRING
+    : '\\' .
+    ;
+
+DOUBLE_CHAR_STRING
+    : '‛' . .
+    ;
+
 // syntax elements
 PIPE
     : '|'
@@ -114,24 +130,12 @@ COLON
     : ':'
     ;
 
-COMPRESSED_STRING
-    : '«'
-    ;
-
 COMPRESSED_NUMBER
     : '»'
     ;
 
 COMPLEX_SEPARATOR
     : '°'
-    ;
-
-SINGLE_CHAR_STRING
-    : '\\'
-    ;
-
-DOUBLE_CHAR_STRING
-    : '‛'
     ;
 
 ONE_ELEMENT_LAMBDA

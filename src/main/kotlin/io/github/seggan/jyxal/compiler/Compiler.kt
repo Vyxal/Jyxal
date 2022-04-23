@@ -58,25 +58,14 @@ class Compiler private constructor(private val classWriter: JyxalClassWriter, pr
         AsmHelper.push(mv)
     }
 
-    override fun visitNormal_string(ctx: Normal_stringContext) {
-        val mv = callStack.peek()
-        val text = ctx.text
-        mv.loadStack()
-        mv.visitLdcInsn(decompress(unescapeString(text.substring(1, text.length - 1))))
-        AsmHelper.push(mv)
-    }
-
-    override fun visitSingle_char_string(ctx: Single_char_stringContext) {
+    override fun visitString(ctx: StringContext) {
         val mv = callStack.peek()
         mv.loadStack()
-        mv.visitLdcInsn(decompress(unescapeString(ctx.text.substring(1))))
-        AsmHelper.push(mv)
-    }
-
-    override fun visitDouble_char_string(ctx: Double_char_stringContext) {
-        val mv = callStack.peek()
-        mv.loadStack()
-        mv.visitLdcInsn(decompress(unescapeString(ctx.text.substring(1))))
+        var str = ctx.text.substring(1)
+        if (str.endsWith("«") || str.endsWith("\"")) {
+            str = str.substring(0, str.length - 1)
+        }
+        mv.visitLdcInsn(decompress(unescapeString(str)))
         AsmHelper.push(mv)
     }
 

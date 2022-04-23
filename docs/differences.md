@@ -13,21 +13,30 @@ The "eval Python" part of `E` evals Java, not Python. It loads the snippet into 
 ### `` ¨U `` 
 `¨U` decompresses compressed responses, unlike Vyxal
 
-### `` ∑ `` 
+### `` ∑ ``
+
 `∑` operating on strings will sum the character codes of the chars in the string instead of returning the string
 
 ### `` \ ``
+
 Single character strings are capable of decompression
 
-### `` ` ``
+### `` " ``
+
 You may use any Java escape codes in strings
+
+### `` ` ``, `` " ``, and `` : ``
+
+`` ` `` is the duplicate command, `"` is a string, and `:` will be pair.
 
 ## Added Elements
 
 ### `` øJ `` (JSON Parse)
+
 Parses a JSON string
 
 #### Overloads
+
 - lst a: vectorise
 - otherwise: `json.parse(str(a))`
 

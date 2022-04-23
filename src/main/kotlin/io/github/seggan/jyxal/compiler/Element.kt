@@ -173,7 +173,7 @@ enum class Element {
      * Stack
      */
     TRIPLICATE("D"),
-    DUPLICATE(":", { mv ->
+    DUPLICATE("`", { mv ->
         AsmHelper.pop(mv)
         mv.visitInsn(Opcodes.DUP)
         mv.loadStack()
