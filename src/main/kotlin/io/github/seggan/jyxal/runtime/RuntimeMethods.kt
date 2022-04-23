@@ -72,6 +72,35 @@ fun all(obj: Any): Any {
     return true.jyxal()
 }
 
+fun any(obj: Any): Any {
+    return if (obj is String) {
+        if (obj.length == 1) {
+            obj.first().isUpperCase().jyxal()
+        } else {
+            obj.any(Char::isUpperCase).jyxal()
+        }
+    } else {
+        for (item in iterator(obj)) {
+            if (truthValue(item)) {
+                return true.jyxal()
+            }
+        }
+        false.jyxal()
+    }
+}
+
+fun binary(obj: Any): Any {
+    return if (obj is Int) {
+        binHelper(obj)
+    } else {
+        obj.toString().map { binHelper(it.code) }.jyxal()
+    }
+}
+
+fun binHelper(i: Int): JyxalList {
+    return i.toString(2).map { it.toString().toInt().jyxal() }.jyxal()
+}
+
 fun chrOrd(obj: Any): Any {
     return if (obj is BigComplex) {
         Character.toString(obj.re.intValueExact())
@@ -100,6 +129,16 @@ fun complement(obj: Any): Any {
         BigComplex.ONE - obj
     } else {
         JyxalList.create(COMMA_PATTERN.split(obj.toString()))
+    }
+}
+
+fun contains(stack: ProgramStack): Any {
+    val b = stack.pop()
+    val a = stack.pop()
+    return if (a is JyxalList) {
+        a.contains(b).jyxal()
+    } else {
+        a.toString().contains(b.toString()).jyxal()
     }
 }
 
@@ -205,6 +244,47 @@ fun equal(stack: ProgramStack): Any {
         (a == b).jyxal()
     } else {
         (a.toString() == b.toString()).jyxal()
+    }
+}
+
+fun exponentiate(stack: ProgramStack): Any {
+    val o = vectorise(2, ::exponentiate, stack)
+    if (o != null) return o
+    val b = stack.pop()
+    val a = stack.pop()
+    return if (a is BigComplex) {
+        if (b is BigComplex) {
+            BigComplexMath.pow(a, b, MathContext.DECIMAL128)
+        } else {
+            val str = b.toString()
+            val c = str[0]
+            val sb = StringBuilder(str)
+            while (sb.length <= a.re.toInt()) {
+                sb.append(c)
+            }
+            sb.toString()
+        }
+    } else if (b is BigComplex) {
+        val str = a.toString()
+        val c = str[0]
+        val sb = StringBuilder(str)
+        while (sb.length <= b.re.toInt()) {
+            sb.append(c)
+        }
+        sb.toString()
+    } else {
+        val regex = regexCache.computeIfAbsent(a.toString(), String::toRegex)
+        val groups = regex.find(b.toString())?.groups
+        if (groups == null || groups.isEmpty()) {
+            JyxalList.create()
+        } else {
+            val range = groups[0]?.range
+            if (range == null) {
+                JyxalList.create()
+            } else {
+                JyxalList.create(range.first, range.last)
+            }
+        }
     }
 }
 
@@ -765,6 +845,21 @@ fun merge(stack: ProgramStack): Any {
     }
 }
 
+fun min(obj: Any): Any {
+    val iterator = iterator(obj)
+    if (!iterator.hasNext()) {
+        return 0.jyxal()
+    }
+    var min = iterator.next()
+    while (iterator.hasNext()) {
+        val next = iterator.next()
+        if (sortByFunctionHelper(next) < sortByFunctionHelper(min)) {
+            min = next
+        }
+    }
+    return min
+}
+
 fun moduloFormat(stack: ProgramStack): Any {
     val o = vectorise(2, ::multiCommand, stack)
     if (o != null) return o
@@ -775,7 +870,7 @@ fun moduloFormat(stack: ProgramStack): Any {
         if (b.isReal) {
             BigComplex.valueOf(a.re.remainder(b.re), a.im.remainder(b.re))
         } else {
-            throw RuntimeException("Can't modulo ((BigComplex) obj) numbers with non-real numbers")
+            throw RuntimeException("Can't modulo complex numbers with non-real numbers")
         }
     } else {
         if (a is BigComplex) {

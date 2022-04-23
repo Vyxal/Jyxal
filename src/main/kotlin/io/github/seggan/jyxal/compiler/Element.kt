@@ -17,9 +17,11 @@ enum class Element {
      * Math
      */
     ADD("+"),
+    BINARY("b", true),
     COMPLEMENT("⌐", true),
     DIVIDE("/"),
     DOUBLE_REPEAT("d", true),
+    EXPONENTIATE("e"),
     FACTORS("K", false),
     HALVE("½"),
     HEX_TO_DECIMAL("H", true),
@@ -48,6 +50,7 @@ enum class Element {
      * Boolean
      */
     ALL("A", false),
+    ANY("a", false),
     BOOLIFY("ḃ", { mv ->
         mv.loadStack()
         AsmHelper.pop(mv)
@@ -140,6 +143,7 @@ enum class Element {
     /**
      * List
      */
+    CONTAINS("c"),
     COUNT("O"),
     FILTER("F"),
     FLATTEN("f", false),
@@ -153,6 +157,7 @@ enum class Element {
     MAP_GET_SET("Þd"),
     MAX("G", false),
     MERGE("J"),
+    MIN("g", false),
     PREPEND("p"),
     REDUCE("R"),
     REMOVE_AT_INDEX("⟇"),
