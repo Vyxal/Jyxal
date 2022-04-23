@@ -54,11 +54,11 @@ LAMBDA_TYPE
     ;
 
 NORMAL_STRING
-    : '"' .*? '"'?
+    : '"' .*? '"'
     ;
 
 COMPRESSED_STRING
-    : '«' .*? '«'?
+    : '«' .*? '«'
     ;
 
 SINGLE_CHAR_STRING
