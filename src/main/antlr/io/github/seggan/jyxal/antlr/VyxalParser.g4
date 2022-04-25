@@ -9,7 +9,7 @@ file
     ;
 
 alias
-    : program SEMICOLON theAlias=element_type WHITESPACE*
+    : program ALIAS_SEP theAlias=element_type WHITESPACE*
     ;
 
 program
@@ -62,6 +62,7 @@ constant
 
 statement
     : if_statement
+    | symjy_statement
     | fori_loop
     | for_loop
     | while_loop
@@ -75,6 +76,10 @@ statement
 
 if_statement
     : IF_OPEN program (PIPE program)? IF_CLOSE?
+    ;
+
+symjy_statement
+    : SYMJY_OPEN ~SEMICOLON+ SEMICOLON?
     ;
 
 fori_loop
@@ -105,6 +110,7 @@ three_element_lambda
     : THREE_ELEMENT_LAMBDA program_node program_node program_node
     ;
 
+// TODO remove this
 function
     : AT_SIGN variable ((COLON parameter (COLON parameter)*)? PIPE program)? SEMICOLON?
     ;

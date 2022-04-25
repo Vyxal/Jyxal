@@ -29,6 +29,10 @@ You may use any Java escape codes in strings
 
 `` ` `` is the duplicate command, `"` is a string, and `:` will be pair.
 
+### `` ¢ ``
+
+`¢` is used as the separator for node aliases (see below), and its functionality has been moved into `ÞI`
+
 ## Added Elements
 
 ### `` øJ `` (JSON Parse)
@@ -56,4 +60,4 @@ Gets a value from a dictionary/map (if not present, 0) or sets a value in the di
 Node aliases are a very powerful new feature in Jyxal. They allow you to reference any "program nodes" in a single byte.
 A program node is any expression that can be captured by the one element lambda. So `[aabbcc|c]` is a program node, and
 so is `Y`, and likewise `kA` is a program node. Node aliases are placed at the start of a file, and have the
-syntax `program_node+ ';' alias`, where "alias" is a single character.
+syntax `program_node+ '¢' alias`, where "alias" is a single character.

@@ -4,6 +4,7 @@ import io.github.seggan.jyxal.CompilerOptions
 import io.github.seggan.jyxal.antlr.VyxalParser
 import io.github.seggan.jyxal.antlr.VyxalParser.*
 import io.github.seggan.jyxal.antlr.VyxalParserBaseVisitor
+import io.github.seggan.jyxal.compiler.symjy.SymJyCompiler
 import io.github.seggan.jyxal.compiler.wrappers.JyxalClassWriter
 import io.github.seggan.jyxal.compiler.wrappers.JyxalMethod
 import io.github.seggan.jyxal.runtime.text.Compression.decompress
@@ -575,6 +576,37 @@ class Compiler private constructor(private val classWriter: JyxalClassWriter, pr
 
     override fun visitFunction(ctx: FunctionContext) {
         throw JyxalCompileException("Functions not yet supported")
+    }
+
+    override fun visitSymjy_statement(ctx: Symjy_statementContext) {
+        var text = ctx.text.substring(1)
+        if (text.endsWith(";")) {
+            text = text.substring(0, text.length - 1)
+        }
+        val (name, arity, signature) = SymJyCompiler.compile(SymJyCompiler.transpile(text), classWriter)
+        val mv = callStack.peek()
+        mv.visitTypeInsn(Opcodes.NEW, "runtime/Lambda")
+        mv.visitInsn(Opcodes.DUP)
+        AsmHelper.selectNumberInsn(mv, arity)
+        mv.visitLdcInsn(
+                Handle(
+                        Opcodes.H_INVOKESTATIC,
+                        "jyxal/Main",
+                        name,
+                        signature,
+                        false
+                )
+        )
+        mv.visitMethodInsn(
+                Opcodes.INVOKESPECIAL,
+                "runtime/Lambda",
+                "<init>",
+                "(ILjava/lang/invoke/MethodHandle;)V",
+                false
+        )
+        mv.loadStack()
+        mv.visitInsn(Opcodes.SWAP)
+        AsmHelper.push(mv)
     }
 
     private data class Loop(val start: Label, val end: Label)

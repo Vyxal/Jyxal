@@ -50,7 +50,7 @@ object AsmHelper : Opcodes {
         )
     }
 
-    fun selectNumberInsn(mv: JyxalMethod, number: Int) {
+    fun selectNumberInsn(mv: MethodVisitor, number: Int) {
         when (number) {
             -1 -> mv.visitInsn(Opcodes.ICONST_M1)
             0 -> mv.visitInsn(Opcodes.ICONST_0)
