@@ -111,7 +111,7 @@ enum class Element {
      * String
      */
     CHR_ORD("C", true),
-    INFINITE_REPLACE("¢"),
+    INFINITE_REPLACE("ÞI"),
     ITEM_SPLIT("÷"),
     JOIN_BY_NEWLINES("⁋", false),
     JOIN_BY_NOTHING("ṅ", false),

@@ -9,7 +9,7 @@ file
     ;
 
 alias
-    : program SEMICOLON theAlias=element_type WHITESPACE*
+    : program ALIAS theAlias=element_type WHITESPACE*
     ;
 
 program

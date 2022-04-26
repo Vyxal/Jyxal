@@ -29,6 +29,10 @@ You may use any Java escape codes in strings
 
 `` ` `` is the duplicate command, `"` is a string, and `:` will be pair.
 
+### `` ¢ ``
+
+`¢` is used as the separator for node aliases (see below), and its functionality has been moved into `ÞI`
+
 ## Added Elements
 
 ### `` øJ `` (JSON Parse)
