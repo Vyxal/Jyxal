@@ -573,10 +573,6 @@ class Compiler private constructor(private val classWriter: JyxalClassWriter, pr
         AsmHelper.push(mv)
     }
 
-    override fun visitFunction(ctx: FunctionContext) {
-        throw JyxalCompileException("Functions not yet supported")
-    }
-
     private data class Loop(val start: Label, val end: Label)
 
     companion object {

@@ -69,7 +69,6 @@ statement
     | one_element_lambda
     | two_element_lambda
     | three_element_lambda
-    | function
     | variable_assn
     ;
 
@@ -103,10 +102,6 @@ two_element_lambda
 
 three_element_lambda
     : THREE_ELEMENT_LAMBDA program_node program_node program_node
-    ;
-
-function
-    : AT_SIGN variable ((COLON parameter (COLON parameter)*)? PIPE program)? SEMICOLON?
     ;
 
 parameter
