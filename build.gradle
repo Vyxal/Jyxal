@@ -84,11 +84,7 @@ sourceSets {
         java {
             srcDir "src/main/antlr"
         }
-    }
-    generated {
-        java {
-            srcDir "build/generated-src/antlr/main/"
-        }
+        java.srcDirs += "build/generated-src/antlr/main/"
     }
 }
 

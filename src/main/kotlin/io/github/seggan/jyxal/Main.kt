@@ -1,7 +1,7 @@
 package io.github.seggan.jyxal
 
-import io.github.seggan.jyxal.antlr.VyxalLexer
-import io.github.seggan.jyxal.antlr.VyxalParser
+import io.github.seggan.jyxal.antlr.JyxalLexer
+import io.github.seggan.jyxal.antlr.JyxalParser
 import io.github.seggan.jyxal.compiler.Compiler
 import io.github.seggan.jyxal.runtime.text.Compression
 import org.antlr.v4.runtime.CharStreams
@@ -48,8 +48,8 @@ object Main {
         } else {
             String(bytes, StandardCharsets.UTF_8)
         }
-        val lexer = VyxalLexer(CharStreams.fromString(s))
-        val parser = VyxalParser(CommonTokenStream(lexer))
+        val lexer = JyxalLexer(CharStreams.fromString(s))
+        val parser = JyxalParser(CommonTokenStream(lexer))
         if (CompilerOptions.contains(CompilerOptions.PRINT_DEBUG_TREE)) {
             println(parser.file().toStringTree(parser))
             parser.reset()

@@ -1,9 +1,9 @@
 package io.github.seggan.jyxal.compiler
 
 import io.github.seggan.jyxal.CompilerOptions
-import io.github.seggan.jyxal.antlr.VyxalParser
-import io.github.seggan.jyxal.antlr.VyxalParser.*
-import io.github.seggan.jyxal.antlr.VyxalParserBaseVisitor
+import io.github.seggan.jyxal.antlr.JyxalParser
+import io.github.seggan.jyxal.antlr.JyxalParser.*
+import io.github.seggan.jyxal.antlr.JyxalParserBaseVisitor
 import io.github.seggan.jyxal.compiler.wrappers.JyxalClassWriter
 import io.github.seggan.jyxal.compiler.wrappers.JyxalMethod
 import io.github.seggan.jyxal.runtime.text.Compression.decompress
@@ -22,7 +22,7 @@ import java.util.Deque
 import java.util.function.Consumer
 import java.util.regex.Pattern
 
-class Compiler private constructor(private val classWriter: JyxalClassWriter, private val clinit: MethodVisitor) : VyxalParserBaseVisitor<Unit>(), Opcodes {
+class Compiler private constructor(private val classWriter: JyxalClassWriter, private val clinit: MethodVisitor) : JyxalParserBaseVisitor<Unit>(), Opcodes {
 
     private val variables: MutableSet<String> = HashSet()
     private val contextVariables: MutableSet<String> = HashSet()
@@ -578,7 +578,7 @@ class Compiler private constructor(private val classWriter: JyxalClassWriter, pr
     companion object {
         private val COMPLEX_SEPARATOR = Pattern.compile("°")
 
-        fun compile(parser: VyxalParser, fileName: String?): ByteArray {
+        fun compile(parser: JyxalParser, fileName: String?): ByteArray {
             val cw = JyxalClassWriter(ClassWriter.COMPUTE_FRAMES)
             cw.visit(Opcodes.V11, Opcodes.ACC_PUBLIC + Opcodes.ACC_FINAL, "jyxal/Main", null, "java/lang/Object", null)
 
