@@ -1,4 +1,4 @@
-lexer grammar VyxalLexer;
+lexer grammar JyxalLexer;
 
 NON_ALPHA_ELEMENT
     : '<' | ':' | '×' | 'Ṁ' | 'ṫ' | '₇' | '¾' | '₄' | '↵' | '¹' | 'Π' | 'æ' | 'ṡ' | '∑' | 'Ẏ' | 'Ṅ'

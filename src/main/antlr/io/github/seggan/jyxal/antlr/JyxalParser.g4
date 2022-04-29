@@ -1,7 +1,7 @@
-parser grammar VyxalParser;
+parser grammar JyxalParser;
 
 options {
-    tokenVocab=VyxalLexer;
+    tokenVocab=JyxalLexer;
 }
 
 file
