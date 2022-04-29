@@ -47,6 +47,35 @@ internal class LazyList(private val generator: Iterator<Any>) : JyxalList() {
         }
     }
 
+    override fun get(ind: IntProgression): JyxalList {
+        val it = this.iterator()
+        for (i in 0 until ind.first) {
+            it.next()
+        }
+        return create(object : Iterator<Any> {
+
+            private var index = ind.first
+
+            override fun hasNext(): Boolean {
+                return it.hasNext() && index < ind.last
+            }
+
+            override fun next(): Any {
+                index++
+                while (index !in ind) {
+                    index++
+                    it.next()
+                }
+                return it.next()
+            }
+        })
+    }
+
+    override fun hasAtLeast(amount: Int): Boolean {
+        fill(amount)
+        return backing.size >= amount;
+    }
+
     override fun hasInd(ind: Int): Boolean {
         fill(ind)
         return backing.size > ind

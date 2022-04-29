@@ -23,7 +23,7 @@ abstract class JyxalList : Collection<Any> {
         }
 
         fun create(list: List<Any>): JyxalList {
-            return FiniteList(list)
+            return FiniteList(ArrayList(list))
         }
 
         @JvmStatic
@@ -117,6 +117,9 @@ abstract class JyxalList : Collection<Any> {
     abstract fun toNonLazy(): JyxalList
 
     abstract operator fun get(ind: Int): Any
+    abstract operator fun get(ind: IntProgression): JyxalList
+
+    abstract fun hasAtLeast(amount: Int): Boolean
 
     abstract fun listIterator(): ListIterator<Any>
 

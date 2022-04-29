@@ -177,6 +177,14 @@ fun iterator(obj: Any): Iterator<Any> {
     }
 }
 
+fun len(obj: Any): Int {
+    return if (obj is JyxalList) {
+        obj.size
+    } else {
+        obj.toString().length
+    }
+}
+
 fun listify(obj: Any): JyxalList {
     return if (obj is JyxalList) {
         obj

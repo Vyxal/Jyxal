@@ -20,6 +20,8 @@ enum class Element {
     BINARY("b", true),
     COMPLEMENT("⌐", true),
     DIVIDE("/"),
+    DIV_FIVE("₅", false),
+    DIV_THREE("₃", false),
     DOUBLE_REPEAT("d", true),
     EXPONENTIATE("e"),
     FACTORS("K", false),
@@ -37,11 +39,13 @@ enum class Element {
         )
         AsmHelper.push(mv)
     }),
+    IS_EVEN("₂", false),
     IS_PRIME("æ", true),
     MODULO_FORMAT("%"),
     MULTI_COMMAND("•"),
     MULTIPLY("*"),
     NEGATE("N", true),
+    SQRT("√", true),
     SUBTRACT("-"),
     SUM("∑", false),
     TWO_POW("E", true),
@@ -116,6 +120,8 @@ enum class Element {
     JOIN_BY_NEWLINES("⁋", false),
     JOIN_BY_NOTHING("ṅ", false),
     JSON_PARSE("øJ", true),
+    MIRROR("m", false),
+    REMOVE("o"),
     REVERSE("Ṙ", false),
     SPACES("I", false),
     SPLIT_ON("€"),
@@ -133,25 +139,24 @@ enum class Element {
         AsmHelper.push(mv)
     }),
     STRIP("P"),
-
-    /**
-     * Literals
-     */
-    ASTERISK("×", "*"),
-    SPACE("ð", " "),
+    UNEVAL("q", false),
 
     /**
      * List
      */
     CONTAINS("c"),
     COUNT("O"),
+    CUMULATIVE_GROUPS("l"),
     FILTER("F"),
     FLATTEN("f", false),
     HEAD("h", false),
     HEAD_EXTRACT("ḣ"),
+    INDEX_INTO("i"),
     INTERLEAVE("Y"),
     IOR("ɾ", true), // inclusive one range
     IZR("ʀ", true), // inclusive zero range
+    JOIN("j"),
+    LISTI("w", false),
     LENGTH("L", false),
     MAP("M"),
     MAP_GET_SET("Þd"),
@@ -159,15 +164,19 @@ enum class Element {
     MERGE("J"),
     MIN("g", false),
     PREPEND("p"),
+    RANGE("r"),
     REDUCE("R"),
     REMOVE_AT_INDEX("⟇"),
     REPLACE("V"),
     SLICE_UNTIL("Ẏ"),
+    SORT("s", false),
     SORT_BY_FUNCTION("ṡ"),
     TAIL("t", false),
     TRUTHY_INDEXES("T", false),
+    UNINTERLEAVE("y"),
     UNIQUIFY("U", false),
     ZIP("Z"),
+    ZIP_SELF("z", false),
 
     /**
      * Stack
@@ -337,12 +346,6 @@ enum class Element {
         }
         this.type = type
     }
-
-    constructor(text: String, literal: String) : this(text, { mv ->
-        mv.loadStack()
-        mv.visitLdcInsn(literal)
-        AsmHelper.push(mv)
-    })
 
     constructor(text: String, vectorise: Boolean) {
         this.text = text

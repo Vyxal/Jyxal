@@ -3,15 +3,14 @@ package io.github.seggan.jyxal.compiler
 import io.github.seggan.jyxal.compiler.wrappers.JyxalMethod
 import io.github.seggan.jyxal.runtime.text.Compression
 import org.objectweb.asm.ClassWriter
-import java.util.function.Consumer
 
 object Constants {
 
-    private val constants: MutableMap<String, Consumer<JyxalMethod>> = HashMap()
+    private val constants: MutableMap<String, (JyxalMethod) -> Unit> = HashMap()
 
     fun compile(name: String, cw: ClassWriter, method: JyxalMethod) {
         if (constants.containsKey(name)) {
-            constants[name]!!.accept(method)
+            constants[name]!!(method)
         } else {
             Element.getByText(name).compile(cw, method)
         }
@@ -25,7 +24,7 @@ object Constants {
         registerConstant(name) { mv: JyxalMethod -> AsmHelper.addBigComplex(value, mv) }
     }
 
-    private fun registerConstant(name: String, method: Consumer<JyxalMethod>) {
+    private fun registerConstant(name: String, method: (JyxalMethod) -> Unit) {
         constants[name] = method
     }
 
@@ -34,6 +33,20 @@ object Constants {
     }
 
     init {
+        string("×", "*")
+        string("ð", " ")
+
+        number("u", -1)
+
+        number("₀", 10)
+        number("₁", 100)
+        number("₄", 26)
+        number("₆", 64)
+        number("₇", 128)
+        number("₈", 256)
+
+        string("¶", "\n")
+
         string("kA", "ABCDEFGHIJKLMNOPQRSTUVWXYZ")
         number("ke", "2.71828182845904523536028747135266249775724709369995")
         string("kf", "Fizz")

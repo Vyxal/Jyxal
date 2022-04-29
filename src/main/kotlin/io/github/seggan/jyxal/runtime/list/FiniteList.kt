@@ -22,6 +22,10 @@ internal class FiniteList(private val backing: List<Any>) : JyxalList() {
         }
     }
 
+    override fun get(ind: IntProgression): JyxalList {
+        return create(backing.filter(ind::contains))
+    }
+
     override fun toNonLazy(): JyxalList {
         return this
     }
@@ -68,6 +72,10 @@ internal class FiniteList(private val backing: List<Any>) : JyxalList() {
 
     override fun toString(): String {
         return vyxalListFormat(backing)
+    }
+
+    override fun hasAtLeast(amount: Int): Boolean {
+        return size >= amount;
     }
 
     override fun hasInd(ind: Int): Boolean {
