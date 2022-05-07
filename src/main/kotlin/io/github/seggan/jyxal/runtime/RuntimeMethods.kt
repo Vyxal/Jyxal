@@ -283,9 +283,6 @@ fun doubleRepeat(obj: Any): Any {
 
 fun ezr(obj: Any): Any {
     return when (obj) {
-        is JyxalList -> {
-            obj.map(::ezr)
-        }
         is BigComplex -> {
             JyxalList.range(BigComplex.ZERO, obj)
         }
@@ -298,15 +295,8 @@ fun ezr(obj: Any): Any {
 
 fun eor(obj: Any): Any {
     return when (obj) {
-        is JyxalList -> {
-            obj.map(::eor)
-        }
-        is BigComplex -> {
-            JyxalList.range(BigComplex.ONE, obj)
-        }
-        else -> {
-            obj.toString().lowercase()
-        }
+        is BigComplex -> JyxalList.range(BigComplex.ONE, obj)
+        else -> obj.toString().lowercase()
     }
 }
 
@@ -426,7 +416,7 @@ fun factorial(obj: Any): Any {
     } else {
         val str = obj.toString()
         var capitalize = true
-        var ret = StringBuilder()
+        val ret = StringBuilder()
         for (c in str) {
             if (capitalize) {
                 ret.append(c.uppercaseChar())
