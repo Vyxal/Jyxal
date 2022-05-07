@@ -20,6 +20,7 @@ enum class Element {
     BINARY("b", true),
     COMPLEMENT("⌐", true),
     DIVIDE("/"),
+    DECREMENT("‹", true),
     DIV_FIVE("₅", false),
     DIV_THREE("₃", false),
     DOUBLE_REPEAT("d", true),

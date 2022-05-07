@@ -192,6 +192,14 @@ fun cumulativeGroups(stack: ProgramStack): Any {
     }
 }
 
+fun decrement(a: Any): Any {
+    return if (a is BigComplex) {
+        a - BigComplex.ONE
+    } else {
+        a.toString() + "-"
+    }
+}
+
 fun divide(stack: ProgramStack): Any {
     val o = vectorise(2, ::divide, stack)
     if (o != null) return o
@@ -389,19 +397,19 @@ fun factorial(a: Any): Any {
     } else {
         val str = a.toString()
         var capitalize = true
-        var ret = ""
+        var ret = StringBuilder()
         for (c in str) {
             if (capitalize) {
-                ret += c.uppercaseChar()
+                ret.append(c.uppercaseChar())
             } else {
-                ret += c.lowercaseChar()
+                ret.append(c.lowercaseChar())
             }
             if (capitalize && c != ' ') {
                 capitalize = false
             }
             capitalize = capitalize || "!?.".contains(c)
         }
-        ret
+        ret.toString()
     }
 }
 
