@@ -379,6 +379,35 @@ fun factors(obj: Any): Any {
     }
 }
 
+fun factorial(stack: ProgramStack): Any {
+    val o = vectorise(1, ::factorial, stack)
+    if (o != null) return o
+    val a = stack.pop()
+    return if (a is BigComplex) {
+        var res = BigComplex.ONE
+        JyxalList.range(BigComplex.ONE, a + 1).forEach {
+            res *= it as BigComplex
+        }
+        res
+    } else {
+        val str = a.toString()
+        var capitalize = true
+        var ret = ""
+        str.forEach {
+            if (capitalize) {
+                ret += it.uppercaseChar()
+            } else {
+                ret += it.lowercaseChar()
+            }
+            if (capitalize && it != ' ') {
+                capitalize = false
+            }
+            capitalize = capitalize || "!?.".contains(it)
+        }
+        ret
+    }
+}
+
 fun filter(stack: ProgramStack): Any {
     val b = stack.pop()
     val a = stack.pop()
