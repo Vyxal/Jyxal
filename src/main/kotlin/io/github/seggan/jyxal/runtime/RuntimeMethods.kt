@@ -192,11 +192,11 @@ fun cumulativeGroups(stack: ProgramStack): Any {
     }
 }
 
-fun decrement(a: Any): Any {
-    return if (a is BigComplex) {
-        a - BigComplex.ONE
+fun decrement(obj: Any): Any {
+    return if (obj is BigComplex) {
+        obj - BigComplex.ONE
     } else {
-        a.toString() + "-"
+        obj.toString() + "-"
     }
 }
 
@@ -416,15 +416,15 @@ fun factors(obj: Any): Any {
     }
 }
 
-fun factorial(a: Any): Any {
-    return if (a is BigComplex) {
+fun factorial(obj: Any): Any {
+    return if (obj is BigComplex) {
         var res = BigComplex.ONE
-        for (i in JyxalList.range(BigComplex.ONE, a + 1)) {
+        for (i in JyxalList.range(BigComplex.ONE, obj + 1)) {
             res *= i as BigComplex
         }
         res
     } else {
-        val str = a.toString()
+        val str = obj.toString()
         var capitalize = true
         var ret = StringBuilder()
         for (c in str) {
