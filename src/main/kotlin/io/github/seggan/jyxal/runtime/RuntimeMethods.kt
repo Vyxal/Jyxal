@@ -408,11 +408,9 @@ fun factors(obj: Any): Any {
 
 fun factorial(obj: Any): Any {
     return if (obj is BigComplex) {
-        var res = BigComplex.ONE
-        for (i in JyxalList.range(BigComplex.ONE, obj + 1)) {
-            res *= i as BigComplex
-        }
-        res
+        JyxalList
+            .range(BigComplex.ONE, obj + 1)
+            .fold(BigComplex.ONE){ acc, i -> acc * (i as BigComplex) }
     } else {
         val str = obj.toString()
         var capitalize = true
