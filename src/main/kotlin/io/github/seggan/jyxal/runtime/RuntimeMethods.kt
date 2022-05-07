@@ -1100,6 +1100,15 @@ fun negate(obj: Any): Any {
     else obj.toString().map { if (it.isUpperCase()) it.lowercaseChar() else it.uppercaseChar() }.joinToString("")
 }
 
+fun parity(obj: Any): Any {
+    return if (obj is BigComplex) {
+        obj % 2
+    } else {
+        val str = obj.toString()
+        str.substring(str.length / 2)
+    }
+}
+
 fun prepend(stack: ProgramStack): Any {
     val b = stack.pop()
     val a = stack.pop()

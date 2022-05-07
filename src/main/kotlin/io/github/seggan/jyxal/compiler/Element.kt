@@ -47,6 +47,7 @@ enum class Element {
     MULTI_COMMAND("•"),
     MULTIPLY("*"),
     NEGATE("N", true),
+    PARITY("∷", true),
     SQRT("√", true),
     SUBTRACT("-"),
     SUM("∑", false),
