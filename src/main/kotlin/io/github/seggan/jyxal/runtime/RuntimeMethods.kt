@@ -1092,8 +1092,7 @@ fun parity(obj: Any): Any {
     return if (obj is BigComplex) {
         obj % 2
     } else {
-        val str = obj.toString()
-        str.substring(str.length / 2)
+        obj.toString().substring(str.length / 2)
     }
 }
 
