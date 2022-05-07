@@ -281,6 +281,35 @@ fun doubleRepeat(obj: Any): Any {
     }
 }
 
+fun ezr(obj: Any): Any {
+    return when (obj) {
+        is JyxalList -> {
+            obj.map(::ezr)
+        }
+        is BigComplex -> {
+            JyxalList.range(BigComplex.ZERO, obj)
+        }
+        else -> {
+            val s = obj.toString()
+            s + s.reversed().drop(1)
+        }
+    }
+}
+
+fun eor(obj: Any): Any {
+    return when (obj) {
+        is JyxalList -> {
+            obj.map(::eor)
+        }
+        is BigComplex -> {
+            JyxalList.range(BigComplex.ONE, obj)
+        }
+        else -> {
+            obj.toString().lowercase()
+        }
+    }
+}
+
 fun equal(stack: ProgramStack): Any {
     val o = vectorise(2, ::equal, stack)
     if (o != null) return o

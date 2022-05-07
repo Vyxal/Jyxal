@@ -149,6 +149,8 @@ enum class Element {
     CONTAINS("c"),
     COUNT("O"),
     CUMULATIVE_GROUPS("l"),
+    EZR("ʁ", true),
+    EOR("ɽ", true),
     FILTER("F"),
     FLATTEN("f", false),
     HEAD("h", false),
