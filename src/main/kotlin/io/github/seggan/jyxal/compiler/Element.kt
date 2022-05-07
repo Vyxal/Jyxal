@@ -25,7 +25,7 @@ enum class Element {
     DOUBLE_REPEAT("d", true),
     EXPONENTIATE("e"),
     FACTORS("K", false),
-    FACTORIAL("¡"),
+    FACTORIAL("¡", true),
     HALVE("½"),
     HEX_TO_DECIMAL("H", true),
     INCREMENT("›", true),
