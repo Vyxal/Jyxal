@@ -192,6 +192,14 @@ fun cumulativeGroups(stack: ProgramStack): Any {
     }
 }
 
+fun decrement(obj: Any): Any {
+    return if (obj is BigComplex) {
+        obj - BigComplex.ONE
+    } else {
+        obj.toString() + "-"
+    }
+}
+
 fun divide(stack: ProgramStack): Any {
     val o = vectorise(2, ::divide, stack)
     if (o != null) return o
@@ -270,6 +278,25 @@ fun doubleRepeat(obj: Any): Any {
         else -> {
             obj.toString() * 2
         }
+    }
+}
+
+fun ezr(obj: Any): Any {
+    return when (obj) {
+        is BigComplex -> {
+            JyxalList.range(BigComplex.ZERO, obj)
+        }
+        else -> {
+            val s = obj.toString()
+            s + s.reversed().drop(1)
+        }
+    }
+}
+
+fun eor(obj: Any): Any {
+    return when (obj) {
+        is BigComplex -> JyxalList.range(BigComplex.ONE, obj)
+        else -> obj.toString().lowercase()
     }
 }
 
@@ -376,6 +403,30 @@ fun factors(obj: Any): Any {
             }
             frequencies.filterValues { it > 1 }.keys.jyxal()
         }
+    }
+}
+
+fun factorial(obj: Any): Any {
+    return if (obj is BigComplex) {
+        JyxalList
+            .range(BigComplex.ONE, obj + 1)
+            .fold(BigComplex.ONE){ acc, i -> acc * (i as BigComplex) }
+    } else {
+        val str = obj.toString()
+        var capitalize = true
+        val ret = StringBuilder()
+        for (c in str) {
+            if (capitalize) {
+                ret.append(c.uppercaseChar())
+            } else {
+                ret.append(c.lowercaseChar())
+            }
+            if (capitalize && c != ' ') {
+                capitalize = false
+            }
+            capitalize = capitalize || "!?.".contains(c)
+        }
+        ret.toString()
     }
 }
 
@@ -1035,6 +1086,15 @@ fun multiply(stack: ProgramStack): Any {
 fun negate(obj: Any): Any {
     return if (obj is BigComplex) obj.negate()
     else obj.toString().map { if (it.isUpperCase()) it.lowercaseChar() else it.uppercaseChar() }.joinToString("")
+}
+
+fun parity(obj: Any): Any {
+    return if (obj is BigComplex) {
+        obj % 2
+    } else {
+        val str = obj.toString()
+        str.substring(str.length / 2)
+    }
 }
 
 fun prepend(stack: ProgramStack): Any {
